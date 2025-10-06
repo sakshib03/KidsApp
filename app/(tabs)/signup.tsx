@@ -465,7 +465,7 @@ export default function SignUpScreen() {
               <View>
                 <TouchableOpacity style={styles.input} onPress={showDatePicker}>
                   <Text style={[styles.inputText, { paddingVertical: 10 }]}>
-                    {dob ? moment(dob).format("MM-DD-YYYY") : "Select Date of Birth"}
+                    {dob ? moment(dob).format("MM-DD-YYYY") : "Enter Date of Birth"}
                   </Text>
                 </TouchableOpacity>
                 <DateTimePickerModal

@@ -14,6 +14,7 @@ import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import * as Font from "expo-font";
 import { API_BASE } from "./config";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function LoginScreen() {
   const [secure, setSecure] = useState(true);
@@ -21,15 +22,15 @@ export default function LoginScreen() {
   const [openChild, setOpenChild] = useState(true);
   const [openParent, setOpenParent] = useState(false);
   const [fontsLoaded, setFontsLoaded] = useState(false);
-  
+
   // Form state
   const [loginData, setLoginData] = useState({
     username: "",
     password: "",
     email: "",
-    parent_password: ""
+    parent_password: "",
   });
-  
+
   // Loading state
   const [loading, setLoading] = useState(false);
 
@@ -42,9 +43,9 @@ export default function LoginScreen() {
 
   // Handle input changes
   const handleInputChange = (field, value) => {
-    setLoginData(prev => ({
+    setLoginData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -64,7 +65,7 @@ export default function LoginScreen() {
         },
         body: JSON.stringify({
           username: loginData.username,
-          password: loginData.password
+          password: loginData.password,
         }),
       });
 
@@ -73,6 +74,15 @@ export default function LoginScreen() {
       if (response.ok) {
         // Login successful
         Alert.alert("Success", "Login successful!");
+
+        await AsyncStorage.setItem(
+          "childDate",
+          JSON.stringify({
+            child_id: data.child_id,
+            username: data.username,
+            fullname: data.fullname,
+          })
+        );
         router.push("/(tabs)/chatbot");
       } else {
         // Login failed
@@ -102,7 +112,7 @@ export default function LoginScreen() {
         },
         body: JSON.stringify({
           email: loginData.email,
-          parent_password: loginData.parent_password
+          parent_password: loginData.parent_password,
         }),
       });
 
@@ -137,20 +147,20 @@ export default function LoginScreen() {
   const switchToChild = () => {
     setOpenChild(true);
     setOpenParent(false);
-    setLoginData(prev => ({
+    setLoginData((prev) => ({
       ...prev,
       email: "",
-      parent_password: ""
+      parent_password: "",
     }));
   };
 
   const switchToParent = () => {
     setOpenParent(true);
     setOpenChild(false);
-    setLoginData(prev => ({
+    setLoginData((prev) => ({
       ...prev,
       username: "",
-      password: ""
+      password: "",
     }));
   };
 
@@ -165,22 +175,50 @@ export default function LoginScreen() {
             source={require("@/assets/images/logo1.png")}
             style={styles.logo}
           />
-          <Text style={{ fontSize: 20, marginBottom:2 , color:'#F25F3B', fontWeight:600, marginTop:10}}>Welcome Back!</Text>
-          <Text style={{fontFamily: "ComicRelief-Regular", color:'#F25F3B'}}>Login to Continue your adventure.</Text>
+          <Text
+            style={{
+              fontSize: 20,
+              marginBottom: 2,
+              color: "#F25F3B",
+              fontWeight: 600,
+              marginTop: 10,
+            }}
+          >
+            Welcome Back!
+          </Text>
+          <Text style={{ fontFamily: "ComicRelief-Regular", color: "#F25F3B" }}>
+            Login to Continue your adventure.
+          </Text>
         </View>
 
         <View
-          style={{ display: "flex", flexDirection: "column", marginBottom: 30, marginTop:30 }}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            marginBottom: 30,
+            marginTop: 30,
+          }}
         >
-          <View style={{ display: "flex", flexDirection: "row", marginBottom:20 }}>
+          <View
+            style={{ display: "flex", flexDirection: "row", marginBottom: 20 }}
+          >
             <TouchableOpacity
-              style={[styles.signupFor, { marginRight: 2, backgroundColor: openChild ? "#F25F3B" : "#f8a792" }]}
+              style={[
+                styles.signupFor,
+                {
+                  marginRight: 2,
+                  backgroundColor: openChild ? "#F25F3B" : "#f8a792",
+                },
+              ]}
               onPress={switchToChild}
             >
               <Text style={styles.buttonText}>CHILD</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.signupFor, { backgroundColor: openParent ? "#F25F3B" : "#f8a792" }]}
+              style={[
+                styles.signupFor,
+                { backgroundColor: openParent ? "#F25F3B" : "#f8a792" },
+              ]}
               onPress={switchToParent}
             >
               <Text style={styles.buttonText}>PARENT</Text>
@@ -227,7 +265,17 @@ export default function LoginScreen() {
                 </TouchableOpacity>
               </View>
               <TouchableOpacity>
-                <Text style={{ marginTop: 10, marginLeft:20, fontFamily: "ComicRelief-Regular", color:'#F25F3B'}} onPress={()=>router.push("/")}>Forgot Password?</Text>
+                <Text
+                  style={{
+                    marginTop: 10,
+                    marginLeft: 20,
+                    fontFamily: "ComicRelief-Regular",
+                    color: "#F25F3B",
+                  }}
+                  onPress={() => router.push("/")}
+                >
+                  Forgot Password?
+                </Text>
               </TouchableOpacity>
             </View>
           )}
@@ -262,9 +310,13 @@ export default function LoginScreen() {
                   placeholder="Password"
                   placeholderTextColor="#F25F3B"
                   value={loginData.parent_password}
-                  onChangeText={(text) => handleInputChange("parent_password", text)}
+                  onChangeText={(text) =>
+                    handleInputChange("parent_password", text)
+                  }
                 />
-                <TouchableOpacity onPress={() => setSecureConfirm(!secureConfirm)}>
+                <TouchableOpacity
+                  onPress={() => setSecureConfirm(!secureConfirm)}
+                >
                   <Feather
                     name={secureConfirm ? "eye-off" : "eye"}
                     size={16}
@@ -274,14 +326,24 @@ export default function LoginScreen() {
                 </TouchableOpacity>
               </View>
               <TouchableOpacity>
-                <Text style={{color:'#F25F3B', marginTop: 10, marginLeft:20, fontFamily: "ComicRelief-Regular", }} onPress={()=>router.push("/")}>Forgot Password?</Text>
+                <Text
+                  style={{
+                    color: "#F25F3B",
+                    marginTop: 10,
+                    marginLeft: 20,
+                    fontFamily: "ComicRelief-Regular",
+                  }}
+                  onPress={() => router.push("/")}
+                >
+                  Forgot Password?
+                </Text>
               </TouchableOpacity>
-            </View>  
+            </View>
           )}
         </View>
 
-        <TouchableOpacity 
-          style={[styles.button, loading && styles.buttonDisabled]} 
+        <TouchableOpacity
+          style={[styles.button, loading && styles.buttonDisabled]}
           onPress={handleLogin}
           disabled={loading}
         >
@@ -290,9 +352,20 @@ export default function LoginScreen() {
           </Text>
         </TouchableOpacity>
 
-        <Text style={{fontFamily: "ComicRelief-Regular", marginTop:6, color:'#F25F3B'}}>
+        <Text
+          style={{
+            fontFamily: "ComicRelief-Regular",
+            marginTop: 6,
+            color: "#F25F3B",
+          }}
+        >
           Don't have an account?{" "}
-          <Text style={{color:"#F25F3B",}} onPress={() => router.push("/(tabs)/signup")}>SignUp</Text>
+          <Text
+            style={{ color: "#F25F3B" }}
+            onPress={() => router.push("/(tabs)/signup")}
+          >
+            SignUp
+          </Text>
         </Text>
       </View>
     </ImageBackground>
@@ -313,13 +386,13 @@ const styles = StyleSheet.create({
   logo: {
     width: 100,
     height: 100,
-    borderRadius:30,
+    borderRadius: 30,
   },
   input: {
     width: 300,
     marginTop: 22,
-    borderColor:'#F25F3B',
-    borderWidth:1,
+    borderColor: "#F25F3B",
+    borderWidth: 1,
     padding: 12,
     paddingVertical: 2,
     paddingHorizontal: 25,

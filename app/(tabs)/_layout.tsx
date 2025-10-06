@@ -33,6 +33,30 @@ export default function TabLayout() {
       name="story"
       options={{title: 'Story'}}
       />
+      <Stack.Screen
+      name="joke"
+      options={{title:'Joke'}}
+      />
+      <Stack.Screen
+      name="question"
+      options={{title:'Question'}}
+      />
+      <Stack.Screen
+      name="quiz"
+      options={{title:'Quiz'}}
+      />
+      <Stack.Screen
+      name="profile"
+      options={{title:'Profile'}}
+      />
+      <Stack.Screen
+      name="reminders"
+      options={{title:'Reminders'}}
+      />
+      <Stack.Screen
+      name="changePassword"
+      options={{title:'ChangePassword'}}
+      />
     </Stack>
   );
 }

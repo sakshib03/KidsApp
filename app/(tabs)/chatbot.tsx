@@ -9,23 +9,46 @@ import {
   Alert,
   Platform,
   PermissionsAndroid,
+  ScrollView,
 } from "react-native";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import * as Speech from 'expo-speech';
+import * as Speech from "expo-speech";
+import * as Font from "expo-font";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function ChatBot() {
   const [micOn, setMicOn] = useState(false);
   const [text, setText] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState(null);
+  const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [userData, setUserData] = useState(null);
 
   useEffect(() => {
-    // Initialize speech recognition
+    Font.loadAsync({
+      "ComicRelief-Bold": require("../../assets/fonts/ComicRelief-Bold.ttf"),
+      "ComicRelief-Regular": require("../../assets/fonts/ComicRelief-Regular.ttf"),
+    }).then(() => setFontsLoaded(true));
+    loadUserData();
+  }, []);
+
+  const loadUserData=async()=>{
+    try{
+      const userDataSting = await AsyncStorage.getItem("userData");
+
+      if(userDataSting){
+        setUserData(JSON.parse(userDataSting));
+      }
+    }catch(error){
+      console.error("Error loading user data:", error);
+    }
+  };
+
+  useEffect(() => {
     initializeSpeechRecognition();
-    
+
     return () => {
-      // Cleanup
       if (recognition) {
         recognition.stop();
       }
@@ -34,13 +57,12 @@ export default function ChatBot() {
 
   const initializeSpeechRecognition = async () => {
     try {
-      // For web compatibility, we'll use a simple approach
-      if (Platform.OS === 'web') {
-        console.log('Web platform - using browser Speech Recognition');
+      if (Platform.OS === "web") {
+        console.log("Web platform - using browser Speech Recognition");
         return;
       }
     } catch (error) {
-      console.error('Error initializing speech recognition:', error);
+      console.error("Error initializing speech recognition:", error);
     }
   };
 
@@ -63,31 +85,33 @@ export default function ChatBot() {
         return false;
       }
     }
-    return true; // iOS permissions are handled by Expo
+    return true;
   };
 
   const startSpeechToText = async () => {
     try {
-      // Request microphone permission first
       const hasPermission = await requestMicrophonePermission();
-      
+
       if (!hasPermission) {
         Alert.alert(
-          "Permission Denied", 
+          "Permission Denied",
           "Microphone permission is required to use voice input."
         );
         return;
       }
 
-      if (Platform.OS === 'web') {
-        // Web implementation
-        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-          const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (Platform.OS === "web") {
+        if (
+          "webkitSpeechRecognition" in window ||
+          "SpeechRecognition" in window
+        ) {
+          const SpeechRecognition =
+            window.SpeechRecognition || window.webkitSpeechRecognition;
           const recognition = new SpeechRecognition();
-          
+
           recognition.continuous = false;
           recognition.interimResults = false;
-          recognition.lang = 'en-US';
+          recognition.lang = "en-US";
 
           recognition.onstart = () => {
             console.log("Speech recognition started");
@@ -98,7 +122,7 @@ export default function ChatBot() {
           recognition.onresult = (event) => {
             const transcript = event.results[0][0].transcript;
             console.log("Speech result:", transcript);
-            setText(prevText => prevText + ' ' + transcript);
+            setText((prevText) => prevText + " " + transcript);
           };
 
           recognition.onerror = (event) => {
@@ -115,17 +139,20 @@ export default function ChatBot() {
           recognition.start();
           setRecognition(recognition);
         } else {
-          Alert.alert("Not Supported", "Speech recognition is not supported in this browser");
+          Alert.alert(
+            "Not Supported",
+            "Speech recognition is not supported in this browser"
+          );
         }
       } else {
-        Alert.alert("Info", "For mobile devices, consider using a dedicated speech-to-text service or library");
-        
-        // Simulate speech recognition for demo purposes
+        Alert.alert(
+          "Info",
+          "For mobile devices, consider using a dedicated speech-to-text service or library"
+        );
+
         setIsListening(true);
         setMicOn(true);
-        
-        // This is where you would integrate with a proper speech recognition service
-        // For now, we'll simulate it with a timeout
+
         setTimeout(() => {
           const demoText = "This is a demo speech to text result";
           setText(demoText);
@@ -136,7 +163,7 @@ export default function ChatBot() {
     } catch (error) {
       console.error("Speech Error:", error);
       Alert.alert(
-        "Speech Error", 
+        "Speech Error",
         error.message || "Something went wrong with voice input."
       );
       setIsListening(false);
@@ -145,7 +172,7 @@ export default function ChatBot() {
   };
 
   const stopSpeechToText = () => {
-    if (Platform.OS === 'web' && recognition) {
+    if (Platform.OS === "web" && recognition) {
       recognition.stop();
     }
     setIsListening(false);
@@ -163,16 +190,14 @@ export default function ChatBot() {
   const handleSend = () => {
     if (text.trim()) {
       console.log("Sending message:", text);
-      // Add your send logic here
-      setText(""); // Clear input after sending
+      setText("");
     }
   };
 
-  // Text-to-Speech function (for the volume button)
   const speakText = () => {
     if (text.trim()) {
       Speech.speak(text, {
-        language: 'en',
+        language: "en",
         pitch: 1.0,
         rate: 0.8,
       });
@@ -183,89 +208,146 @@ export default function ChatBot() {
 
   return (
     <ImageBackground
-      source={require("@/assets/images/background2.png")}
+      source={require("@/assets/images/login_image.png")}
       style={styles.background}
     >
       <View style={styles.container}>
-        <Text style={styles.welcomeText}>
-          Welcome to the ChatBot! Let's have some fun.
-        </Text>
+        {/* Main Content Area */}
+        <View
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "space-between",
+            padding: 20,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              gap: 4,
+            }}
+          >
+            <TouchableOpacity
+              style={{
+                backgroundColor: "#454545ff",
+                padding: 6,
+                borderRadius: 50,
+              }}
+              onPress={()=>router.push("/(tabs)/profile")}
+            >
+              <Feather name="user" size={24} color="#fff" />
+            </TouchableOpacity>
 
-        <View style={styles.inputContainer}>
-          <View style={styles.textInputWrapper}>
-            <TextInput
-              style={styles.inputText}
-              placeholder="Type your question here..."
-              placeholderTextColor="#000"
-              value={text}
-              onChangeText={setText}
-              multiline
-            />
-            <TouchableOpacity onPress={handleSend}>
-              <Feather name="send" size={20} color="#56bbf1ff" />
+            <TouchableOpacity
+            style={{
+                backgroundColor: "#454545ff",
+                padding: 6,
+                borderRadius: 50,
+              }}
+              onPress={()=>router.push("/(tabs)/reminders")}
+              >
+              <Feather name="bell" size={24} color="#fff" />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.voiceControls}>
-            <TouchableOpacity style={styles.voiceButton} onPress={speakText}>
-              <Feather name="volume-2" size={20} color="#fff" />
-            </TouchableOpacity>
+          <TouchableOpacity>
+            <Feather name="log-out" size={26} color="#000" />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.mainContent}>
+          <Text style={styles.welcomeText}>
+            Welcome to the ChatBot! Let's have some fun.
+          </Text>
 
-            <TouchableOpacity 
-              style={[
-                styles.voiceButton,
-                micOn && styles.listeningButton
-              ]}
-              onPress={toggleMic}
-            >
-              <Feather 
-                name={micOn ? "mic" : "mic-off"} 
-                size={20} 
-                color="#fff" 
-              />
-            </TouchableOpacity>
+          <View style={styles.inputSection}>
+            <View style={styles.inputContainer}>
+              <View style={styles.textInputWrapper}>
+                <TextInput
+                  style={styles.inputText}
+                  placeholder="Type your question here..."
+                  placeholderTextColor="#666"
+                  value={text}
+                  onChangeText={setText}
+                  multiline
+                  numberOfLines={3}
+                />
+                <TouchableOpacity
+                  style={styles.sendButton}
+                  onPress={handleSend}
+                >
+                  <Feather name="send" size={22} color="#fff" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.voiceControls}>
+                <TouchableOpacity
+                  style={styles.voiceButton}
+                  onPress={speakText}
+                >
+                  <Feather name="volume-2" size={22} color="#fff" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.voiceButton, micOn && styles.listeningButton]}
+                  onPress={toggleMic}
+                >
+                  <Feather
+                    name={micOn ? "mic" : "mic-off"}
+                    size={22}
+                    color="#fff"
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {isListening && (
+              <View style={styles.listeningIndicator}>
+                <Text style={styles.listeningText}>Listening... Speak now</Text>
+              </View>
+            )}
           </View>
         </View>
 
-        {isListening && (
-          <View style={styles.listeningIndicator}>
-            <Text style={styles.listeningText}>Listening... Speak now</Text>
-          </View>
-        )}
-      </View>
-
-      {/* Buttons Container */}
-      <View style={styles.bottomContainer}>
-        <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Log Out</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Profile</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Go to Quiz</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Question of the Day</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Joke of the Day</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.button} 
-          onPress={() => router.push("/(tabs)/story")}
+        {/* Bottom Navigation Buttons */}
+        <ScrollView
+          style={styles.bottomContainer}
+          contentContainerStyle={styles.bottomContent}
+          showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.buttonText}>Generate Story</Text>
-        </TouchableOpacity>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={styles.button}
+            onPress={()=>router.push("/(tabs)/quizq")}
+            >
+              <Text style={styles.buttonText}>Go to Quiz</Text>
+            </TouchableOpacity>
+          </View>
 
-        <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Reminders</Text>
-        </TouchableOpacity>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => router.push("/(tabs)/question")}
+            >
+              <Text style={styles.buttonText}>Question of the Day</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => router.push("/(tabs)/joke")}
+            >
+              <Text style={styles.buttonText}>Joke of the Day</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => router.push("/(tabs)/story")}
+            >
+              <Text style={styles.buttonText}>Generate Story</Text>
+            </TouchableOpacity>
+
+          </View>
+        </ScrollView>
       </View>
     </ImageBackground>
   );
@@ -279,91 +361,143 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    padding: 4,
+    marginTop:16
+  },
+  mainContent: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    paddingHorizontal: 10,
   },
   welcomeText: {
-    fontFamily: "ComicRelief-Regular",
-    fontSize: 16,
+    fontFamily: "ComicRelief-Bold",
+    fontSize: 20,
     textAlign: "center",
-    marginBottom: 20,
-    color: "#000",
+    marginBottom: 30,
+    color: "#e33b3bff",
+    lineHeight: 28,
+  },
+  inputSection: {
+    width: "100%",
+    alignItems: "center",
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
+    gap: 6,
     width: "100%",
-    justifyContent: "center",
+    maxWidth: 400,
   },
   textInputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffffff",
-    padding: 12,
+    backgroundColor: "#ffffff",
+    padding: 10,
     paddingHorizontal: 16,
-    borderRadius: 10,
+    borderRadius: 12,
     flex: 1,
-    maxWidth: 280,
+    borderWidth: 2,
+    borderColor: "#56bbf1",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   inputText: {
     fontSize: 16,
     fontFamily: "ComicRelief-Regular",
-    fontWeight: "500",
     color: "#000",
     flex: 1,
     padding: 0,
     margin: 0,
+    textAlignVertical: "top",
+    minHeight: 60,
+  },
+  sendButton: {
+    backgroundColor: "#56bbf1",
+    padding: 8,
+    borderRadius: 8,
+    marginLeft: 4,
   },
   voiceControls: {
     flexDirection: "row",
-    gap: 8,
+    gap: 6,
   },
   voiceButton: {
-    backgroundColor: "#56bbf1ff",
-    padding: 10,
-    borderRadius: 8,
+    backgroundColor: "#56bbf1",
+    padding: 12,
+    borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
+    minWidth: 50,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
   listeningButton: {
     backgroundColor: "#ff6b6b",
+    transform: [{ scale: 1.1 }],
   },
   listeningIndicator: {
-    marginTop: 10,
-    padding: 8,
-    backgroundColor: "rgba(86, 187, 241, 0.2)",
-    borderRadius: 5,
+    marginTop: 15,
+    padding: 12,
+    backgroundColor: "rgba(86, 187, 241, 0.15)",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#56bbf1",
   },
   listeningText: {
-    color: "#56bbf1ff",
-    fontFamily: "ComicRelief-Regular",
+    color: "#56bbf1",
+    fontFamily: "ComicRelief-Bold",
     fontSize: 14,
+    textAlign: "center",
   },
   bottomContainer: {
-    position: "absolute",
-    bottom: 40,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
+    maxHeight: 190,
+  },
+  bottomContent: {
     paddingHorizontal: 10,
   },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginBottom: 10,
+    gap: 8,
+  },
   button: {
-    margin: 8,
-    backgroundColor: "#56bbf1ff",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    minWidth: "20%",
+    backgroundColor: "#56bbf1",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
     alignItems: "center",
+    flex: 1,
+    minWidth: 110,
+    maxWidth: 160,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 4,
   },
   buttonText: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 13,
+    fontWeight: "500",
     color: "#fff",
     textAlign: "center",
+    fontFamily: "ComicRelief-Regular",
+    lineHeight: 16,
   },
 });
