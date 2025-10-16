@@ -8,129 +8,328 @@ import {
   Image,
   TextInput,
   ScrollView,
+  Alert,
 } from "react-native";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE } from "./config";
-import * as Font from "expo-font";
 
 export default function Profile() {
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedData, setEditedData] = useState(null);
+  const [childId, setChildId] = useState(null);
+  const [avatarUrl, setAvatarUrl] = useState(null);
+  const [avatarLoading, setAvatarLoading] = useState(true);
+
+  useEffect(() => {
+    loadChildId();
+  }, []);
+
+  useEffect(() => {
+    if (childId) {
+      fetchUserData();
+      fetchAvatar();
+    }
+  }, [childId]);
+
+  const loadChildId = async () => {
+    try {
+      const storedChildId = await AsyncStorage.getItem("childId");
+      console.log("Stored Child ID:", storedChildId);
+
+      if (storedChildId) {
+        setChildId(storedChildId);
+      } else {
+        Alert.alert("Error", "Child ID not found. Please login again.");
+        router.push("/login");
+      }
+    } catch (error) {
+      console.error("Error getting child ID:", error);
+      Alert.alert("Error", "Failed to initialize app");
+    }
+  };
+
+  const fetchUserData = async () => {
+    try {
+      setLoading(true);
+      if (!childId) {
+        Alert.alert("Error", "Child ID not available");
+        return;
+      }
+
+      console.log("Fetching data for child ID:", childId);
+
+      const response = await fetch(`${API_BASE}/child-profile/${childId}`, {
+        method: "GET",
+        headers: {
+          accept: "application/json",
+        },
+      });
+
+      console.log("Response status:", response.status);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Fetched user data:", data);
+
+      setUserData(data);
+      setEditedData(data);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      Alert.alert("Error", "Failed to load profile data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAvatar = async () => {
+    try {
+      setAvatarLoading(true);
+      if (!childId) {
+        console.log("No child ID available for avatar fetch");
+        return;
+      }
+
+      console.log("Fetching avatar for child ID:", childId);
+
+      const response = await fetch(`${API_BASE}/set-avatar`, {
+        method: "POST",
+        headers: {
+          "accept": "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          child_id: parseInt(childId)
+        }),
+      });
+
+      console.log("Avatar response status:", response.status);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Avatar response data:", data);
+
+      if (data.avatar) {
+        // Construct the full URL to the avatar image
+        // Adjust this path based on where your avatars are stored
+        const avatarFullUrl = `${API_BASE}/avatars/${data.avatar}`;
+        setAvatarUrl(avatarFullUrl);
+        console.log("Avatar URL set:", avatarFullUrl);
+      }
+    } catch (error) {
+      console.error("Error fetching avatar:", error);
+      // Don't show alert for avatar failure as it's not critical
+    } finally {
+      setAvatarLoading(false);
+    }
+  };
+
+  const handleAvatarError = () => {
+    console.log("Failed to load avatar, using default image");
+    setAvatarUrl(null);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+  };
+
+  if (loading) {
+    return (
+      <ImageBackground
+        source={require("@/assets/images/theme1.png")}
+        style={styles.background}
+      >
+        <View style={styles.container}>
+          <Text style={styles.loadingText}>Loading profile...</Text>
+        </View>
+      </ImageBackground>
+    );
+  }
+
+  if (!userData) {
+    return (
+      <ImageBackground
+        source={require("@/assets/images/theme1.png")}
+        style={styles.background}
+      >
+        <View style={styles.container}>
+          <Text style={styles.errorText}>Failed to load profile data</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchUserData}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </ImageBackground>
+    );
+  }
+
   return (
     <ImageBackground
       source={require("@/assets/images/theme1.png")}
       style={styles.background}
     >
-      <View style={styles.container}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.push("/(tabs)/chatbot")}
-        >
-          <Feather name="arrow-left" size={24} color={"#fff"} />
-          <Text style={styles.backButtonText}>Back to Home</Text>
-        </TouchableOpacity>
-        <View style={styles.mainContainer}>
-          <View style={{ alignItems: "center" }}>
-            <Image
-              source={require("@/assets/images/user.jpg")}
-              style={styles.logo}
-            />
-            <Text
-              style={{
-                marginTop: 10,
-                fontSize: 14,
-                fontWeight: 500,
-                color: "#fff",
-              }}
-            >
-              Age:
-            </Text>
-            <TextInput />
-          </View>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.container}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.push("/(tabs)/chatbot")}
+          >
+            <Feather name="arrow-left" size={24} color={"#fff"} />
+            <Text style={styles.backButtonText}>Back to Home</Text>
+          </TouchableOpacity>
 
-          <View style={styles.subContainer}>
-            <View
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                gap: 14,
-                justifyContent: "center",
-              }}
-            >
-              <View>
-                <View style={styles.inputField}>
-                  <Text style={styles.input}>Total Score</Text>
-                  <TextInput style={styles.inputText} />
+          <View style={styles.mainContainer}>
+            <View style={{ alignItems: "center" }}>
+              <Image
+                source={
+                  avatarUrl && !avatarLoading 
+                    ? { uri: avatarUrl }
+                    : require("@/assets/images/user.jpg")
+                }
+                style={styles.logo}
+                onError={handleAvatarError}
+                defaultSource={require("@/assets/images/user.jpg")}
+              />
+              {avatarLoading && (
+                <Text style={styles.avatarLoadingText}>Loading avatar...</Text>
+              )}
+              <Text style={styles.userName}>{userData.fullname}</Text>
+              <Text style={styles.username}>@{userData.username}</Text>
+            </View>
+
+            <View style={styles.subContainer}>
+              <View style={styles.columnsContainer}>
+                <View style={styles.column}>
+                  <View style={styles.inputField}>
+                    <Text style={styles.input}>Total Score</Text>
+                    <TextInput
+                      style={[styles.inputText, styles.nonEditableInput]}
+                      value={userData.credits?.total?.toString() || "0"}
+                      editable={false}
+                    />
+                  </View>
+
+                  <View style={styles.inputField}>
+                    <Text style={styles.input}>Gender</Text>
+                    <TextInput
+                      style={[styles.inputText, styles.nonEditableInput]}
+                      value={userData.gender}
+                      editable={false}
+                    />
+                  </View>
+
+                  <View style={styles.inputField}>
+                    <Text style={styles.input}>Story Score</Text>
+                    <TextInput
+                      style={[styles.inputText, styles.nonEditableInput]}
+                      value={userData.credits?.story?.toString() || "0"}
+                      editable={false}
+                    />
+                  </View>
+
+                  <View style={styles.inputField}>
+                    <Text style={styles.input}>Quiz Score</Text>
+                    <TextInput
+                      style={[styles.inputText, styles.nonEditableInput]}
+                      value={userData.credits?.quiz?.toString() || "0"}
+                      editable={false}
+                    />
+                  </View>
+                  <View style={styles.inputField}>
+                    <Text style={styles.input}>Chat Score</Text>
+                    <TextInput
+                      style={[styles.inputText, styles.nonEditableInput]}
+                      value={userData.credits?.chat?.toString() || "0"}
+                      editable={false}
+                    />
+                  </View>
                 </View>
 
-                <view style={styles.inputField}>
-                  <Text style={styles.input}>Chat Score</Text>
-                  <TextInput style={styles.inputText} />
-                </view>
+                <View style={styles.column}>
+                  <View style={styles.inputField}>
+                    <Text style={styles.input}>Dream Career</Text>
+                    <TextInput
+                      style={[styles.inputText, styles.nonEditableInput]}
+                      value={userData.dream_career}
+                      editable={false}
+                    />
+                  </View>
 
-                <View style={styles.inputField}>
-                  <Text style={styles.input}>Story Score</Text>
-                  <TextInput style={styles.inputText} />
-                </View>
+                  <View style={styles.inputField}>
+                    <Text style={styles.input}>DOB</Text>
+                    <TextInput
+                      style={[styles.inputText, styles.nonEditableInput]}
+                      value={formatDate(userData.dob)}
+                      editable={false}
+                    />
+                  </View>
 
-                <View style={styles.inputField}>
-                  <Text style={styles.input}>Quiz Score</Text>
-                  <TextInput style={styles.inputText} />
-                </View>
-              </View>
+                  <View style={styles.inputField}>
+                    <Text style={styles.input}>Question Score</Text>
+                    <TextInput
+                      style={[styles.inputText, styles.nonEditableInput]}
+                      value={userData.credits?.question?.toString() || "0"}
+                      editable={false}
+                    />
+                  </View>
 
-              <View>
-                <View style={styles.inputField}>
-                  <Text style={styles.input}>Dream Career</Text>
-                  <TextInput style={styles.inputText} />
-                </View>
-
-                <View style={styles.inputField}>
-                  <Text style={styles.input}>DOB</Text>
-                  <TextInput style={styles.inputText} />
-                </View>
-
-                <View style={styles.inputField}>
-                  <Text style={styles.input}>Question Score</Text>
-                  <TextInput style={styles.inputText} />
-                </View>
-
-                <View style={styles.inputField}>
-                  <Text style={styles.input}>Joke Score</Text>
-                  <TextInput style={styles.inputText} />
+                  <View style={styles.inputField}>
+                    <Text style={styles.input}>Joke Score</Text>
+                    <TextInput
+                      style={[styles.inputText, styles.nonEditableInput]}
+                      value={userData.credits?.joke?.toString() || "0"}
+                      editable={false}
+                    />
+                  </View>
+                  <View style={styles.inputField}>
+                    <Text style={styles.input}>Game Score</Text>
+                    <TextInput
+                      style={[styles.inputText, styles.nonEditableInput]}
+                      value={userData.credits?.game?.toString() || "0"}
+                      editable={false}
+                    />
+                  </View>
                 </View>
               </View>
             </View>
           </View>
-        </View>
 
-        <View style={styles.buttonContainer}>
-          <View
-            style={{ flexDirection: "row", justifyContent: "center", gap: 20 }}
-          >
-            <TouchableOpacity
-              style={[styles.button, { backgroundColor: "#33b445ff" }]}
-            >
-              <Text style={styles.buttonText}>Edit Profile</Text>
-            </TouchableOpacity>
+          <View style={styles.buttonContainer}>
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={[styles.button, { backgroundColor: "#33b445ff" }]}
+                onPress={fetchAvatar}
+              >
+                <Text style={styles.buttonText}>Refresh Avatar</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.button, { backgroundColor: "#ff4b4bff" }]}
-            >
-              <Text style={styles.buttonText}>Redeem Rewards</Text>
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity
+                style={[styles.button, { backgroundColor: "#ff4b4bff" }]}
+              >
+                <Text style={styles.buttonText}>Redeem Rewards</Text>
+              </TouchableOpacity>
+            </View>
 
-          <View style={{ flexDirection: "row", justifyContent: "center" }}>
-            <TouchableOpacity
-              style={[styles.button, { backgroundColor: "#1bc7c5ff" }]}
-              onPress={() => router.push("/(tabs)/changePassword")}
-            >
-              <Text style={styles.buttonText}>change Password</Text>
-            </TouchableOpacity>
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={[styles.button, { backgroundColor: "#1bc7c5ff" }]}
+              >
+                <Text style={styles.buttonText}>Edit Profile</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </View>
+      </ScrollView>
     </ImageBackground>
   );
 }
@@ -140,6 +339,9 @@ const styles = StyleSheet.create({
     flex: 1,
     width: "100%",
     height: "100%",
+  },
+  scrollContainer: {
+    flexGrow: 1,
   },
   container: {
     flex: 1,
@@ -167,7 +369,7 @@ const styles = StyleSheet.create({
   },
   mainContainer: {
     width: "100%",
-    padding: 16,
+    padding: 12,
     borderRadius: 4,
     backgroundColor: "#67b8faff",
   },
@@ -176,43 +378,89 @@ const styles = StyleSheet.create({
     padding: 16,
     justifyContent: "center",
     borderRadius: 14,
+    marginTop: 16,
+  },
+  columnsContainer: {
+    display: "flex",
+    flexDirection: "row",
+    gap: 14,
+    justifyContent: "center",
+  },
+  column: {
+    flex: 1,
   },
   logo: {
     width: 80,
     height: 80,
     borderRadius: 50,
+    borderWidth: 2,
+    borderColor: "#fff",
+  },
+  avatarLoadingText: {
+    marginTop: 5,
+    fontSize: 12,
+    color: "#fff",
+    fontFamily: "ComicRelief-Regular",
+  },
+  userName: {
+    marginTop: 10,
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#fff",
+    textAlign: "center",
+    fontFamily: "ComicRelief-Regular",
+  },
+  username: {
+    marginTop: 4,
+    fontSize: 14,
+    color: "#fff",
+    textAlign: "center",
+    fontFamily: "ComicRelief-Regular",
   },
   inputField: {
     display: "flex",
     flexDirection: "column",
+    marginBottom: 8,
   },
   input: {
     marginTop: 12,
     fontSize: 14,
-    fontWeight: 500,
+    fontWeight: "500",
+    color: "#222222ff",
+    fontFamily: "ComicRelief-Regular",
   },
   inputText: {
-    width: 125,
-    marginTop: 12,
+    width: "100%",
+    marginTop: 6,
     backgroundColor: "#fff",
-    borderColor: "#fff",
+    borderColor: "#ddd",
     borderWidth: 1,
-    borderRadius: 4,
-    padding: 12,
-    paddingVertical: 2,
-    paddingHorizontal: 25,
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 14,
+    fontFamily: "ComicRelief-Regular",
+  },
+  nonEditableInput: {
+    backgroundColor: "#f5f5f5",
+    color: "#363636ff",
   },
   buttonContainer: {
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
+    marginTop: 20,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 20,
   },
   button: {
     backgroundColor: "#56bbf1",
     paddingVertical: 12,
     paddingHorizontal: 18,
     borderRadius: 20,
-    marginTop: 20,
+    marginTop: 12,
     alignItems: "center",
     flex: 1,
     minWidth: 160,
@@ -233,5 +481,30 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontFamily: "ComicRelief-Regular",
     lineHeight: 16,
+  },
+  loadingText: {
+    color: "#fff",
+    fontSize: 16,
+    textAlign: "center",
+    fontFamily: "ComicRelief-Regular",
+  },
+  errorText: {
+    color: "#fff",
+    fontSize: 16,
+    textAlign: "center",
+    fontFamily: "ComicRelief-Regular",
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: "#f66c46ff",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    alignSelf: "center",
+  },
+  retryButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontFamily: "ComicRelief-Regular",
   },
 });

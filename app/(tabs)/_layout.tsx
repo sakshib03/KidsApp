@@ -18,17 +18,21 @@ export default function TabLayout() {
       options={{title: 'SignUp'}}
       />
       <Stack.Screen
+      name="dashboard"
+      options={{title:'Dashboard'}}
+      />
+      <Stack.Screen
       name="chatbot"
       options={{title: 'ChatBot'}}
       />
-      {/* <Stack.Screen
+       <Stack.Screen
       name="resetPassword"
       options={{title: 'ResetPassword'}}
       />
       <Stack.Screen
       name="changePassword"
       options={{title: 'ChangePassword'}}
-      /> */}
+      />
       <Stack.Screen
       name="story"
       options={{title: 'Story'}}
@@ -52,10 +56,6 @@ export default function TabLayout() {
       <Stack.Screen
       name="reminders"
       options={{title:'Reminders'}}
-      />
-      <Stack.Screen
-      name="changePassword"
-      options={{title:'ChangePassword'}}
       />
     </Stack>
   );

@@ -72,17 +72,18 @@ export default function LoginScreen() {
       const data = await response.json();
 
       if (response.ok) {
-        // Login successful
         Alert.alert("Success", "Login successful!");
 
+        await AsyncStorage.setItem("childId", data.child_id.toString());
         await AsyncStorage.setItem(
-          "childDate",
-          JSON.stringify({
-            child_id: data.child_id,
-            username: data.username,
-            fullname: data.fullname,
-          })
-        );
+        "userData",
+        JSON.stringify({
+          child_id: data.child_id,
+          username: data.username,
+          fullname: data.fullname,
+        })
+      );
+      
         router.push("/(tabs)/chatbot");
       } else {
         // Login failed
@@ -119,11 +120,20 @@ export default function LoginScreen() {
       const data = await response.json();
 
       if (response.ok) {
-        // Login successful
         Alert.alert("Success", "Login successful!");
-        router.push("/(tabs)/chatbot");
+
+        await AsyncStorage.setItem("parentId", data.parent_id.toString());
+        await AsyncStorage.setItem(
+          "parentData",
+          JSON.stringify({
+            parent_id:data.parent_id,
+            email:data.email,
+            fullname:data.fullname,
+          })
+        );
+
+        router.push("/(tabs)/dashboard");
       } else {
-        // Login failed
         Alert.alert("Error", data.detail || "Login failed. Please try again.");
       }
     } catch (error) {
@@ -134,7 +144,7 @@ export default function LoginScreen() {
     }
   };
 
-  // Handle login based on user type
+
   const handleLogin = () => {
     if (openChild) {
       handleChildLogin();

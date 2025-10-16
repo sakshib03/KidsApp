@@ -34,6 +34,8 @@ export default function SignUpScreen() {
   const [childConfirmPassword, setChildConfirmPassword] = useState("");
   const [gender, setGender] = useState("");
   const [dreamCareer, setDreamCareer] = useState("");
+  const [dreamCareer1, setDreamCareer1]=useState("");
+  const [dreamCareer2, setDreamCareer2]=useState("");
   
   const [parentFullName, setParentFullName] = useState("");
   const [parentEmail, setParentEmail] = useState("");
@@ -56,6 +58,8 @@ export default function SignUpScreen() {
   
   const [showGenderDropdown, setShowGenderDropdown] = useState(false);
   const [showCareerDropdown, setShowCareerDropdown] = useState(false);
+  const [showCareerDropdown1, setShowCareerDropdown1] = useState(false);
+  const [showCareerDropdown2, setShowCareerDropdown2] = useState(false);
   const [showRelationDropdown, setShowRelationDropdown] = useState(false);
   const [showParentGenderDropdown, setShowParentGenderDropdown] = useState(false);
 
@@ -362,7 +366,7 @@ export default function SignUpScreen() {
       onPress={() => {
         onSelect(item);
         if (dropdownType === "gender") setShowGenderDropdown(false);
-        if (dropdownType === "career") setShowCareerDropdown(false);
+        if (dropdownType === "career") [setShowCareerDropdown(false), setShowCareerDropdown1(false), setShowCareerDropdown2(false)];
         if (dropdownType === "relation") setShowRelationDropdown(false);
         if (dropdownType === "parentGender") setShowParentGenderDropdown(false);
       }}
@@ -403,14 +407,14 @@ export default function SignUpScreen() {
       style={styles.background}
     >
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <View style={{ justifyContent: "center", alignItems: "center", marginBottom: 14 }}>
+        <View style={{ justifyContent: "center", alignItems: "center", marginBottom: 12 }}>
           <Text style={{ fontSize: 22, fontWeight: 600, color: '#F25F3B' }}>Welcome, SignUp to Continue</Text>
         </View>
 
         <View style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
           {step === "child" && (
-            <View style={{ display: "flex", flexDirection: "column", marginBottom: 20, alignItems: "center", justifyContent: "center" }}>
-              <Text style={{ fontSize: 16, color: "#F25F3B", fontWeight: 400, marginTop: 20, fontFamily: "ComicRelief-Regular" }}>
+            <View style={{ display: "flex", flexDirection: "column", marginBottom: 14, alignItems: "center", justifyContent: "center" }}>
+              <Text style={{ fontSize: 16, color: "#F25F3B", fontWeight: 400, marginTop: 10, fontFamily: "ComicRelief-Regular" }}>
                 Child Information
               </Text>
               
@@ -497,18 +501,38 @@ export default function SignUpScreen() {
                 <Feather name="chevron-down" size={16} marginTop={14} color="#F25F3B" />
               </TouchableOpacity>
 
+              <TouchableOpacity
+              style={[styles.input, { display: "flex", flexDirection: "row", justifyContent: "space-between" }]}
+              onPress={() => setShowCareerDropdown1(true)}
+              >
+                <Text style={[styles.inputText, !dreamCareer1 && { color: "#F25F3B" }, { paddingVertical: 10 }]}>
+                  {dreamCareer1 ? dreamCareer1 : "Optional Dream Career 1"}
+                </Text>
+                <Feather name="chevron-down" size={16} marginTop={14} color="#F25F3B" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+              style={[styles.input, { display: "flex", flexDirection: "row", justifyContent: "space-between" }]}
+              onPress={() => setShowCareerDropdown2(true)}
+              >
+                <Text style={[styles.inputText, !dreamCareer2 && { color: "#F25F3B" }, { paddingVertical: 10 }]}>
+                  {dreamCareer2 ? dreamCareer2 : "Optional Dream Career 2"}
+                </Text>
+                <Feather name="chevron-down" size={16} marginTop={14} color="#F25F3B" />
+              </TouchableOpacity>
+
               <TouchableOpacity 
                 style={styles.button} 
                 onPress={handleChildSubmit}
               >
-                <Text style={styles.buttonText}>SUBMIT</Text>
+                <Text style={styles.buttonText}>CONTINUE</Text>
               </TouchableOpacity>
             </View>
           )}
 
           {step === "parent" && (
-            <View style={{ display: "flex", flexDirection: "column", marginBottom: 20, justifyContent: "center", alignItems: "center" }}>
-              <Text style={{ fontSize: 16, color: "#F25F3B", fontWeight: 400, marginTop: 20, fontFamily: "ComicRelief-Regular" }}>
+            <View style={{ display: "flex", flexDirection: "column", marginBottom: 16, justifyContent: "center", alignItems: "center" }}>
+              <Text style={{ fontSize: 16, color: "#F25F3B", fontWeight: 400, marginTop: 10, fontFamily: "ComicRelief-Regular" }}>
                 Parent Information
               </Text>
               
@@ -654,7 +678,7 @@ export default function SignUpScreen() {
             </View>
           )}
 
-          <Text style={{ fontFamily: "ComicRelief-Regular", color: '#F25F3B', marginTop: 20 }}>
+          <Text style={{ fontFamily: "ComicRelief-Regular", color: '#F25F3B',}}>
             Already have an account?{" "}
             <Text style={{ color: "#F25F3B", fontFamily: "ComicRelief-Regular", textDecorationLine: "underline" }} onPress={() => router.push("/")}>
               Login
@@ -676,6 +700,22 @@ export default function SignUpScreen() {
           options={careerOptions}
           onSelect={setDreamCareer}
           onClose={() => setShowCareerDropdown(false)}
+          dropdownType="career"
+        />
+
+        <DropdownModal
+          visible={showCareerDropdown1}
+          options={careerOptions}
+          onSelect={setDreamCareer1}
+          onClose={() => setShowCareerDropdown1(false)}
+          dropdownType="career"
+        />
+
+        <DropdownModal
+          visible={showCareerDropdown2}
+          options={careerOptions}
+          onSelect={setDreamCareer2}
+          onClose={() => setShowCareerDropdown2(false)}
           dropdownType="career"
         />
 
@@ -707,10 +747,10 @@ const styles = StyleSheet.create({
   },
   input: {
     width: 300,
-    marginTop: 22,
+    marginTop: 18,
     borderColor:'#F25F3B',
     borderWidth:1,
-    padding: 12,
+    padding: 8,
     paddingVertical: 2,
     paddingHorizontal: 25,
     borderRadius: 30,
@@ -723,7 +763,7 @@ const styles = StyleSheet.create({
   },
   button: {
     width: 300,
-    marginTop: 50,
+    marginTop: 40,
     backgroundColor: "#F25F3B",
     padding: 12,
     paddingVertical: 10,

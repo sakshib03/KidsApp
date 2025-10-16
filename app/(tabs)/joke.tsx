@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
     borderRadius: 12,
-    padding: 10,
+    padding:10
   },
   scrollContent: {
     flexGrow: 1,

@@ -15,7 +15,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE } from "./config";
 import * as Font from "expo-font";
 
-export default function ChangePassword() {
+export default function ResetPassword() {
   return (
     <ImageBackground
       source={require("@/assets/images/theme3.png")}
@@ -39,25 +39,24 @@ export default function ChangePassword() {
                   fontSize: 24,
                   fontWeight: 700,
                   color: "#fff",
-                  marginBottom:14
+                  marginBottom:20
                 }}
               >
-                Change Password
+                Password Reset
               </Text>
-              <View style={styles.inputField}>
-                <Text style={styles.input}>New Password</Text>
-                <TextInput style={styles.inputText} />
+              <View style={styles.prompt}>
+                <Text style={{color:"#fff"}}>Enter your e-mail address below, and we will send you an e-mail allowing you to reset it.</Text>
               </View>
 
               <view style={styles.inputField}>
-                <Text style={styles.input}>Confirm Password</Text>
+                <Text style={styles.input}>Email Address</Text>
                 <TextInput style={styles.inputText} />
               </view>
 
               <TouchableOpacity
                 style={[styles.button, { backgroundColor: "#45c556ff" }]}
               >
-                <Text style={styles.buttonText}>Change Password</Text>
+                <Text style={styles.buttonText}>Request OTP</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -75,17 +74,28 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    padding: 30,
+    padding: 20,
     justifyContent: "center",
   },
   mainContainer: {
     width: "100%",
-    maxHeight: "50%",
+    maxHeight: "60%",
     padding: 30,
     backgroundColor: "#7560ecff",
     justifyContent: "center",
     alignItems: "center",
-    borderRadius:30,
+    borderRadius:20,
+  },
+  prompt:{
+    maxWidth:260,
+    borderWidth:2,
+    borderColor:"#fff",
+    backgroundColor:"#684ff2ff",
+    padding:4,
+    marginBottom:20,
+    borderRadius:2,
+    paddingHorizontal:10,
+    paddingVertical:10
   },
   inputField: {
     display: "flex",
@@ -98,7 +108,7 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   inputText: {
-    width: 240,
+    width: 260,
     height: 40,
     marginTop: 12,
     backgroundColor: "#fff",
@@ -117,7 +127,7 @@ const styles = StyleSheet.create({
     marginTop: 30,
     alignItems: "center",
     flex: 1,
-    minWidth: 240,
+    minWidth: 260,
     maxWidth: 220,
     shadowColor: "#000",
     shadowOffset: {
