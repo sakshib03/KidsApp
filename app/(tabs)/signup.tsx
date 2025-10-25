@@ -82,7 +82,7 @@ export default function SignUpScreen() {
 
   useEffect(() => {
     Font.loadAsync({
-      "ComicRelief-Bold": require("../../assets/fonts/ComicRelief-Bold.ttf"),
+      "ComicRelief-Bold": require("../../assets/fonts/ComicRelief-Regular.ttf"),
       "ComicRelief-Regular": require("../../assets/fonts/ComicRelief-Regular.ttf"),
     }).then(() => setFontsLoaded(true));
   }, []);

@@ -31,9 +31,14 @@ export default function Profile() {
   useEffect(() => {
     if (childId) {
       fetchUserData();
-      fetchAvatar();
     }
   }, [childId]);
+
+  useEffect(() => {
+    if (childId && userData) {
+      fetchAvatar();
+    }
+  }, [childId, userData]);
 
   const loadChildId = async () => {
     try {
@@ -91,27 +96,31 @@ export default function Profile() {
   const fetchAvatar = async () => {
     try {
       setAvatarLoading(true);
-      if (!childId) {
-        console.log("No child ID available for avatar fetch");
+      if (!childId || !userData) {
+        console.log("No child ID or user data available for avatar fetch");
         return;
       }
 
       console.log("Fetching avatar for child ID:", childId);
+      console.log("Dream career:", userData.default_dream_career);
 
       const response = await fetch(`${API_BASE}/set-avatar`, {
         method: "POST",
         headers: {
-          "accept": "application/json",
+          accept: "application/json",
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          child_id: parseInt(childId)
+          child_id: parseInt(childId),
+          selected_career: userData.default_dream_career,
         }),
       });
 
       console.log("Avatar response status:", response.status);
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Backend error:", errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
@@ -119,22 +128,24 @@ export default function Profile() {
       console.log("Avatar response data:", data);
 
       if (data.avatar) {
-        // Construct the full URL to the avatar image
-        // Adjust this path based on where your avatars are stored
-        const avatarFullUrl = `${API_BASE}/avatars/${data.avatar}`;
-        setAvatarUrl(avatarFullUrl);
+        const avatarFullUrl = `${API_BASE.replace('/kids/v3', '')}/avatars/${data.avatar}`;
         console.log("Avatar URL set:", avatarFullUrl);
+        setAvatarUrl(avatarFullUrl);
+      } else {
+        console.warn("No avatar returned from backend");
+        setAvatarUrl(null);
       }
     } catch (error) {
       console.error("Error fetching avatar:", error);
-      // Don't show alert for avatar failure as it's not critical
+      setAvatarUrl(null);
     } finally {
       setAvatarLoading(false);
     }
   };
 
-  const handleAvatarError = () => {
-    console.log("Failed to load avatar, using default image");
+  const handleAvatarError = (error) => {
+    console.log("Failed to load avatar:", error.nativeEvent);
+    console.log("Failed URL:",avatarUrl);
     setAvatarUrl(null);
   };
 
@@ -191,14 +202,9 @@ export default function Profile() {
           <View style={styles.mainContainer}>
             <View style={{ alignItems: "center" }}>
               <Image
-                source={
-                  avatarUrl && !avatarLoading 
-                    ? { uri: avatarUrl }
-                    : require("@/assets/images/user.jpg")
-                }
+                source={avatarUrl ? { uri: avatarUrl } : require("@/assets/images/user.jpg")}
                 style={styles.logo}
                 onError={handleAvatarError}
-                defaultSource={require("@/assets/images/user.jpg")}
               />
               {avatarLoading && (
                 <Text style={styles.avatarLoadingText}>Loading avatar...</Text>
@@ -260,7 +266,7 @@ export default function Profile() {
                     <Text style={styles.input}>Dream Career</Text>
                     <TextInput
                       style={[styles.inputText, styles.nonEditableInput]}
-                      value={userData.dream_career}
+                      value={userData.default_dream_career}
                       editable={false}
                     />
                   </View>
@@ -316,7 +322,10 @@ export default function Profile() {
               <TouchableOpacity
                 style={[styles.button, { backgroundColor: "#ff4b4bff" }]}
               >
-                <Text style={styles.buttonText}>Redeem Rewards</Text>
+                <Text 
+                style={styles.buttonText}
+                onPress={()=> router.push("/(tabs)/redeemRewards")}
+                >Redeem Rewards</Text>
               </TouchableOpacity>
             </View>
 

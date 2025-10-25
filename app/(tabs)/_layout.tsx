@@ -25,10 +25,6 @@ export default function TabLayout() {
       name="chatbot"
       options={{title: 'ChatBot'}}
       />
-       <Stack.Screen
-      name="resetPassword"
-      options={{title: 'ResetPassword'}}
-      />
       <Stack.Screen
       name="changePassword"
       options={{title: 'ChangePassword'}}
@@ -56,6 +52,22 @@ export default function TabLayout() {
       <Stack.Screen
       name="reminders"
       options={{title:'Reminders'}}
+      />
+      <Stack.Screen
+      name="redeemRewards"
+      options={{title:'RedeemRewards'}}
+      />
+      <Stack.Screen
+      name="forgotPassword"
+      options={{title: 'ForgotPassword'}}
+      />
+      <Stack.Screen
+      name="forgotPassParent"
+      options={{title: 'ForgotPassParent'}}
+      />
+      <Stack.Screen
+      name="verifyForgotPassword"
+      options={{title:'VerifyForgotPassword'}}
       />
     </Stack>
   );

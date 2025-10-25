@@ -58,7 +58,6 @@ export default function ChatBot() {
     setMessages(initialMessages);
 
     return () => {
-      // Clean up sound on unmount
       if (sound) {
         sound.unloadAsync();
       }
@@ -69,7 +68,7 @@ export default function ChatBot() {
     if (!userData.child_id) return;
     try {
       const response = await fetch(
-        `${API_BASE}/chat-history/1/${userData.child_id}`,
+        `${API_BASE}/chat-history/${userData.parent_id}/${userData.child_id}`,
         {
           method: "GET",
           headers: {
@@ -86,10 +85,43 @@ export default function ChatBot() {
 
       const data = await response.json();
       console.log("history data:", data);
-      setChatHistory(data.chat_history || []);
+
+      // Store the original date-wise structure
+      setChatHistory(data.chat_history || {});
     } catch (error) {
       console.error("Error fetching chat history:", error);
       Alert.alert("Error", "Failed to load chat history");
+    }
+  };
+
+  // State to track expanded dates
+  const [expandedDates, setExpandedDates] = useState({});
+
+  const toggleDateExpansion = (date) => {
+    setExpandedDates((prev) => ({
+      ...prev,
+      [date]: !prev[date],
+    }));
+  };
+
+  // Function to format date for display
+  const formatDateDisplay = (dateString) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+      return "Today";
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return "Yesterday";
+    } else {
+      return date.toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
     }
   };
 
@@ -110,6 +142,7 @@ export default function ChatBot() {
       const userDataString = await AsyncStorage.getItem("userData");
       if (userDataString) {
         setUserData(JSON.parse(userDataString));
+
       }
     } catch (error) {
       console.error("Error loading user data:", error);
@@ -262,6 +295,7 @@ export default function ChatBot() {
       if (sound) {
         await sound.stopAsync();
         await sound.unloadAsync();
+        setSound(null);
       }
 
       const audioUri = `data:audio/mp3;base64,${base64Audio}`;
@@ -365,6 +399,170 @@ export default function ChatBot() {
     }
   };
 
+  const handleSpeechToSpeech = async () => {
+    try {
+      const permission = await Audio.requestPermissionsAsync();
+      if (permission.status !== "granted") {
+        Alert.alert(
+          "Permission Required",
+          "Please allow microphone access for speech-to-speech."
+        );
+        return;
+      }
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+        shouldDuckAndroid: true,
+        playThroughEarpieceAndroid: false,
+      });
+
+      const { recording: newRecording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+
+      setRecording(newRecording);
+      setIsRecording(true);
+
+      Alert.alert("Recording", "Speak now...", [
+        {
+          text: "Stop Recording",
+          onPress: async () => {
+            await stopRecordingAndProcess();
+          },
+        },
+      ]);
+    } catch (error) {
+      console.error("Failed to start recording:", error);
+      Alert.alert("Error", "Failed to start recording");
+    }
+  };
+
+  const stopRecordingAndProcess = async () => {
+    try {
+      if (!recording) return;
+      setIsRecording(false);
+
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+
+      if (!uri) {
+        Alert.alert("Error", "No audio recorded");
+        return;
+      }
+
+      // Show loading state
+      setIsSpeechToSpeechLoading(true);
+
+      const base64Audio = await audioToBase64(uri);
+
+      if (!base64Audio) {
+        Alert.alert("Error", "Failed to process audio");
+        return;
+      }
+
+      // Send to speech-to-speech API
+      await sendSpeechToSpeech(base64Audio);
+    } catch (error) {
+      console.error("Error processing recording:", error);
+      Alert.alert("Error", "Failed to process recording");
+    } finally {
+      setRecording(null);
+      setIsSpeechToSpeechLoading(false);
+    }
+  };
+
+  const audioToBase64 = async (uri) => {
+    try {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result.split(",")[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error("Error converting audio to base64:", error);
+      return null;
+    }
+  };
+
+  const sendSpeechToSpeech = async (audioBase64) => {
+    if (!userData?.child_id) {
+      Alert.alert("Error", "User data not loaded");
+      return;
+    }
+    try {
+      setIsSpeechToSpeechLoading(true);
+      const response = await fetch(`${API_BASE}/speech-to-speech`, {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          child_id: userData.child_id,
+          audio_base64: audioBase64,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Speech-to-speech Response:", data);
+
+      const userMessage = {
+        id: Date.now().toString(),
+        text: data.transcribed_text || "[Voice message]",
+        isUser: true,
+        timestamp: new Date(),
+      };
+
+      const botMessage = {
+        id: (Date.now() + 1).toString(),
+        text: data.response,
+        isUser: false,
+        timestamp: new Date(),
+        audio: data.audio_base64,
+      };
+
+      setMessages((prev) => [...prev, userMessage, botMessage]);
+
+      if (data.audio_base64) {
+        await playAudioFromBase64(data.audio_base64);
+      }
+    } catch (error) {
+      console.error("Speech-to-speech API Error:", error);
+      Alert.alert("Error", "Failed to process speech-to-speech request");
+    } finally {
+      setIsSpeechToSpeechLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await AsyncStorage.multiRemove([
+        "accessToken",
+        "loginTime",
+        "userType",
+        "childId",
+        "parentId",
+        "userData",
+        "parentData",
+      ]);
+      router.replace("/(tabs)/login");
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
+  };
+
   const clearChat = () => {
     Alert.alert("Clear Chat", "Are you sure you want to clear all messages?", [
       {
@@ -451,22 +649,29 @@ export default function ChatBot() {
                 <Feather name="menu" size={22} color="#239a5e" />
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.iconButton} onPress={clearChat}>
-                <Feather name="trash-2" size={20} color="#239a5e" />
+              <TouchableOpacity
+                style={styles.iconButton}
+                onPress={() => router.push("/(tabs)/profile")}
+              >
+                <Feather name="user" size={20} color="#239a5e" />
               </TouchableOpacity>
             </View>
 
             <Text style={styles.headerTitle}>Learning Buddy</Text>
 
             <View style={styles.headerRight}>
-              <TouchableOpacity style={styles.iconButton}>
-                <Feather name="bell" size={20} color="#239a5e" />
-              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.iconButton}
-                onPress={() => router.push("/(tabs)/profile")}
+                onPress={() => router.push("/(tabs)/reminders")}
               >
-                <Feather name="user" size={20} color="#239a5e" />
+                <Feather name="bell" size={20} color="#239a5e" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.iconButton}
+                onPress={handleLogout}
+              >
+                <Feather name="log-out" size={20} color="#239a5e" />
               </TouchableOpacity>
             </View>
           </View>
@@ -606,6 +811,7 @@ export default function ChatBot() {
                   top: 20,
                   right: 10,
                   padding: 4,
+                  zIndex: 1,
                 }}
                 onPress={() => setShowHistory(false)}
               >
@@ -622,43 +828,70 @@ export default function ChatBot() {
                 <Text
                   style={{ fontSize: 18, color: "#56bbf1", fontWeight: "bold" }}
                 >
-                  Recent Chats
+                  Chat History
                 </Text>
-                <TouchableOpacity>
-                  <Feather name="plus" size={24} color="#56bbf1" />
-                </TouchableOpacity>
               </View>
               <ScrollView style={{ marginTop: 60 }}>
-                {chatHistory.length === 0 ? (
-                  <Text style={{ textAlign: "center", color: "#999" }}>
-                    No history available
+                {Object.keys(chatHistory).length === 0 ? (
+                  <Text
+                    style={{
+                      textAlign: "center",
+                      color: "#999",
+                      marginTop: 20,
+                    }}
+                  >
+                    No chat history available
                   </Text>
                 ) : (
-                  chatHistory.map((chat) => (
-                    <View
-                      key={chat.id}
-                      style={{
-                        backgroundColor: "#f8f9fa",
-                        padding: 10,
-                        borderRadius: 10,
-                        marginBottom: 8,
-                        borderLeftWidth: 4,
-                        borderLeftColor: "#56bbf1",
-                      }}
-                    >
-                      <Text style={{ fontWeight: "bold", color: "#239a5e" }}>
-                        You: {chat.message}
-                      </Text>
-                      <Text style={{ color: "#333", marginTop: 4 }}>
-                        Buddy: {chat.response}
-                      </Text>
-                      <Text
-                        style={{ color: "#999", fontSize: 12, marginTop: 4 }}
-                      >
-                        {new Date(chat.timestamp).toLocaleString()}
-                      </Text>
-                    </View>
-                  ))
+                  Object.entries(chatHistory)
+                    .sort(
+                      ([dateA], [dateB]) => new Date(dateB) - new Date(dateA)
+                    ) // Sort dates descending (newest first)
+                    .map(([date, messages]) => (
+                      <View key={date} style={styles.dateSection}>
+                        <TouchableOpacity
+                          style={styles.dateHeader}
+                          onPress={() => toggleDateExpansion(date)}
+                        >
+                          <Text style={styles.dateHeaderText}>
+                            {formatDateDisplay(date)}
+                          </Text>
+                          <Feather
+                            name={
+                              expandedDates[date]
+                                ? "chevron-up"
+                                : "chevron-down"
+                            }
+                            size={20}
+                            color="#56bbf1"
+                          />
+                        </TouchableOpacity>
+
+                        {expandedDates[date] && (
+                          <View style={styles.messagesContainer}>
+                            {messages.map((chat) => (
+                              <View key={chat.id} style={styles.chatItem}>
+                                <Text style={styles.userMessageText}>
+                                  You: {chat.message}
+                                </Text>
+                                <Text style={styles.botMessageText}>
+                                  Buddy: {chat.response}
+                                </Text>
+                                <Text style={styles.timestampText}>
+                                  {new Date(chat.timestamp).toLocaleTimeString(
+                                    [],
+                                    {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    }
+                                  )}
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        )}
+                      </View>
+                    ))
                 )}
               </ScrollView>
             </View>
@@ -727,11 +960,6 @@ const styles = StyleSheet.create({
   messagesList: {
     flex: 1,
   },
-  messagesContainer: {
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    gap: 12,
-  },
   messageBubble: {
     maxWidth: "85%",
     padding: 12,
@@ -763,12 +991,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "ComicRelief-Regular",
     lineHeight: 20,
-  },
-  userMessageText: {
-    color: "#ffffff",
-  },
-  botMessageText: {
-    color: "#333333",
   },
   messageFooter: {
     flexDirection: "row",
@@ -902,5 +1124,60 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     elevation: 10,
     padding: 20,
+  },
+
+  dateSection: {
+    marginBottom: 12,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+    overflow: 'hidden',
+  },
+  dateHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#f8f9fa',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+  },
+  dateHeaderText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#56bbf1',
+    fontFamily: 'ComicRelief-Bold',
+  },
+  messagesContainer: {
+    padding: 8,
+  },
+  chatItem: {
+    backgroundColor: '#f8f9fa',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#56bbf1',
+  },
+  userMessageText: {
+    color: '#333333ff',
+    fontSize: 14,
+    marginBottom: 4,
+    fontFamily: 'ComicRelief-Regular',
+  },
+  botMessageText: {
+    color: '#333',
+    fontSize: 14,
+    marginBottom: 4,
+    fontFamily: 'ComicRelief-Regular',
+  },
+  timestampText: {
+    color: '#999',
+    fontSize: 11,
+    fontFamily: 'ComicRelief-Regular',
   },
 });

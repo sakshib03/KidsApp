@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Children } from "react";
 import {
   View,
   Text,
@@ -39,7 +39,105 @@ export default function LoginScreen() {
       "ComicRelief-Bold": require("../../assets/fonts/ComicRelief-Bold.ttf"),
       "ComicRelief-Regular": require("../../assets/fonts/ComicRelief-Regular.ttf"),
     }).then(() => setFontsLoaded(true));
+
+    checkExistingAuth();
   }, []);
+
+  // Check for existing valid authentication
+  const checkExistingAuth = async () => {
+    try {
+      const loginTime = await AsyncStorage.getItem("loginTime");
+      const accessToken = await AsyncStorage.getItem("accessToken");
+      const userType = await AsyncStorage.getItem("userType");
+
+      if (loginTime && accessToken && userType) {
+        const isTokenValid = checkTokenValidity(loginTime);
+        
+        if (isTokenValid) {
+          if (userType === "child") {
+            router.replace("/(tabs)/chatbot");
+          } else if (userType === "parent") {
+            router.replace("/(tabs)/dashboard");
+          }
+        } else {
+          await clearAuthStorage();
+        }
+      }
+    } catch (error) {
+      console.error("Error checking auth status:", error);
+    }
+  };
+
+  // Check if token is still valid (15 days)
+  const checkTokenValidity = (loginTime) => {
+    const FIFTEEN_DAYS_IN_MS = 15 * 24 * 60 * 60 * 1000;
+    const currentTime = new Date().getTime();
+    const loginTimestamp = parseInt(loginTime);
+    
+    return currentTime - loginTimestamp < FIFTEEN_DAYS_IN_MS;
+  };
+
+  // Clear authentication data
+  const clearAuthStorage = async () => {
+    try {
+      await AsyncStorage.multiRemove([
+        "accessToken",
+        "loginTime", 
+        "userType",
+        "childId",
+        "parentId",
+        "userData",
+        "parentData"
+      ]);
+    } catch (error) {
+      console.error("Error clearing auth storage:", error);
+    }
+  };
+
+  // Store authentication data
+  const storeAuthData = async (userType, data) => {
+    try {
+      const loginTime = new Date().getTime().toString();
+      
+      await AsyncStorage.multiSet([
+        ["accessToken", data.access_token || `token_${loginTime}`],
+        ["loginTime", loginTime],
+        ["userType", userType]
+      ]);
+
+      // Store user-specific data
+      if (userType === "child") {
+        await AsyncStorage.setItem("childId", data.child_id.toString());
+        await AsyncStorage.setItem("parentId", data.parent_id.toString());
+        await AsyncStorage.setItem(
+          "userData",
+          JSON.stringify({
+            child_id: data.child_id,
+            username: data.username,
+            fullname: data.fullname,
+            parent_id: data.parent_id,
+          })
+        );
+      } else if (userType === "parent") {
+        await AsyncStorage.setItem("parentId", data.parent_id.toString());
+        if(data.children && data.children.length >0){
+          await AsyncStorage.setItem("childId", data.children[0].child_id.toString());
+        }
+        await AsyncStorage.setItem(
+          "parentData",
+          JSON.stringify({
+            parent_id: data.parent_id,
+            email: data.email,
+            fullname: data.fullname,
+            children: data.children,
+          })
+        );
+      }
+    } catch (error) {
+      console.error("Error storing auth data:", error);
+      throw error;
+    }
+  };
 
   // Handle input changes
   const handleInputChange = (field, value) => {
@@ -72,21 +170,11 @@ export default function LoginScreen() {
       const data = await response.json();
 
       if (response.ok) {
-        Alert.alert("Success", "Login successful!");
+        await storeAuthData("child", data);
 
-        await AsyncStorage.setItem("childId", data.child_id.toString());
-        await AsyncStorage.setItem(
-        "userData",
-        JSON.stringify({
-          child_id: data.child_id,
-          username: data.username,
-          fullname: data.fullname,
-        })
-      );
-      
-        router.push("/(tabs)/chatbot");
+        Alert.alert("Success", "Login successful!");
+        router.replace("/(tabs)/chatbot");
       } else {
-        // Login failed
         Alert.alert("Error", data.detail || "Login failed. Please try again.");
       }
     } catch (error) {
@@ -120,18 +208,8 @@ export default function LoginScreen() {
       const data = await response.json();
 
       if (response.ok) {
+        await storeAuthData("parent", data);
         Alert.alert("Success", "Login successful!");
-
-        await AsyncStorage.setItem("parentId", data.parent_id.toString());
-        await AsyncStorage.setItem(
-          "parentData",
-          JSON.stringify({
-            parent_id:data.parent_id,
-            email:data.email,
-            fullname:data.fullname,
-          })
-        );
-
         router.push("/(tabs)/dashboard");
       } else {
         Alert.alert("Error", data.detail || "Login failed. Please try again.");
@@ -282,7 +360,7 @@ export default function LoginScreen() {
                     fontFamily: "ComicRelief-Regular",
                     color: "#F25F3B",
                   }}
-                  onPress={() => router.push("/")}
+                  onPress={() => router.push("/(tabs)/forgotPassword")}
                 >
                   Forgot Password?
                 </Text>
@@ -343,7 +421,7 @@ export default function LoginScreen() {
                     marginLeft: 20,
                     fontFamily: "ComicRelief-Regular",
                   }}
-                  onPress={() => router.push("/")}
+                  onPress={() => router.push("/(tabs)/forgotPassParent")}
                 >
                   Forgot Password?
                 </Text>
