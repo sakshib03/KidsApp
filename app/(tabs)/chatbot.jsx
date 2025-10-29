@@ -142,7 +142,6 @@ export default function ChatBot() {
       const userDataString = await AsyncStorage.getItem("userData");
       if (userDataString) {
         setUserData(JSON.parse(userDataString));
-
       }
     } catch (error) {
       console.error("Error loading user data:", error);
@@ -251,7 +250,7 @@ export default function ChatBot() {
     try {
       setIsLoading(true);
 
-      const response = await fetch(`${API_BASE}/chat-with-audio`, {
+      const response = await fetch(`${API_BASE}/chat`, {
         method: "POST",
         headers: {
           Accept: "application/json",
@@ -276,48 +275,103 @@ export default function ChatBot() {
 
       return {
         text: data.response || "I'm here to help! What would you like to know?",
-        audio: data.audio_base64,
+        message_id: data.message_id, // Store the message_id for audio generation
+        flagged: data.flagged,
+        credits_awarded: data.credits_awarded,
+        total_credits: data.total_credits,
       };
     } catch (error) {
       console.error("API Error:", error);
       return {
         text: "Oops! I'm having trouble connecting right now. Please try again later! 🤔",
-        audio: null,
+        message_id: null,
       };
     } finally {
       setIsLoading(false);
     }
   };
 
-  const playAudioFromBase64 = async (base64Audio) => {
+  const generateAndPlayAudio = async (messageItem) => {
+    if (!messageItem.text.trim()) return;
+
     try {
-      // Stop any currently playing sound
-      if (sound) {
-        await sound.stopAsync();
-        await sound.unloadAsync();
-        setSound(null);
-      }
+      if (messageItem.message_id && userData?.child_id) {
+        const audioUrl = `${API_BASE}/generate-chat-audio?child_id=${userData.child_id}&message_id=${messageItem.message_id}`;
+        
+        console.log("Generating audio for message:", messageItem.message_id);
+        
+        // Fetch the audio
+        const response = await fetch(audioUrl, {
+          method: 'GET',
+          headers: {
+            'accept': 'application/json',
+          },
+        });
 
-      const audioUri = `data:audio/mp3;base64,${base64Audio}`;
+        if (!response.ok) {
+          throw new Error(`Audio generation failed: ${response.status}`);
+        }
 
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: audioUri },
-        { shouldPlay: true }
-      );
+        // Get the audio blob
+        const audioBlob = await response.blob();
+        
+        // Create object URL from blob
+        const audioObjectUrl = URL.createObjectURL(audioBlob);
 
-      setSound(newSound);
-
-      // Handle playback completion
-      newSound.setOnPlaybackStatusUpdate((status) => {
-        if (status.didJustFinish) {
-          newSound.unloadAsync();
+        // Stop any currently playing sound
+        if (sound) {
+          await sound.stopAsync();
+          await sound.unloadAsync();
           setSound(null);
         }
-      });
+
+        // Play the audio using Expo AV
+        const { sound: newSound } = await Audio.Sound.createAsync(
+          { uri: audioObjectUrl },
+          { shouldPlay: true }
+        );
+
+        setSound(newSound);
+
+        // Handle playback completion
+        newSound.setOnPlaybackStatusUpdate((status) => {
+          if (status.didJustFinish) {
+            newSound.unloadAsync();
+            setSound(null);
+            // Clean up the object URL
+            URL.revokeObjectURL(audioObjectUrl);
+          }
+        });
+
+      } else {
+        // Fallback: if no message_id, use text-to-speech
+        console.warn("No message_id available, using text-to-speech fallback");
+        Speech.speak(messageItem.text, {
+          language: 'en',
+          pitch: 1.0,
+          rate: 0.9,
+        });
+      }
     } catch (error) {
-      console.error("Audio playback error:", error);
-      Alert.alert("Error", "Failed to play audio");
+      console.error("Audio Generation/Playback Error:", error);
+      
+      // Fallback to text-to-speech if audio generation fails
+      console.log("Falling back to text-to-speech");
+      Speech.speak(messageItem.text, {
+        language: 'en',
+        pitch: 1.0,
+        rate: 0.9,
+      });
+      
+      Alert.alert("Info", "Playing text-to-speech version");
     }
+  };
+
+  const speakText = async (messageItem) => {
+    if (!messageItem.text.trim()) return;
+
+    // Use the new audio generation function
+    await generateAndPlayAudio(messageItem);
   };
 
   const handleSend = async () => {
@@ -336,7 +390,7 @@ export default function ChatBot() {
 
     setMessages((prev) => [...prev, newUserMessage]);
 
-    // Get bot response with audio from single API
+    // Get bot response with message_id from API
     const botResponse = await sendMessageToAPI(userMessage);
 
     if (botResponse) {
@@ -345,57 +399,10 @@ export default function ChatBot() {
         text: botResponse.text,
         isUser: false,
         timestamp: new Date(),
-        audio: botResponse.audio,
+        message_id: botResponse.message_id, // Store message_id for audio generation
       };
 
       setMessages((prev) => [...prev, newBotMessage]);
-
-      if (botResponse.audio) {
-        await playAudioFromBase64(botResponse.audio);
-      }
-    }
-  };
-
-  const speakText = async (messageItem) => {
-    if (!messageItem.text.trim()) return;
-
-    try {
-      // If audio is already available in the message, use it
-      if (messageItem.audio) {
-        await playAudioFromBase64(messageItem.audio);
-      } else {
-        // Fallback: fetch audio for older messages that don't have audio stored
-        const response = await fetch(`${API_BASE}/chat-with-audio`, {
-          method: "POST",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            child_id: userData?.child_id,
-            message: messageItem.text,
-          }),
-        });
-
-        if (!response.ok) throw new Error(`API error: ${response.status}`);
-
-        const data = await response.json();
-        if (data.audio_base64) {
-          await playAudioFromBase64(data.audio_base64);
-
-          // Update the message with audio for future use
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === messageItem.id
-                ? { ...msg, audio: data.audio_base64 }
-                : msg
-            )
-          );
-        }
-      }
-    } catch (error) {
-      console.error("Audio Playback Error:", error);
-      Alert.alert("Error", "Failed to play audio");
     }
   };
 
@@ -530,13 +537,14 @@ export default function ChatBot() {
         text: data.response,
         isUser: false,
         timestamp: new Date(),
-        audio: data.audio_base64,
+        message_id: data.message_id, // Store message_id for audio generation
       };
 
       setMessages((prev) => [...prev, userMessage, botMessage]);
 
-      if (data.audio_base64) {
-        await playAudioFromBase64(data.audio_base64);
+      // Auto-play the audio response for speech-to-speech
+      if (data.message_id) {
+        await generateAndPlayAudio(botMessage);
       }
     } catch (error) {
       console.error("Speech-to-speech API Error:", error);
@@ -974,6 +982,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-end",
     backgroundColor: "#56bbf1",
     borderBottomRightRadius: 4,
+    marginBottom:6,
   },
   botMessage: {
     alignSelf: "flex-start",
@@ -981,6 +990,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 4,
     borderWidth: 1,
     borderColor: "#e0e0e0",
+    marginBottom:6,
   },
   typingBubble: {
     flexDirection: "row",

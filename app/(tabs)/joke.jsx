@@ -18,13 +18,26 @@ export default function Joke() {
   const [joke, setJoke] = useState("");
   const [childId, setChildId] = useState(null);
   const [loading, setLoading] = useState(false);
- const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [currentGif, setCurrentGif] = useState(null);
+
+ const gifs=[
+  require("@/assets/gifs/hahaha.gif"),
+  require("@/assets/gifs/laughing-cat.gif"),
+  require("@/assets/gifs/laughing-haha.gif"),
+  require("@/assets/gifs/laughing-laugh.gif"),
+ ];
 
  useEffect(() => {
        Font.loadAsync({
          "ComicRelief-Bold": require("../../assets/fonts/ComicRelief-Bold.ttf"),
          "ComicRelief-Regular": require("../../assets/fonts/ComicRelief-Regular.ttf"),
        }).then(() => setFontsLoaded(true));
+
+       const randomIndex=Math.floor(Math.random()*gifs.length);
+       setCurrentGif(gifs[randomIndex]);
+
+       fetchChildId();
      }, []);
 
   useEffect(() => {
@@ -117,10 +130,9 @@ export default function Joke() {
           )}
         </View>
         <View style={styles.logoContainer}>
-          <Image
-            source={require("@/assets/gifs/laughing-laugh.gif")}
-            style={styles.logo}
-          />
+          {currentGif &&(
+            <Image source={currentGif} style={styles.logo}/>
+          )}
         </View>
       </View>
     </ImageBackground>

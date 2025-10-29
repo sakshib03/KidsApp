@@ -128,7 +128,7 @@ export default function Profile() {
       console.log("Avatar response data:", data);
 
       if (data.avatar) {
-        const avatarFullUrl = `${API_BASE.replace('/kids/v3', '')}/avatars/${data.avatar}`;
+        const avatarFullUrl = `${API_BASE.replace('/kids/v1', '')}/v1/avatars/${data.avatar}`;
         console.log("Avatar URL set:", avatarFullUrl);
         setAvatarUrl(avatarFullUrl);
       } else {
@@ -314,9 +314,8 @@ export default function Profile() {
             <View style={styles.buttonRow}>
               <TouchableOpacity
                 style={[styles.button, { backgroundColor: "#33b445ff" }]}
-                onPress={fetchAvatar}
               >
-                <Text style={styles.buttonText}>Refresh Avatar</Text>
+                <Text style={styles.buttonText}>Switch Career</Text>
               </TouchableOpacity>
 
               <TouchableOpacity

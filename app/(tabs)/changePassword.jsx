@@ -11,7 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableWithoutFeedback,
-  Keyboard
+  Keyboard,
 } from "react-native";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -22,14 +22,14 @@ export default function ChangePassword() {
   const [formData, setFormData] = useState({
     current_password: "",
     new_password: "",
-    confirm_password: ""
+    confirm_password: "",
   });
   const [childId, setChildId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState({
     current: false,
     new: false,
-    confirm: false
+    confirm: false,
   });
   const [errors, setErrors] = useState({});
 
@@ -39,37 +39,40 @@ export default function ChangePassword() {
 
   const loadChildId = async () => {
     try {
-      const storedChildId = await AsyncStorage.getItem('childId');
-      console.log('Stored child ID:', storedChildId);
+      const storedChildId = await AsyncStorage.getItem("childId");
+      console.log("Stored child ID:", storedChildId);
       if (storedChildId) {
         setChildId(parseInt(storedChildId));
       } else {
-        Alert.alert("Error", "Unable to find your account information. Please login again.");
+        Alert.alert(
+          "Error",
+          "Unable to find your account information. Please login again."
+        );
       }
     } catch (error) {
-      console.error('Error loading child ID:', error);
+      console.error("Error loading child ID:", error);
       Alert.alert("Error", "Failed to load account information.");
     }
   };
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
 
     if (errors[field]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [field]: ""
+        [field]: "",
       }));
     }
   };
 
   const toggleShowPassword = (field) => {
-    setShowPassword(prev => ({
+    setShowPassword((prev) => ({
       ...prev,
-      [field]: !prev[field]
+      [field]: !prev[field],
     }));
   };
 
@@ -100,48 +103,54 @@ export default function ChangePassword() {
     if (!validateForm()) return;
 
     if (!childId) {
-      Alert.alert("Error", "Account information not found. Please try logging in again.");
+      Alert.alert(
+        "Error",
+        "Account information not found. Please try logging in again."
+      );
       return;
     }
 
     setLoading(true);
 
     try {
-      console.log('Sending request with:', {
+      console.log("Sending request with:", {
         child_id: childId,
         current_password: formData.current_password,
-        new_password: formData.new_password
+        new_password: formData.new_password,
       });
 
       const response = await fetch(`${API_BASE}/change-child-password`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
+          Accept: "application/json",
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           child_id: childId,
           current_password: formData.current_password,
-          new_password: formData.new_password
-        })
+          new_password: formData.new_password,
+        }),
       });
 
       const result = await response.json();
-      console.log('API Response:', response.status, result);
+      console.log("API Response:", response.status, result);
 
       if (response.ok) {
         Alert.alert("Success", "Child password changed successfully`");
-        setTimeout(()=>{
+        setTimeout(() => {
           router.push("/(tabs)/dashboard");
-        },1000)
+        }, 1000);
       } else {
-        const errorMessage = result.detail || result.message || "Failed to change password. Please check your current password and try again.";
+        const errorMessage =
+          result.detail ||
+          result.message ||
+          "Failed to change password. Please check your current password and try again.";
         Alert.alert("Error", errorMessage);
       }
     } catch (error) {
-      console.error('Error changing password:', error);
+      console.error("Error changing password:", error);
       Alert.alert(
-        "Network Error", 
+        "Network Error",
         "Please check your internet connection and try again."
       );
     } finally {
@@ -150,11 +159,13 @@ export default function ChangePassword() {
   };
 
   const isFormValid = () => {
-    return formData.current_password.trim() && 
-           formData.new_password.trim() && 
-           formData.confirm_password.trim() &&
-           formData.new_password === formData.confirm_password &&
-           formData.new_password.length >= 6;
+    return (
+      formData.current_password.trim() &&
+      formData.new_password.trim() &&
+      formData.confirm_password.trim() &&
+      formData.new_password === formData.confirm_password &&
+      formData.new_password.length >= 6
+    );
   };
 
   return (
@@ -163,71 +174,79 @@ export default function ChangePassword() {
         source={require("@/assets/images/theme3.png")}
         style={styles.background}
       >
-        <KeyboardAvoidingView 
+        <KeyboardAvoidingView
           style={styles.container}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
           <View style={styles.mainContainer}>
             <View style={styles.contentWrapper}>
-              <Text style={styles.title}>
-                Change Password
-              </Text>
+              <Text style={styles.title}>Change Password</Text>
 
               <View style={styles.inputField}>
                 <Text style={styles.inputLabel}>Current Password</Text>
-                <View style={[
-                  styles.passwordContainer,
-                  errors.current_password && styles.inputError
-                ]}>
-                  <TextInput 
+                <View
+                  style={[
+                    styles.passwordContainer,
+                    errors.current_password && styles.inputError,
+                  ]}
+                >
+                  <TextInput
                     style={styles.inputText}
                     secureTextEntry={!showPassword.current}
                     value={formData.current_password}
-                    onChangeText={(text) => handleInputChange('current_password', text)}
+                    onChangeText={(text) =>
+                      handleInputChange("current_password", text)
+                    }
                     editable={!loading}
                     returnKeyType="next"
                   />
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.eyeIcon}
-                    onPress={() => toggleShowPassword('current')}
+                    onPress={() => toggleShowPassword("current")}
                     disabled={loading}
                   >
-                    <Feather 
-                      name={showPassword.current ? "eye" : "eye-off"} 
-                      size={20} 
-                      color="#666" 
+                    <Feather
+                      name={showPassword.current ? "eye" : "eye-off"}
+                      size={20}
+                      color="#666"
                     />
                   </TouchableOpacity>
                 </View>
                 {errors.current_password && (
-                  <Text style={styles.errorText}>{errors.current_password}</Text>
+                  <Text style={styles.errorText}>
+                    {errors.current_password}
+                  </Text>
                 )}
               </View>
 
               {/* New Password */}
               <View style={styles.inputField}>
                 <Text style={styles.inputLabel}>New Password</Text>
-                <View style={[
-                  styles.passwordContainer,
-                  errors.new_password && styles.inputError
-                ]}>
-                  <TextInput 
+                <View
+                  style={[
+                    styles.passwordContainer,
+                    errors.new_password && styles.inputError,
+                  ]}
+                >
+                  <TextInput
                     style={styles.inputText}
                     secureTextEntry={!showPassword.new}
                     value={formData.new_password}
-                    onChangeText={(text) => handleInputChange('new_password', text)}
+                    onChangeText={(text) =>
+                      handleInputChange("new_password", text)
+                    }
                     editable={!loading}
                     returnKeyType="next"
                   />
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.eyeIcon}
-                    onPress={() => toggleShowPassword('new')}
+                    onPress={() => toggleShowPassword("new")}
                     disabled={loading}
                   >
-                    <Feather 
-                      name={showPassword.new ? "eye" : "eye-off"} 
-                      size={20} 
-                      color="#666" 
+                    <Feather
+                      name={showPassword.new ? "eye" : "eye-off"}
+                      size={20}
+                      color="#666"
                     />
                   </TouchableOpacity>
                 </View>
@@ -239,40 +258,59 @@ export default function ChangePassword() {
               {/* Confirm Password */}
               <View style={styles.inputField}>
                 <Text style={styles.inputLabel}>Confirm Password</Text>
-                <View style={[
-                  styles.passwordContainer,
-                  errors.confirm_password && styles.inputError
-                ]}>
-                  <TextInput 
+                <View
+                  style={[
+                    styles.passwordContainer,
+                    errors.confirm_password && styles.inputError,
+                  ]}
+                >
+                  <TextInput
                     style={styles.inputText}
                     secureTextEntry={!showPassword.confirm}
                     value={formData.confirm_password}
-                    onChangeText={(text) => handleInputChange('confirm_password', text)}
+                    onChangeText={(text) =>
+                      handleInputChange("confirm_password", text)
+                    }
                     editable={!loading}
                     returnKeyType="done"
                     onSubmitEditing={handleChangePassword}
                   />
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.eyeIcon}
-                    onPress={() => toggleShowPassword('confirm')}
+                    onPress={() => toggleShowPassword("confirm")}
                     disabled={loading}
                   >
-                    <Feather 
-                      name={showPassword.confirm ? "eye" : "eye-off"} 
-                      size={20} 
-                      color="#666" 
+                    <Feather
+                      name={showPassword.confirm ? "eye" : "eye-off"}
+                      size={20}
+                      color="#666"
                     />
                   </TouchableOpacity>
                 </View>
                 {errors.confirm_password && (
-                  <Text style={styles.errorText}>{errors.confirm_password}</Text>
+                  <Text style={styles.errorText}>
+                    {errors.confirm_password}
+                  </Text>
                 )}
               </View>
 
+              <TouchableOpacity>
+                <Text
+                  style={{
+                    marginTop: 10,
+                    fontFamily: "ComicRelief-Regular",
+                    color: "#ffffffff",
+                  }}
+                  onPress={() => router.push("/(tabs)/forgotPassword")}
+                >
+                  Forgot Password?
+                </Text>
+              </TouchableOpacity>
+
               <TouchableOpacity
                 style={[
-                  styles.button, 
-                  { backgroundColor: isFormValid() ? "#45c556ff" : "#cccccc" }
+                  styles.button,
+                  { backgroundColor: isFormValid() ? "#45c556ff" : "#cccccc" },
                 ]}
                 onPress={handleChangePassword}
                 disabled={loading || !isFormValid()}
@@ -283,7 +321,6 @@ export default function ChangePassword() {
                   <Text style={styles.buttonText}>Change Password</Text>
                 )}
               </TouchableOpacity>
-
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -307,7 +344,7 @@ const styles = StyleSheet.create({
     width: "100%",
     maxHeight: "80%",
     padding: 30,
-    backgroundColor: "#7560ecff",
+    backgroundColor: "#5848b4ff",
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 15,
@@ -327,7 +364,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#fff",
+    color: "#ffffffff",
     marginBottom: 20,
     textAlign: "center",
   },
@@ -365,7 +402,7 @@ const styles = StyleSheet.create({
     width: "100%",
     paddingVertical: 15,
     borderRadius: 8,
-    marginTop: 20,
+    marginTop: 10,
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: {

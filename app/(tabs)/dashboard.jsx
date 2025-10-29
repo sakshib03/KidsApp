@@ -15,6 +15,7 @@ import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE } from "./config";
 import * as Font from "expo-font";
+import { Background } from "@react-navigation/elements";
 
 export default function Dashboard() {
   const [parentData, setParentData] = useState(null);
@@ -151,9 +152,12 @@ export default function Dashboard() {
   };
 
   const getFlaggedWords = () => {
-    if (!childrenData[selectedChild]?.flagged_messages) return "";
+    if (!childrenData[selectedChild]?.flagged_messages) return " ";
 
     const flaggedMessages = childrenData[selectedChild].flagged_messages;
+
+    if (!flaggedMessages || flaggedMessages.length === 0) return "No words";
+
     let flaggedWords = "";
 
     flaggedMessages.forEach((msg) => {
@@ -223,6 +227,10 @@ export default function Dashboard() {
           )}
 
           <View style={styles.mainContainer}>
+            <Image
+              source={require("@/assets/images/user.jpg")}
+              style={styles.logo}
+            />
             <Text style={styles.userName}>
               Child Name: {currentChild?.profile?.fullname || "N/A"}
             </Text>
@@ -242,7 +250,7 @@ export default function Dashboard() {
                     />
                   </View>
 
-                  <View style={styles.inputField}>
+                  {/* <View style={styles.inputField}>
                     <Text style={styles.input}>Story Score</Text>
                     <TextInput
                       style={[styles.inputText, styles.nonEditableInput]}
@@ -266,7 +274,7 @@ export default function Dashboard() {
                       value={credits.chat?.toString() || "0"}
                       editable={false}
                     />
-                  </View>
+                  </View> */}
                 </View>
 
                 <View style={styles.column}>
@@ -281,7 +289,7 @@ export default function Dashboard() {
                     />
                   </View>
 
-                  <View style={styles.inputField}>
+                  {/* <View style={styles.inputField}>
                     <Text style={styles.input}>Question Score</Text>
                     <TextInput
                       style={[styles.inputText, styles.nonEditableInput]}
@@ -305,38 +313,35 @@ export default function Dashboard() {
                       value="0" // Assuming this isn't in the API response
                       editable={false}
                     />
-                  </View>
+                  </View> */}
                 </View>
               </View>
-            </View>
-
-            <View style={styles.subContainer}>
-              <Text style={styles.input}>Used Wrong Words:</Text>
+              <Text style={styles.input}>Flagged Messages:</Text>
               <TextInput
                 style={[styles.inputText, styles.multilineInputText]}
                 multiline
                 value={getFlaggedWords()}
                 editable={false}
               />
+
+              <Text
+                style={[styles.input, { color: "#182198ff", fontSize: 16 }]}
+              >
+                Chat History:
+              </Text>
+              <TextInput
+                style={[styles.inputText, styles.multilineInput]}
+                multiline
+                value={getChatHistoryText()}
+                editable={false}
+              />
             </View>
           </View>
 
-          <View style={styles.subContainer}>
-            <Text style={[styles.input, { color: "#182198ff", fontSize: 16 }]}>
-              Chat History:
-            </Text>
-            <TextInput
-              style={[styles.inputText, styles.multilineInput]}
-              multiline
-              value={getChatHistoryText()}
-              editable={false}
-            />
-          </View>
-
-          <View style={styles.buttonsContainer}>
+          {/* <View style={styles.buttonsContainer}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <TouchableOpacity
-                style={styles.actionButton}
+                style={[styles.actionButton,{backgroundColor:"#3d9464ff"}]}
                 onPress={() => router.push("/(tabs)/changePassword")}
               >
                 <Text style={styles.actionButtonText}>
@@ -345,14 +350,14 @@ export default function Dashboard() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.actionButton}
+                style={[styles.actionButton, {backgroundColor:"#745cfeff"}]}
                 onPress={handleUnblockChild}
               >
                 <Text style={styles.actionButtonText}>Unblock Child</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.actionButton}
+                style={[styles.actionButton,{backgroundColor:"#bc4242ff"}]}
                 onPress={() => router.push("/(tabs)/changeParentPass")}
               >
                 <Text style={styles.actionButtonText}>
@@ -360,6 +365,34 @@ export default function Dashboard() {
                 </Text>
               </TouchableOpacity>
             </ScrollView>
+          </View> */}
+
+          <View style={styles.buttonContainer}>
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={[styles.button, { backgroundColor: "#33b445ff" }]}
+                onPress={() => router.push("/(tabs)/changePassword")}
+              >
+                <Text style={styles.buttonText}>Change Child Password</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.button, { backgroundColor: "#ff4b4bff" }]}
+              >
+                <Text style={styles.buttonText} onPress={handleUnblockChild}>
+                  Unlock child
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={[styles.button, { backgroundColor: "#1bc7c5ff" }]}
+                onPress={() => router.push("/(tabs)/changeParentPass")}
+              >
+                <Text style={styles.buttonText}>Change Parent Password</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -452,7 +485,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 20,
     marginTop: 20,
-    marginBottom:40
+    marginBottom: 40,
   },
   actionButton: {
     flex: 1,
@@ -461,10 +494,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#468df6ff",
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-    marginRight:10
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 25,
+    marginRight: 10,
   },
   actionButtonText: {
     color: "#fff",
@@ -483,8 +516,16 @@ const styles = StyleSheet.create({
   mainContainer: {
     width: "100%",
     padding: 12,
-    borderRadius: 4,
+    borderRadius: 10,
     backgroundColor: "#67b8faff",
+    alignItems: "center",
+  },
+  logo: {
+    width: 80,
+    height: 80,
+    borderRadius: 50,
+    borderWidth: 2,
+    borderColor: "#fff",
   },
   subContainer: {
     backgroundColor: "#9cd2ffff",
@@ -492,6 +533,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 14,
     marginTop: 16,
+    width: "100%",
   },
   columnsContainer: {
     display: "flex",
@@ -519,7 +561,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
     fontWeight: "500",
-    color: "#222222ff",
+    color: "#182198ff",
     fontFamily: "ComicRelief-Regular",
   },
   inputText: {
@@ -534,7 +576,8 @@ const styles = StyleSheet.create({
     fontFamily: "ComicRelief-Regular",
   },
   multilineInputText: {
-    minHeight: 50,
+    minHeight: 120,
+    minWidth: 270,
     textAlignVertical: "top",
   },
   multilineInput: {
@@ -544,5 +587,110 @@ const styles = StyleSheet.create({
   nonEditableInput: {
     backgroundColor: "#f5f5f5",
     color: "#363636ff",
+  },
+  // New styles for date-wise chat history
+  chatHistoryContainer: {
+    marginTop: 8,
+    maxHeight: 400,
+  },
+  noHistoryText: {
+    textAlign: "center",
+    color: "#999",
+    fontSize: 14,
+    fontFamily: "ComicRelief-Regular",
+    padding: 20,
+  },
+  dateSection: {
+    marginBottom: 12,
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+    overflow: "hidden",
+  },
+  dateHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    backgroundColor: "#f8f9fa",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e9ecef",
+  },
+  dateHeaderText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#56bbf1",
+    fontFamily: "ComicRelief-Bold",
+  },
+  messagesContainer: {
+    padding: 8,
+  },
+  chatItem: {
+    backgroundColor: "#f8f9fa",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: "#56bbf1",
+  },
+  userMessageText: {
+    color: "#333333ff",
+    fontSize: 14,
+    marginBottom: 4,
+    fontFamily: "ComicRelief-Regular",
+  },
+  botMessageText: {
+    color: "#333",
+    fontSize: 14,
+    marginBottom: 4,
+    fontFamily: "ComicRelief-Regular",
+  },
+  timestampText: {
+    color: "#999",
+    fontSize: 11,
+    fontFamily: "ComicRelief-Regular",
+  },
+  buttonContainer: {
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    marginTop: 20,
+    marginBottom:30,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 10,
+  },
+  button: {
+    backgroundColor: "#56bbf1",
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 20,
+    marginTop: 12,
+    alignItems: "center",
+    flex: 1,
+    minWidth: 160,
+    maxWidth: 200,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  buttonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#fff",
+    textAlign: "center",
+    fontFamily: "ComicRelief-Regular",
+    lineHeight: 16,
   },
 });

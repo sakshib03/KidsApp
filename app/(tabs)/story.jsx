@@ -22,15 +22,23 @@ export default function Story() {
   const [loading, setLoading] = useState(false);
   const [childId, setChildId] = useState(null);
   const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [currentCartoon, setCurrentCartoon]=useState(null);
+
+  const cartoons=[
+    require("@/assets/images/dragon.png"),
+    require("@/assets/images/story-cartoon.png"),
+    require("@/assets/images/story-cartoon1.png"),
+  ];
 
   useEffect(() => {
     Font.loadAsync({
       "ComicRelief-Bold": require("../../assets/fonts/ComicRelief-Bold.ttf"),
       "ComicRelief-Regular": require("../../assets/fonts/ComicRelief-Regular.ttf"),
     }).then(() => setFontsLoaded(true));
-  }, []);
 
-  useEffect(() => {
+    const randomIndex=Math.floor(Math.random()*cartoons.length);
+    setCurrentCartoon(cartoons[randomIndex]);
+
     fetchChildId();
   }, []);
 
@@ -210,10 +218,9 @@ export default function Story() {
 
         {/* Dragon Logo */}
         <View style={styles.logoContainer}>
-          <Image
-            source={require("@/assets/images/dragon.png")}
-            style={styles.logo}
-          />
+          {currentCartoon &&(
+            <Image source={currentCartoon} style={styles.logo}/>
+          )}
         </View>
       </View>
     </ImageBackground>
@@ -232,7 +239,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    marginTop: 30,
+    marginTop: 25,
     marginBottom: 20,
   },
   backButton: {
@@ -359,8 +366,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   logo: {
-    width: 170,
-    height: 170,
+    width: 180,
+    height: 180,
     resizeMode: "contain",
     opacity: 0.9,
   },

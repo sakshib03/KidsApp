@@ -15,6 +15,7 @@ import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE } from "./config";
 import * as Font from "expo-font";
+import {Audio} from "expo-av";
 
 export default function Question() {
   const [questionData, setQuestionData] = useState(null);
@@ -25,6 +26,27 @@ export default function Question() {
   const [showResult, setShowResult] = useState(false);
   const [result, setResult] = useState(null);
   const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [sound, setSound]=useState(null);
+
+  async function playSound(isCorrect){
+    try{
+      const soundFile=isCorrect ? require("@/assets/audio/mixkit-correct.wav") : require("@/assets/audio/mixkit-wrong.wav");
+
+      const {sound}=await Audio.Sound.createAsync(soundFile);
+      setSound(sound);
+      await sound.playAsync();
+    }catch(error){
+      console.error("Error playing sound:",error);
+    }
+  }
+
+  useEffect(()=>{
+    return sound
+    ?()=>{
+      sound.unloadAsync();
+    }
+    : undefined;
+  },[sound]);
 
   useEffect(() => {
     Font.loadAsync({
@@ -36,6 +58,7 @@ export default function Question() {
   useEffect(() => {
     fetchChildId();
   }, []);
+
 
   const fetchChildId = async () => {
     try {
@@ -110,6 +133,8 @@ export default function Question() {
 
       setResult(resultData);
       setShowResult(true);
+
+      await playSound(resultData.is_correct);
     } catch (error) {
       console.error("Error submitting answer:", error);
       Alert.alert("Error", "Failed to submit answer. Please try again.");

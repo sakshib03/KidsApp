@@ -352,7 +352,7 @@ export default function LoginScreen() {
                   />
                 </TouchableOpacity>
               </View>
-              <TouchableOpacity>
+              {/* <TouchableOpacity>
                 <Text
                   style={{
                     marginTop: 10,
@@ -364,7 +364,7 @@ export default function LoginScreen() {
                 >
                   Forgot Password?
                 </Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
           )}
 
