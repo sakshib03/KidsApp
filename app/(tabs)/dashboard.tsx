@@ -9,23 +9,45 @@ import {
   TextInput,
   ScrollView,
   Alert,
+  Animated,
+  Easing,
 } from "react-native";
 import { router } from "expo-router";
-import { Feather } from "@expo/vector-icons";
+import { Feather, FontAwesome5, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE } from "./config";
-import * as Font from "expo-font";
-import { Background } from "@react-navigation/elements";
 
 export default function Dashboard() {
   const [parentData, setParentData] = useState(null);
   const [childrenData, setChildrenData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedChild, setSelectedChild] = useState(0);
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const [slideAnim] = useState(new Animated.Value(50));
+  const [expandedDates, setExpandedDates] = useState(new Set());
 
   useEffect(() => {
     fetchParentDashboard();
   }, []);
+
+  useEffect(() => {
+    // Animation when data loads
+    if (!loading) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 600,
+          easing: Easing.out(Easing.back(1.5)),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [loading]);
 
   const fetchParentDashboard = async () => {
     try {
@@ -99,7 +121,6 @@ export default function Dashboard() {
 
       if (result.message === "Child unblocked successfully") {
         Alert.alert("Success", "Child has been unblocked successfully!");
-        console.log("Child has been unblocked successfully!");
         fetchParentDashboard();
       } else {
         Alert.alert("Error", result.message || "Failed to unblock child");
@@ -134,21 +155,47 @@ export default function Dashboard() {
     return date.toLocaleDateString() + " " + date.toLocaleTimeString();
   };
 
-  const getChatHistoryText = () => {
-    if (!childrenData[selectedChild]?.chat_history) return "";
+  const formatDateHeader = (dateString) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+      return "Today";
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return "Yesterday";
+    } else {
+      return date.toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+    }
+  };
+
+  const toggleDateExpansion = (date) => {
+    const newExpandedDates = new Set(expandedDates);
+    if (newExpandedDates.has(date)) {
+      newExpandedDates.delete(date);
+    } else {
+      newExpandedDates.add(date);
+    }
+    setExpandedDates(newExpandedDates);
+  };
+
+  const getChatHistoryByDate = () => {
+    if (!childrenData[selectedChild]?.chat_history) return [];
 
     const chatHistory = childrenData[selectedChild].chat_history;
-    let historyText = "";
-
-    Object.keys(chatHistory).forEach((date) => {
-      chatHistory[date].forEach((chat) => {
-        historyText += `[${new Date(chat.timestamp).toLocaleString()}]\n`;
-        historyText += `You: ${chat.message}\n`;
-        historyText += `AI: ${chat.response}\n\n`;
-      });
-    });
-
-    return historyText;
+    const dates = Object.keys(chatHistory).sort((a, b) => new Date(b) - new Date(a));
+    
+    return dates.map(date => ({
+      date,
+      formattedDate: formatDateHeader(date),
+      messages: chatHistory[date].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+    }));
   };
 
   const getFlaggedWords = () => {
@@ -156,14 +203,12 @@ export default function Dashboard() {
 
     const flaggedMessages = childrenData[selectedChild].flagged_messages;
 
-    if (!flaggedMessages || flaggedMessages.length === 0) return "No words";
+    if (!flaggedMessages || flaggedMessages.length === 0) return "No flagged messages! Great job! 🎉";
 
     let flaggedWords = "";
 
     flaggedMessages.forEach((msg) => {
-      flaggedWords += `[${new Date(msg.timestamp).toLocaleString()}] ${
-        msg.message
-      }\n`;
+      flaggedWords += `[${new Date(msg.timestamp).toLocaleString()}]\n${msg.message}\n\n`;
     });
 
     return flaggedWords;
@@ -176,7 +221,10 @@ export default function Dashboard() {
         style={styles.background}
       >
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading...</Text>
+          <View style={styles.loadingAnimation}>
+            <FontAwesome5 name="robot" size={60} color="#FF6B8B" />
+            <Text style={styles.loadingText}>Loading Adventure...</Text>
+          </View>
         </View>
       </ImageBackground>
     );
@@ -184,6 +232,7 @@ export default function Dashboard() {
 
   const currentChild = childrenData[selectedChild];
   const credits = currentChild?.profile?.credits || {};
+  const chatHistoryByDate = getChatHistoryByDate();
 
   return (
     <ImageBackground
@@ -191,16 +240,27 @@ export default function Dashboard() {
       style={styles.background}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.container}>
-          <TouchableOpacity style={styles.backButton} onPress={handleLogout}>
-            <Feather name="arrow-left" size={24} color={"#fff"} />
-            <Text style={styles.backButtonText}>Logout</Text>
-          </TouchableOpacity>
+        <Animated.View 
+          style={[
+            styles.container,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }]
+            }
+          ]}
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backButton} onPress={handleLogout}>
+              <Feather name="log-out" size={20} color={"#fff"} />
+              <Text style={styles.backButtonText}>Logout</Text>
+            </TouchableOpacity>
+          </View>
 
           {/* Child Selection */}
           {childrenData.length > 1 && (
             <View style={styles.childSelector}>
-              <Text style={styles.selectorLabel}>Select Child:</Text>
+              <Text style={styles.selectorLabel}>👦 Select Your Child:</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {childrenData.map((child, index) => (
                   <TouchableOpacity
@@ -211,11 +271,15 @@ export default function Dashboard() {
                     ]}
                     onPress={() => setSelectedChild(index)}
                   >
+                    <MaterialIcons 
+                      name="child-care" 
+                      size={16} 
+                      color={selectedChild === index ? "#FF6B8B" : "#56BBF1"} 
+                    />
                     <Text
                       style={[
                         styles.childOptionText,
-                        selectedChild === index &&
-                          styles.childOptionTextSelected,
+                        selectedChild === index && styles.childOptionTextSelected,
                       ]}
                     >
                       {child.profile.fullname}
@@ -226,175 +290,161 @@ export default function Dashboard() {
             </View>
           )}
 
-          <View style={styles.mainContainer}>
-            <Image
-              source={require("@/assets/images/user.jpg")}
-              style={styles.logo}
-            />
-            <Text style={styles.userName}>
-              Child Name: {currentChild?.profile?.fullname || "N/A"}
-            </Text>
-            <Text style={styles.userName}>
-              Last Login: {formatDate(currentChild?.profile?.last_login)}
-            </Text>
-
-            <View style={styles.subContainer}>
-              <View style={styles.columnsContainer}>
-                <View style={styles.column}>
-                  <View style={styles.inputField}>
-                    <Text style={styles.input}>Total Score</Text>
-                    <TextInput
-                      style={[styles.inputText, styles.nonEditableInput]}
-                      value={credits.total?.toString() || "0"}
-                      editable={false}
-                    />
-                  </View>
-
-                  {/* <View style={styles.inputField}>
-                    <Text style={styles.input}>Story Score</Text>
-                    <TextInput
-                      style={[styles.inputText, styles.nonEditableInput]}
-                      value={credits.story?.toString() || "0"}
-                      editable={false}
-                    />
-                  </View>
-
-                  <View style={styles.inputField}>
-                    <Text style={styles.input}>Quiz Score</Text>
-                    <TextInput
-                      style={[styles.inputText, styles.nonEditableInput]}
-                      value={credits.quiz?.toString() || "0"}
-                      editable={false}
-                    />
-                  </View>
-                  <View style={styles.inputField}>
-                    <Text style={styles.input}>Chat Score</Text>
-                    <TextInput
-                      style={[styles.inputText, styles.nonEditableInput]}
-                      value={credits.chat?.toString() || "0"}
-                      editable={false}
-                    />
-                  </View> */}
-                </View>
-
-                <View style={styles.column}>
-                  <View style={styles.inputField}>
-                    <Text style={styles.input}>Dream Career</Text>
-                    <TextInput
-                      style={[styles.inputText, styles.nonEditableInput]}
-                      value={
-                        currentChild?.profile?.default_dream_career || "N/A"
-                      }
-                      editable={false}
-                    />
-                  </View>
-
-                  {/* <View style={styles.inputField}>
-                    <Text style={styles.input}>Question Score</Text>
-                    <TextInput
-                      style={[styles.inputText, styles.nonEditableInput]}
-                      value={credits.question?.toString() || "0"}
-                      editable={false}
-                    />
-                  </View>
-
-                  <View style={styles.inputField}>
-                    <Text style={styles.input}>Joke Score</Text>
-                    <TextInput
-                      style={[styles.inputText, styles.nonEditableInput]}
-                      value={credits.joke?.toString() || "0"}
-                      editable={false}
-                    />
-                  </View>
-                  <View style={styles.inputField}>
-                    <Text style={styles.input}>Game Score</Text>
-                    <TextInput
-                      style={[styles.inputText, styles.nonEditableInput]}
-                      value="0" // Assuming this isn't in the API response
-                      editable={false}
-                    />
-                  </View> */}
+          {/* Main Card */}
+          <View style={styles.mainCard}>
+            {/* Child Profile */}
+            <View style={styles.profileSection}>
+              <View style={styles.avatarContainer}>
+                <Image
+                  source={require("@/assets/images/user.jpg")}
+                  style={styles.avatar}
+                />
+                <View style={styles.onlineIndicator} />
+              </View>
+              <View style={styles.profileInfo}>
+                <Text style={styles.childName}>
+                  {currentChild?.profile?.fullname || "Little Explorer"}
+                </Text>
+                <View style={styles.lastLogin}>
+                  <Text style={styles.lastLoginText}>
+                    Last login: {formatDate(currentChild?.profile?.last_login)}
+                  </Text>
                 </View>
               </View>
-              <Text style={styles.input}>Flagged Messages:</Text>
-              <TextInput
-                style={[styles.inputText, styles.multilineInputText]}
-                multiline
-                value={getFlaggedWords()}
-                editable={false}
-              />
+            </View>
 
-              <Text
-                style={[styles.input, { color: "#182198ff", fontSize: 16 }]}
-              >
-                Chat History:
-              </Text>
-              <TextInput
-                style={[styles.inputText, styles.multilineInput]}
-                multiline
-                value={getChatHistoryText()}
-                editable={false}
-              />
+            {/* Stats Grid */}
+            <View style={styles.statsGrid}>
+              <View style={styles.statCard}>
+                <View style={[styles.statIcon, { backgroundColor: '#FFD166' }]}>
+                  <FontAwesome5 name="star" size={16} color="#fff" />
+                </View>
+                <Text style={styles.statValue}>{credits.total?.toString() || "0"}</Text>
+                <Text style={styles.statLabel}>Total Score</Text>
+              </View>
+
+              <View style={styles.statCard}>
+                <View style={[styles.statIcon, { backgroundColor: '#56BBF1' }]}>
+                  <FontAwesome5 name="graduation-cap" size={14} color="#fff" />
+                </View>
+                <Text style={styles.statValue}>
+                  {currentChild?.profile?.default_dream_career || "N/A"}
+                </Text>
+                <Text style={styles.statLabel}>Dream Career</Text>
+              </View>
+            </View>
+
+            {/* Info Sections */}
+            <View style={styles.infoSections}>
+              {/* Flagged Messages */}
+              <View style={styles.infoCard}>
+                <View style={styles.infoHeader}>
+                  <MaterialIcons name="warning" size={18} color="#FF6B8B" />
+                  <Text style={styles.infoTitle}>Flagged Messages</Text>
+                </View>
+                <View style={styles.infoContent}>
+                  <ScrollView style={styles.flaggedScroll} nestedScrollEnabled>
+                    <Text style={styles.infoText}>
+                      {getFlaggedWords()}
+                    </Text>
+                  </ScrollView>
+                </View>
+              </View>
+
+              {/* Chat History */}
+              <View style={styles.infoCard}>
+                <View style={styles.infoHeader}>
+                  <Feather name="message-square" size={18} color="#56BBF1" />
+                  <Text style={styles.infoTitle}>Chat History</Text>
+                </View>
+                <View style={styles.infoContent}>
+                  <ScrollView style={styles.chatScroll} nestedScrollEnabled>
+                    {chatHistoryByDate.length === 0 ? (
+                      <Text style={styles.noChatsText}>
+                        No chat history yet. Start chatting!
+                      </Text>
+                    ) : (
+                      chatHistoryByDate.map(({ date, formattedDate, messages }) => (
+                        <View key={date} style={styles.dateSection}>
+                          <TouchableOpacity 
+                            style={styles.dateHeader}
+                            onPress={() => toggleDateExpansion(date)}
+                          >
+                            <View style={styles.dateHeaderLeft}>
+                              <Feather 
+                                name={expandedDates.has(date) ? "chevron-down" : "chevron-right"} 
+                                size={16} 
+                                color="#56BBF1" 
+                              />
+                              <Text style={styles.dateHeaderText}>{formattedDate}</Text>
+                              <Text style={styles.messageCount}>
+                                ({messages.length} messages)
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
+                          
+                          {expandedDates.has(date) && (
+                            <View style={styles.messagesContainer}>
+                              {messages.map((chat, index) => (
+                                <View key={index} style={styles.chatItem}>
+                                  <View style={styles.messageRow}>
+                                    <Text style={styles.userLabel}>You:</Text>
+                                    <Text style={styles.messageText}>{chat.message}</Text>
+                                  </View>
+                                  <View style={styles.messageRow}>
+                                    <Text style={styles.botLabel}>AI:</Text>
+                                    <Text style={styles.messageText}>{chat.response}</Text>
+                                  </View>
+                                  <Text style={styles.timestamp}>
+                                    {new Date(chat.timestamp).toLocaleTimeString([], { 
+                                      hour: '2-digit', 
+                                      minute: '2-digit' 
+                                    })}
+                                  </Text>
+                                </View>
+                              ))}
+                            </View>
+                          )}
+                        </View>
+                      ))
+                    )}
+                  </ScrollView>
+                </View>
+              </View>
             </View>
           </View>
 
-          {/* <View style={styles.buttonsContainer}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {/* Action Buttons */}
+          <View style={styles.actionButtons}>
+            <View style={styles.buttonRow}>
               <TouchableOpacity
-                style={[styles.actionButton,{backgroundColor:"#3d9464ff"}]}
+                style={[styles.actionButton, styles.primaryButton]}
                 onPress={() => router.push("/(tabs)/changePassword")}
               >
-                <Text style={styles.actionButtonText}>
-                  Change Child Password
-                </Text>
+                <MaterialIcons name="lock" size={20} color="#fff" />
+                <Text style={styles.actionButtonText}>Change Child Password</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.actionButton, {backgroundColor:"#745cfeff"}]}
+                style={[styles.actionButton, styles.successButton]}
                 onPress={handleUnblockChild}
               >
+                <MaterialIcons name="lock-open" size={20} color="#fff" />
                 <Text style={styles.actionButtonText}>Unblock Child</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.actionButton,{backgroundColor:"#bc4242ff"}]}
-                onPress={() => router.push("/(tabs)/changeParentPass")}
-              >
-                <Text style={styles.actionButtonText}>
-                  Change Your Password
-                </Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </View> */}
-
-          <View style={styles.buttonContainer}>
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={[styles.button, { backgroundColor: "#33b445ff" }]}
-                onPress={() => router.push("/(tabs)/changePassword")}
-              >
-                <Text style={styles.buttonText}>Change Child Password</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.button, { backgroundColor: "#ff4b4bff" }]}
-              >
-                <Text style={styles.buttonText} onPress={handleUnblockChild}>
-                  Unlock child
-                </Text>
               </TouchableOpacity>
             </View>
 
             <View style={styles.buttonRow}>
               <TouchableOpacity
-                style={[styles.button, { backgroundColor: "#1bc7c5ff" }]}
+                style={[styles.actionButton, styles.infoButton]}
                 onPress={() => router.push("/(tabs)/changeParentPass")}
               >
-                <Text style={styles.buttonText}>Change Parent Password</Text>
+                <Feather name="shield" size={20} color="#fff" />
+                <Text style={styles.actionButtonText}>Change Parent Password</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </Animated.View>
       </ScrollView>
     </ImageBackground>
   );
@@ -408,192 +458,229 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
+    paddingBottom: 20,
   },
   container: {
     flex: 1,
-    padding: 15,
-    justifyContent: "center",
+    padding: 16,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
+  loadingAnimation: {
+    alignItems: "center",
+  },
   loadingText: {
     color: "#fff",
     fontSize: 18,
     fontFamily: "ComicRelief-Regular",
+    marginTop: 16,
   },
-  backButton: {
-    maxWidth: 120,
-    left: 0,
-    display: "flex",
+  header: {
     flexDirection: "row",
-    backgroundColor: "#f66c46ff",
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 20,
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 20,
   },
-  parentInfo: {
-    backgroundColor: "#468df6ff",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  parentName: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-    fontFamily: "ComicRelief-Regular",
-  },
-  parentEmail: {
-    color: "#fff",
-    fontSize: 14,
-    fontFamily: "ComicRelief-Regular",
-  },
-  childSelector: {
-    marginBottom: 16,
-  },
-  selectorLabel: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "bold",
-    marginBottom: 8,
-    fontFamily: "ComicRelief-Regular",
-  },
-  childOption: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: "#468df6ff",
-    borderRadius: 20,
-    marginRight: 8,
-  },
-  childOptionSelected: {
-    backgroundColor: "#f66c46ff",
-  },
-  childOptionText: {
-    color: "#fff",
-    fontSize: 12,
-    fontFamily: "ComicRelief-Regular",
-  },
-  childOptionTextSelected: {
-    fontWeight: "bold",
-  },
-  buttonsContainer: {
-    display: "flex",
+  backButton: {
     flexDirection: "row",
-    gap: 20,
-    marginTop: 20,
-    marginBottom: 40,
-  },
-  actionButton: {
-    flex: 1,
-    minWidth: 180,
-    display: "flex",
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#468df6ff",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 25,
-    marginRight: 10,
-  },
-  actionButtonText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
-    fontFamily: "ComicRelief-Regular",
+    backgroundColor: "#FF6B8B",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
   backButtonText: {
     color: "#fff",
     fontSize: 14,
     fontWeight: "600",
-    marginTop: 4,
-    marginLeft: 5,
+    marginLeft: 6,
     fontFamily: "ComicRelief-Regular",
   },
-  mainContainer: {
-    width: "100%",
-    padding: 12,
-    borderRadius: 10,
-    backgroundColor: "#67b8faff",
-    alignItems: "center",
+  childSelector: {
+    marginBottom: 20,
   },
-  logo: {
-    width: 80,
-    height: 80,
-    borderRadius: 50,
+  selectorLabel: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 12,
+    fontFamily: "ComicRelief-Bold",
+  },
+  childOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderRadius: 25,
+    marginRight: 10,
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  childOptionSelected: {
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
+    borderColor: "#FFD166",
+  },
+  childOptionText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+    marginLeft: 6,
+    fontFamily: "ComicRelief-Regular",
+  },
+  childOptionTextSelected: {
+    color: "#FFD166",
+  },
+  mainCard: {
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    borderRadius: 24,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  profileSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  avatarContainer: {
+    position: "relative",
+    marginRight: 16,
+  },
+  avatar: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    borderWidth: 3,
+    borderColor: "#56BBF1",
+  },
+  onlineIndicator: {
+    position: "absolute",
+    bottom: 2,
+    right: 2,
+    width: 16,
+    height: 16,
+    backgroundColor: "#4CD964",
+    borderRadius: 8,
     borderWidth: 2,
     borderColor: "#fff",
   },
-  subContainer: {
-    backgroundColor: "#9cd2ffff",
-    padding: 16,
-    justifyContent: "center",
-    borderRadius: 14,
-    marginTop: 16,
-    width: "100%",
-  },
-  columnsContainer: {
-    display: "flex",
-    flexDirection: "row",
-    gap: 14,
-    justifyContent: "center",
-  },
-  column: {
+  profileInfo: {
     flex: 1,
   },
-  userName: {
-    marginTop: 10,
-    fontSize: 16,
+  childName: {
+    fontSize: 22,
     fontWeight: "bold",
-    color: "#fff",
-    textAlign: "center",
+    color: "#333",
+    fontFamily: "ComicRelief-Bold",
+    marginBottom: 4,
+  },
+  lastLogin: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  lastLoginText: {
+    fontSize: 12,
+    color: "#494949ff",
+    marginLeft: 4,
     fontFamily: "ComicRelief-Regular",
   },
-  inputField: {
-    display: "flex",
-    flexDirection: "column",
+  statsGrid: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 24,
+  },
+  statCard: {
+    flex: 1,
+    alignItems: "center",
+    backgroundColor: "#f8f9fa",
+    padding: 16,
+    borderRadius: 16,
+    marginHorizontal: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  statIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 8,
   },
-  input: {
-    marginTop: 12,
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#182198ff",
-    fontFamily: "ComicRelief-Regular",
+  statValue: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    fontFamily: "ComicRelief-Bold",
+    textAlign: "center",
   },
-  inputText: {
-    width: "100%",
-    marginTop: 6,
+  statLabel: {
+    fontSize: 12,
+    color: "#484848ff",
+    fontFamily: "ComicRelief-Regular",
+    textAlign: "center",
+    marginTop: 4,
+  },
+  infoSections: {
+    gap: 16,
+  },
+  infoCard: {
     backgroundColor: "#fff",
-    borderColor: "#ddd",
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 10,
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderLeftWidth: 4,
+    borderLeftColor: "#56BBF1",
+  },
+  infoHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  infoTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+    marginLeft: 8,
+    fontFamily: "ComicRelief-Bold",
+  },
+  infoContent: {
+    backgroundColor: "#f8f9fa",
+    borderRadius: 12,
+    padding: 12,
+  },
+  infoText: {
     fontSize: 14,
+    color: "#4b4b4bff",
+    lineHeight: 20,
     fontFamily: "ComicRelief-Regular",
   },
-  multilineInputText: {
-    minHeight: 120,
-    minWidth: 270,
-    textAlignVertical: "top",
+  flaggedScroll: {
+    maxHeight: 120,
   },
-  multilineInput: {
-    minHeight: 300,
-    textAlignVertical: "top",
-  },
-  nonEditableInput: {
-    backgroundColor: "#f5f5f5",
-    color: "#363636ff",
-  },
-  // New styles for date-wise chat history
-  chatHistoryContainer: {
-    marginTop: 8,
+  chatScroll: {
     maxHeight: 400,
   },
-  noHistoryText: {
+  noChatsText: {
     textAlign: "center",
     color: "#999",
     fontSize: 14,
@@ -615,16 +702,28 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
+    padding: 14,
     backgroundColor: "#f8f9fa",
     borderBottomWidth: 1,
     borderBottomColor: "#e9ecef",
+  },
+  dateHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
   },
   dateHeaderText: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#56bbf1",
     fontFamily: "ComicRelief-Bold",
+    marginLeft: 8,
+  },
+  messageCount: {
+    fontSize: 12,
+    color: "#999",
+    fontFamily: "ComicRelief-Regular",
+    marginLeft: 8,
   },
   messagesContainer: {
     padding: 8,
@@ -637,60 +736,75 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: "#56bbf1",
   },
-  userMessageText: {
+  messageRow: {
+    flexDirection: "row",
+    marginBottom: 4,
+  },
+  userLabel: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#FF6B8B",
+    fontFamily: "ComicRelief-Bold",
+    width: 30,
+  },
+  botLabel: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#4CD964",
+    fontFamily: "ComicRelief-Bold",
+    width: 30,
+  },
+  messageText: {
+    flex: 1,
+    fontSize: 12,
     color: "#333333ff",
-    fontSize: 14,
-    marginBottom: 4,
     fontFamily: "ComicRelief-Regular",
+    lineHeight: 16,
   },
-  botMessageText: {
-    color: "#333",
-    fontSize: 14,
-    marginBottom: 4,
-    fontFamily: "ComicRelief-Regular",
-  },
-  timestampText: {
+  timestamp: {
+    fontSize: 10,
     color: "#999",
-    fontSize: 11,
     fontFamily: "ComicRelief-Regular",
+    textAlign: "right",
+    marginTop: 4,
   },
-  buttonContainer: {
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    marginTop: 20,
-    marginBottom:30,
+  actionButtons: {
+    marginTop: 24,
+    gap: 12,
   },
   buttonRow: {
     flexDirection: "row",
-    justifyContent: "center",
-    gap: 10,
+    justifyContent: "space-between",
+    gap: 12,
   },
-  button: {
-    backgroundColor: "#56bbf1",
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 20,
-    marginTop: 12,
-    alignItems: "center",
+  actionButton: {
     flex: 1,
-    minWidth: 160,
-    maxWidth: 200,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    borderRadius: 20,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  buttonText: {
-    fontSize: 14,
-    fontWeight: "600",
+  primaryButton: {
+    backgroundColor: "#56BBF1",
+  },
+  successButton: {
+    backgroundColor: "#4CD964",
+  },
+  infoButton: {
+    backgroundColor: "#FF6B8B",
+  },
+  actionButtonText: {
     color: "#fff",
-    textAlign: "center",
-    fontFamily: "ComicRelief-Regular",
-    lineHeight: 16,
+    fontSize: 14,
+    fontWeight: "bold",
+    marginLeft: 8,
+    fontFamily: "ComicRelief-Bold",
   },
 });

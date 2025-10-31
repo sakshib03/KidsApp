@@ -297,14 +297,14 @@ export default function ChatBot() {
     try {
       if (messageItem.message_id && userData?.child_id) {
         const audioUrl = `${API_BASE}/generate-chat-audio?child_id=${userData.child_id}&message_id=${messageItem.message_id}`;
-        
+
         console.log("Generating audio for message:", messageItem.message_id);
-        
+
         // Fetch the audio
         const response = await fetch(audioUrl, {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'accept': 'application/json',
+            accept: "application/json",
           },
         });
 
@@ -314,7 +314,7 @@ export default function ChatBot() {
 
         // Get the audio blob
         const audioBlob = await response.blob();
-        
+
         // Create object URL from blob
         const audioObjectUrl = URL.createObjectURL(audioBlob);
 
@@ -342,27 +342,26 @@ export default function ChatBot() {
             URL.revokeObjectURL(audioObjectUrl);
           }
         });
-
       } else {
         // Fallback: if no message_id, use text-to-speech
         console.warn("No message_id available, using text-to-speech fallback");
         Speech.speak(messageItem.text, {
-          language: 'en',
+          language: "en",
           pitch: 1.0,
           rate: 0.9,
         });
       }
     } catch (error) {
       console.error("Audio Generation/Playback Error:", error);
-      
+
       // Fallback to text-to-speech if audio generation fails
       console.log("Falling back to text-to-speech");
       Speech.speak(messageItem.text, {
-        language: 'en',
+        language: "en",
         pitch: 1.0,
         rate: 0.9,
       });
-      
+
       Alert.alert("Info", "Playing text-to-speech version");
     }
   };
@@ -571,20 +570,6 @@ export default function ChatBot() {
     }
   };
 
-  const clearChat = () => {
-    Alert.alert("Clear Chat", "Are you sure you want to clear all messages?", [
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
-      {
-        text: "Clear",
-        style: "destructive",
-        onPress: () => setMessages(initialMessages),
-      },
-    ]);
-  };
-
   const renderMessage = ({ item }) => (
     <View
       style={[
@@ -772,7 +757,7 @@ export default function ChatBot() {
           </View>
 
           {/* Quick Action Buttons */}
-          <ScrollView
+          {/* <ScrollView
             style={styles.quickActions}
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -809,7 +794,7 @@ export default function ChatBot() {
             >
               <Text style={styles.quickActionText}>Joke of the Day</Text>
             </TouchableOpacity>
-          </ScrollView>
+          </ScrollView> */}
 
           {showHistory && (
             <View style={styles.chatHistory}>
@@ -828,13 +813,87 @@ export default function ChatBot() {
               <View
                 style={{
                   top: 40,
-                  flexDirection: "row",
+                  flexDirection: "column",
                   justifyContent: "space-between",
                   padding: 10,
                 }}
               >
+                <View
+                  style={{
+                    marginBottom: 20,
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <View
+                    style={{
+                      marginBottom: 20,
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <TouchableOpacity
+                      style={[styles.quickActionButton,{backgroundColor:"#c53737ff"}]}
+                      onPress={() => router.push("/(tabs)/quiz")}
+                    >
+                      <Text style={styles.quickActionText}>Go to Quiz</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.quickActionButton,{backgroundColor:"#37c537ff"}]}
+                      onPress={() => router.push("/(tabs)/story")}
+                    >
+                      <Text style={styles.quickActionText}>
+                        Story of the Day
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <View
+                    style={{
+                      marginBottom: 20,
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <TouchableOpacity
+                     style={[styles.quickActionButton,{backgroundColor:"#4cabe6ff"}]}
+                      onPress={() => router.push("/(tabs)/question")}
+                    >
+                      <Text style={styles.quickActionText}>
+                        Question of the Day
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={[styles.quickActionButton,{backgroundColor:"#ded755ff"}]}>
+                      <Text style={styles.quickActionText}>Games</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <View
+                    style={{
+                      marginBottom: 20,
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <TouchableOpacity
+                      style={[styles.quickActionButton,{backgroundColor:"#db58afff"}]}
+                      onPress={() => router.push("/(tabs)/joke")}
+                    >
+                      <Text style={styles.quickActionText}>
+                        Joke of the Day
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
                 <Text
-                  style={{ fontSize: 18, color: "#56bbf1", fontWeight: "bold" }}
+                  style={{
+                    fontSize: 18,
+                    color: "#ea524aff",
+                    fontWeight: "bold",
+                  }}
                 >
                   Chat History
                 </Text>
@@ -982,7 +1041,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-end",
     backgroundColor: "#56bbf1",
     borderBottomRightRadius: 4,
-    marginBottom:6,
+    marginBottom: 6,
   },
   botMessage: {
     alignSelf: "flex-start",
@@ -990,7 +1049,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 4,
     borderWidth: 1,
     borderColor: "#e0e0e0",
-    marginBottom:6,
+    marginBottom: 6,
   },
   typingBubble: {
     flexDirection: "row",
@@ -1046,7 +1105,7 @@ const styles = StyleSheet.create({
   },
   inputSection: {
     paddingHorizontal: 12,
-    paddingBottom: 8,
+    paddingBottom: 30,
   },
   inputContainer: {
     flexDirection: "row",
@@ -1114,8 +1173,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#56bbf1",
   },
   quickActionText: {
     fontSize: 12,
@@ -1138,56 +1195,56 @@ const styles = StyleSheet.create({
 
   dateSection: {
     marginBottom: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     borderRadius: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   dateHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: 16,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: "#f8f9fa",
     borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
+    borderBottomColor: "#e9ecef",
   },
   dateHeaderText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#56bbf1',
-    fontFamily: 'ComicRelief-Bold',
+    fontWeight: "bold",
+    color: "#56bbf1",
+    fontFamily: "ComicRelief-Bold",
   },
   messagesContainer: {
     padding: 8,
   },
   chatItem: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: "#f8f9fa",
     padding: 12,
     borderRadius: 8,
     marginBottom: 8,
     borderLeftWidth: 4,
-    borderLeftColor: '#56bbf1',
+    borderLeftColor: "#56bbf1",
   },
   userMessageText: {
-    color: '#333333ff',
+    color: "#333333ff",
     fontSize: 14,
     marginBottom: 4,
-    fontFamily: 'ComicRelief-Regular',
+    fontFamily: "ComicRelief-Regular",
   },
   botMessageText: {
-    color: '#333',
+    color: "#333",
     fontSize: 14,
     marginBottom: 4,
-    fontFamily: 'ComicRelief-Regular',
+    fontFamily: "ComicRelief-Regular",
   },
   timestampText: {
-    color: '#999',
+    color: "#999",
     fontSize: 11,
-    fontFamily: 'ComicRelief-Regular',
+    fontFamily: "ComicRelief-Regular",
   },
 });

@@ -249,7 +249,7 @@ export default function Quiz() {
             {loading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#f35a5aff" />
-                <Text style={styles.loadingText}>Generating your quiz...</Text>
+                <Text style={styles.loadingText}>Generating your question...</Text>
               </View>
             ) : quizData && quizData.question ? (
               <View style={styles.questionWrapper}>

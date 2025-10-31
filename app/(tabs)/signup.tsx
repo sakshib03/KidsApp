@@ -65,7 +65,7 @@ export default function SignUpScreen() {
 
   const inputsRef = useRef([]);
 
-  const genderOptions = ["Girl", "Boy"];
+  const genderOptions = ["female", "male", "other"];
   const genderOptions2 = ["Male", "Female", "Other"];
   const careerOptions = [
     "Doctor", "Engineer", "Teacher", "Scientist", "Artist", "Athlete", 

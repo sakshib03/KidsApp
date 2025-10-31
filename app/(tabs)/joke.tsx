@@ -21,24 +21,24 @@ export default function Joke() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [currentGif, setCurrentGif] = useState(null);
 
- const gifs=[
-  require("@/assets/gifs/hahaha.gif"),
-  require("@/assets/gifs/laughing-cat.gif"),
-  require("@/assets/gifs/laughing-haha.gif"),
-  require("@/assets/gifs/laughing-laugh.gif"),
- ];
+  const gifs = [
+    require("@/assets/gifs/hahaha.gif"),
+    require("@/assets/gifs/laughing-cat.gif"),
+    require("@/assets/gifs/laughing-haha.gif"),
+    require("@/assets/gifs/laughing-laugh.gif"),
+  ];
 
- useEffect(() => {
-       Font.loadAsync({
-         "ComicRelief-Bold": require("../../assets/fonts/ComicRelief-Bold.ttf"),
-         "ComicRelief-Regular": require("../../assets/fonts/ComicRelief-Regular.ttf"),
-       }).then(() => setFontsLoaded(true));
+  useEffect(() => {
+    Font.loadAsync({
+      "ComicRelief-Bold": require("../../assets/fonts/ComicRelief-Bold.ttf"),
+      "ComicRelief-Regular": require("../../assets/fonts/ComicRelief-Regular.ttf"),
+    }).then(() => setFontsLoaded(true));
 
-       const randomIndex=Math.floor(Math.random()*gifs.length);
-       setCurrentGif(gifs[randomIndex]);
+    const randomIndex = Math.floor(Math.random() * gifs.length);
+    setCurrentGif(gifs[randomIndex]);
 
-       fetchChildId();
-     }, []);
+    fetchChildId();
+  }, []);
 
   useEffect(() => {
     fetchChildId();
@@ -130,9 +130,7 @@ export default function Joke() {
           )}
         </View>
         <View style={styles.logoContainer}>
-          {currentGif &&(
-            <Image source={currentGif} style={styles.logo}/>
-          )}
+          {currentGif && <Image source={currentGif} style={styles.logo} />}
         </View>
       </View>
     </ImageBackground>
@@ -208,7 +206,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
     borderRadius: 12,
-    padding:10
+    padding: 10,
   },
   scrollContent: {
     flexGrow: 1,
