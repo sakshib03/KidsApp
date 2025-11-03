@@ -5,19 +5,19 @@ import {
   TouchableOpacity,
   StyleSheet,
   ImageBackground,
-  Image,
   TextInput,
   ScrollView,
   Alert,
-  Modal,
   FlatList,
+  Platform,
+  ActivityIndicator,
+  RefreshControl
 } from "react-native";
 import { router } from "expo-router";
-import { Feather, MaterialIcons } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE } from "./config";
 import * as Font from "expo-font";
-import DateTimePicker from "react-native-modal-datetime-picker";
 
 export default function Reminders() {
   const [reminders, setReminders] = useState([]);
@@ -25,27 +25,133 @@ export default function Reminders() {
   const [reminderDate, setReminderDate] = useState("");
   const [reminderTime, setReminderTime] = useState("");
   const [message, setMessage] = useState("");
-  const [childId, setChildId] = useState(1);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedTime, setSelectedTime] = useState(new Date());
+  const [childId, setChildId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [editingReminder, setEditingReminder] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [fontsLoaded, setFontsLoaded]= useState(false);
 
   useEffect(() => {
-    loadReminders();
+    initializeData();
+    Font.loadAsync({
+      "ComicRelief-Bold": require("../../assets/fonts/ComicRelief-Bold.ttf"),
+      "ComicRelief-Regular": require("../../assets/fonts/ComicRelief-Regular.ttf"),
+    }).then(() => setFontsLoaded(true));
   }, []);
 
-  const loadReminders = async () => {
+  // Consistent with Profile page approach
+  const getChildIdFromStorage = async () => {
     try {
-      const storedReminders = await AsyncStorage.getItem("kid_reminders");
-      if (storedReminders) {
-        setReminders(JSON.parse(storedReminders));
+      // Use the same key as Profile page
+      const childId = await AsyncStorage.getItem("childId");
+      console.log("Stored Child ID:", childId);
+
+      if (childId) {
+        return childId;
       }
+
+      // Fallback to selected_child if childId doesn't exist
+      const childData = await AsyncStorage.getItem("selected_child");
+      if (childData) {
+        const parsedChildData = JSON.parse(childData);
+        return parsedChildData.id;
+      }
+
+      return null;
     } catch (error) {
-      console.error("Error loading reminders:", error);
+      console.error("Error getting child ID:", error);
+      return null;
     }
   };
 
+  const initializeData = async () => {
+    try {
+      setLoading(true);
+      const storedChildId = await getChildIdFromStorage();
+
+      if (storedChildId) {
+        setChildId(storedChildId);
+        await loadReminders(storedChildId);
+      } else {
+        Alert.alert("Error", "Child ID not found. Please login again.");
+        router.push("/login");
+      }
+    } catch (error) {
+      console.error("Error initializing data:", error);
+      Alert.alert("Error", "Failed to load reminders");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load reminders from API
+  const loadReminders = async (childIdParam = null) => {
+    try {
+      setLoading(true);
+
+      const currentChildId = childIdParam || childId;
+      if (!currentChildId) {
+        throw new Error('No child ID available');
+      }
+
+      console.log("Loading reminders for child ID:", currentChildId);
+
+      const response = await fetch(`${API_BASE}/reminders/${currentChildId}`, {
+        method: 'GET',
+        headers: {
+          'accept': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log("API Response:", result);
+
+        if (result.reminders && Array.isArray(result.reminders)) {
+          setReminders(result.reminders);
+          await AsyncStorage.setItem("kid_reminders", JSON.stringify(result.reminders));
+        } else {
+          // Fallback to local storage
+          console.log("No reminders from API, checking local storage");
+          const storedReminders = await AsyncStorage.getItem("kid_reminders");
+          if (storedReminders) {
+            setReminders(JSON.parse(storedReminders));
+          }
+        }
+      } else {
+        throw new Error(`Failed to fetch reminders: ${response.status}`);
+      }
+    } catch (error) {
+      console.error("Error loading reminders from API:", error);
+
+      // Fallback to local storage
+      try {
+        const storedReminders = await AsyncStorage.getItem("kid_reminders");
+        if (storedReminders) {
+          console.log("Using local storage reminders");
+          setReminders(JSON.parse(storedReminders));
+        }
+      } catch (storageError) {
+        console.error("Error loading from local storage:", storageError);
+      }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // Function to refresh reminders
+  const handleRefresh = () => {
+    setRefreshing(true);
+    if (childId) {
+      loadReminders(childId);
+    } else {
+      initializeData();
+    }
+  };
+
+  // Save reminders to local storage
   const saveReminders = async (newReminders) => {
     try {
       await AsyncStorage.setItem("kid_reminders", JSON.stringify(newReminders));
@@ -54,102 +160,259 @@ export default function Reminders() {
     }
   };
 
-  const handleCreateReminder=async()=>{
-    if(!occasion || !reminderDate || !reminderTime || !message){
+  // Create new reminder
+  const handleCreateReminder = async () => {
+    if (!occasion || !reminderDate || !reminderTime || !message) {
       Alert.alert("Oops!", "Please fill in all fields!");
       return;
     }
 
-    try{
-      const reminderData={
-        child_id: childId,
+    const currentChildId = childId || await getChildIdFromStorage();
+
+    if (!currentChildId) {
+      Alert.alert("Error", "Child ID not found. Please login again.");
+      return;
+    }
+
+    try {
+      const reminderData = {
+        child_id: parseInt(currentChildId),
         occasion,
-        reminder_date:reminderDate,
-        reminder_time:reminderTime,
+        reminder_date: reminderDate,
+        reminder_time: reminderTime,
         message
       };
 
-      const response=await fetch(`${API_BASE}/set-reminder`,{
-        method:'POST',
-        headers:{
-          'Content-Type':'application/json',
-          'accept':'application/json'
+      console.log("Creating reminder:", reminderData);
+
+      const response = await fetch(`${API_BASE}/set-reminder`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'accept': 'application/json'
         },
-        body:JSON.stringify(reminderData)
+        body: JSON.stringify(reminderData)
       });
 
-      if(response.ok){
-        const result=await response.json();
+      if (response.ok) {
+        const result = await response.json();
+        console.log("Create reminder result:", result);
 
-        const newReminder={
+        const newReminder = {
           id: result.reminder_id || Date.now(),
           ...reminderData,
-          created_at:new Date().toISOString()
+          created_at: new Date().toISOString()
         };
 
-        const updatedReminders=[...reminders, newReminder];
+        // Update state and storage
+        const updatedReminders = [...reminders, newReminder];
         setReminders(updatedReminders);
-        saveReminders(updatedReminders);
+        await saveReminders(updatedReminders);
 
-        setOccasion("");
-        setReminderDate("");
-        setReminderTime("");
-        setMessage("");
+        // Clear form
+        resetForm();
 
-        Alert.alert("Yay!", "reminder created successfully!");
-      }else{
+        Alert.alert("Yay!", "Reminder created successfully!");
+      } else {
+        const errorText = await response.text();
+        console.error("Create reminder failed:", errorText);
         throw new Error('Failed to create reminder');
       }
-    }catch(error){
+    } catch (error) {
       console.error('Error creating reminder:', error);
       Alert.alert("Oh no!", "Couldn't create reminder. Please try again!");
     }
   };
 
-  const handleDateChange=(event, date)=>{
-    setShowDatePicker(false);
-    if(date){
-      setSelectedDate(date);
-      const formattedDate=date.toISOString().split('T')[0];
-      setReminderDate(formattedDate);
+  // Update existing reminder
+  const handleUpdateReminder = async () => {
+    if (!occasion || !reminderDate || !reminderTime || !message) {
+      Alert.alert("Oops!", "Please fill in all fields!");
+      return;
+    }
+
+    try {
+      const currentChildId = childId || await getChildIdFromStorage();
+
+      if (!currentChildId) {
+        Alert.alert("Error", "Child ID not found.");
+        return;
+      }
+
+      const reminderData = {
+        child_id: parseInt(currentChildId),
+        occasion,
+        reminder_date: reminderDate,
+        reminder_time: reminderTime,
+        message
+      };
+
+      console.log("Updating reminder:", editingReminder.id, reminderData);
+
+      const response = await fetch(`${API_BASE}/reminder/${editingReminder.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'accept': 'application/json'
+        },
+        body: JSON.stringify(reminderData)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log("Update reminder result:", result);
+
+        // Update local state
+        const updatedReminders = reminders.map(reminder =>
+          reminder.id === editingReminder.id
+            ? { ...reminder, ...reminderData }
+            : reminder
+        );
+
+        setReminders(updatedReminders);
+        await saveReminders(updatedReminders);
+
+        // Reset form and exit edit mode
+        resetForm();
+
+        Alert.alert("Success!", "Reminder updated successfully!");
+      } else {
+        const errorText = await response.text();
+        console.error("Update reminder failed:", errorText);
+        throw new Error('Failed to update reminder');
+      }
+    } catch (error) {
+      console.error('Error updating reminder:', error);
+      Alert.alert("Oh no!", "Couldn't update reminder. Please try again!");
     }
   };
 
-  const handleTimeChange = (event, time) => {
-    setShowTimePicker(false);
-    if (time) {
-      setSelectedTime(time);
-      const formattedTime = time.toTimeString().split(' ')[0].substring(0, 5);
-      setReminderTime(formattedTime);
-    }
-  };
-
-  const deleteReminder=(id)=>{
+  // Delete reminder
+  const deleteReminder = async (id) => {
     Alert.alert(
       "Delete Reminder",
       "Are you sure you want to delete this reminder?",
       [
-        {text:"Cancel", style:"cancel"},
+        { text: "Cancel", style: "cancel" },
         {
           text: "Delete",
-          style:"destructive",
-          onPress:()=>{
-            const updatedReminders=reminders.filter(reminder=>reminder.id !== id);
-            setReminders(updatedReminders);
-            saveReminders(updatedReminders);
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const currentChildId = childId || await getChildIdFromStorage();
+
+              if (!currentChildId) {
+                Alert.alert("Error", "Child ID not found.");
+                return;
+              }
+
+              console.log("Deleting reminder:", id);
+
+              const response = await fetch(
+                `${API_BASE}/reminder/${id}?child_id=${currentChildId}`,
+                {
+                  method: 'DELETE',
+                  headers: {
+                    'accept': 'application/json'
+                  }
+                }
+              );
+
+              if (response.ok) {
+                const result = await response.json();
+                console.log("Delete reminder result:", result);
+
+                // Remove from local state
+                const updatedReminders = reminders.filter(reminder => reminder.id !== id);
+                setReminders(updatedReminders);
+
+                // Update local storage
+                await saveReminders(updatedReminders);
+
+                Alert.alert("Success!", "Reminder deleted successfully!");
+              } else {
+                const errorText = await response.text();
+                console.error("Delete reminder failed:", errorText);
+                throw new Error('Failed to delete reminder from API');
+              }
+            } catch (error) {
+              console.error("Error deleting reminder:", error);
+
+              // Fallback: remove from local state even if API fails
+              const updatedReminders = reminders.filter(reminder => reminder.id !== id);
+              setReminders(updatedReminders);
+              await saveReminders(updatedReminders);
+
+              Alert.alert("Deleted locally", "Reminder was deleted from your device.");
+            }
           }
         }
       ]
     );
   };
 
-  const renderReminderItem=({item})=>(
+  // Start editing a reminder
+  const handleEditReminder = (reminder) => {
+    setEditingReminder(reminder);
+    setEditMode(true);
+    setOccasion(reminder.occasion);
+    setReminderDate(reminder.reminder_date);
+    setReminderTime(reminder.reminder_time);
+    setMessage(reminder.message);
+  };
+
+  // Reset form and exit edit mode
+  const resetForm = () => {
+    setEditingReminder(null);
+    setEditMode(false);
+    setOccasion("");
+    setReminderDate("");
+    setReminderTime("");
+    setMessage("");
+  };
+
+  // Cancel editing
+  const handleCancelEdit = () => {
+    resetForm();
+  };
+
+  // Web-compatible date handler
+  const handleDateChange = (event) => {
+    setReminderDate(event.target.value);
+  };
+
+  // Web-compatible time handler
+  const handleTimeChange = (event) => {
+    setReminderTime(event.target.value);
+  };
+
+  // Get today's date in YYYY-MM-DD format for the min attribute
+  const getTodayDate = () => {
+    return new Date().toISOString().split('T')[0];
+  };
+
+  // Render individual reminder item
+  const renderReminderItem = ({ item }) => (
     <View style={styles.reminderCard}>
       <View style={styles.reminderHeader}>
-          <Text style={styles.reminderOccasion}>{item.occasion}</Text>
-          <TouchableOpacity onPress={()=> deleteReminder(item.id)}>
-            <Feather name="trash-2" size={18} color="#FF6B6B"/>
+        <Text style={styles.reminderOccasion}>{item.occasion}</Text>
+        <View style={styles.reminderActions}>
+          {/* Edit Button */}
+          <TouchableOpacity
+            onPress={() => handleEditReminder(item)}
+            style={styles.editButton}
+          >
+            <Feather name="edit" size={16} color="#4CAF50" />
           </TouchableOpacity>
+
+          {/* Delete Button */}
+          <TouchableOpacity
+            onPress={() => deleteReminder(item.id)}
+            style={styles.deleteButton}
+          >
+            <Feather name="trash-2" size={16} color="#FF6B6B" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <Text style={styles.reminderMessage}>{item.message}</Text>
@@ -175,25 +438,27 @@ export default function Reminders() {
             <Feather name="arrow-left" size={20} color={"#fff"} />
             <Text style={styles.backButtonText}>Back to Home</Text>
           </TouchableOpacity>
-
-          {/* <View style={styles.titleContainer}>
-            <MaterialIcons
-              name="notifications-active"
-              size={28}
-              color="#FFD700"
-            />
-            <Text style={styles.title}>My Reminders</Text>
-          </View> */}
         </View>
 
         <ScrollView
           style={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={["#196c57"]}
+              tintColor="#196c57"
+            />
+          }
         >
           {/* Main Container */}
           <View style={styles.mainContainer}>
             <View style={styles.subContainer}>
-              <Text style={styles.sectionTitle}>Create New Reminder</Text>
+              {/* Dynamic Title based on mode */}
+              <Text style={styles.sectionTitle}>
+                {editMode ? "Edit Reminder" : "Create New Reminder"}
+              </Text>
 
               {/* Input Fields */}
               <View style={styles.inputsContainer}>
@@ -217,20 +482,17 @@ export default function Reminders() {
                       <Feather name="calendar" size={16} color="#196c57" />
                       <Text style={styles.inputLabelText}>Date</Text>
                     </View>
-                    <TouchableOpacity
-                      style={styles.inputText}
-                      onPress={() => setShowDatePicker(true)}
-                    >
-                      <Text
-                        style={
-                          reminderDate
-                            ? styles.dateText
-                            : styles.placeholderText
-                        }
-                      >
-                        {reminderDate || "Select date"}
-                      </Text>
-                    </TouchableOpacity>
+
+                    <View style={styles.inputWrapper}>
+                      <input
+                        type="date"
+                        value={reminderDate}
+                        onChange={handleDateChange}
+                        style={styles.webInput}
+                        min={getTodayDate()}
+                        className="date-input"
+                      />
+                    </View>
                   </View>
 
                   <View style={[styles.inputField, styles.halfInput]}>
@@ -238,20 +500,16 @@ export default function Reminders() {
                       <Feather name="clock" size={16} color="#196c57" />
                       <Text style={styles.inputLabelText}>Time</Text>
                     </View>
-                    <TouchableOpacity
-                      style={styles.inputText}
-                      onPress={() => setShowTimePicker(true)}
-                    >
-                      <Text
-                        style={
-                          reminderTime
-                            ? styles.dateText
-                            : styles.placeholderText
-                        }
-                      >
-                        {reminderTime || "Select time"}
-                      </Text>
-                    </TouchableOpacity>
+
+                    <View style={styles.inputWrapper}>
+                      <input
+                        type="time"
+                        value={reminderTime}
+                        onChange={handleTimeChange}
+                        style={styles.webInput}
+                        className="time-input"
+                      />
+                    </View>
                   </View>
                 </View>
 
@@ -272,19 +530,55 @@ export default function Reminders() {
                 </View>
               </View>
 
-              {/* Create Button */}
-              <TouchableOpacity
-                style={styles.createButton}
-                onPress={handleCreateReminder}
-              >
-                <Feather name="plus" size={20} color="#fff" />
-                <Text style={styles.createButtonText}>Create Reminder</Text>
-              </TouchableOpacity>
+              {/* Dynamic Action Buttons */}
+              <View style={styles.actionButtons}>
+                {editMode ? (
+                  <>
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.cancelButton]}
+                      onPress={handleCancelEdit}
+                    >
+                      <Feather name="x" size={20} color="#fff" />
+                      <Text style={styles.actionButtonText}>Cancel</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.updateButton]}
+                      onPress={handleUpdateReminder}
+                    >
+                      <Feather name="save" size={20} color="#fff" />
+                      <Text style={styles.actionButtonText}>Update Reminder</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.createButton}
+                    onPress={handleCreateReminder}
+                    disabled={!childId}
+                  >
+                    <Feather name="plus" size={20} color="#fff" />
+                    <Text style={styles.createButtonText}>
+                      {childId ? "Create Reminder" : "Loading..."}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
 
-            {reminders.length > 0 && (
+            {/* Loading Indicator */}
+            {loading && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#196c57" />
+                <Text style={styles.loadingText}>Loading reminders...</Text>
+              </View>
+            )}
+
+            {/* Reminders List */}
+            {!loading && reminders.length > 0 && (
               <View style={styles.remindersContainer}>
-                <Text style={styles.sectionTitle}>Your Reminders 📝</Text>
+                <View style={styles.remindersHeader}>
+                  <Text style={styles.sectionTitle}>Your Reminders 📝</Text>
+                </View>
                 <FlatList
                   data={reminders}
                   renderItem={renderReminderItem}
@@ -294,27 +588,19 @@ export default function Reminders() {
                 />
               </View>
             )}
+
+            {/* No Reminders Message */}
+            {!loading && reminders.length === 0 && (
+              <View style={styles.noRemindersContainer}>
+                <Feather name="bell-off" size={48} color="#999" />
+                <Text style={styles.noRemindersText}>No reminders yet</Text>
+                <Text style={styles.noRemindersSubText}>
+                  Create your first reminder above!
+                </Text>
+              </View>
+            )}
           </View>
         </ScrollView>
-
-        {showDatePicker && (
-          <DateTimePicker
-            value={selectedDate}
-            mode="date"
-            display="default"
-            onChange={handleDateChange}
-            minimumDate={new Date()}
-          />
-        )}
-
-        {showTimePicker && (
-          <DateTimePicker
-            value={selectedTime}
-            mode="time"
-            display="default"
-            onChange={handleTimeChange}
-          />
-        )}
       </View>
     </ImageBackground>
   );
@@ -328,12 +614,12 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    padding: 20,
+    padding: 14,
     marginTop: 30,
   },
   header: {
-    flexDirection: "column",
-    alignItems: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 20,
   },
@@ -348,27 +634,17 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     color: "#fff",
+    fontFamily: "ComicRelief-Regular",
     fontSize: 14,
     fontWeight: "600",
-    fontFamily: "ComicRelief-Regular",
-  },
-  titleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight:700,
-    color: "#2eb3c5ff",
   },
   scrollContainer: {
     flex: 1,
   },
   mainContainer: {
     width: "100%",
-    padding: 16,
-    borderRadius: 20,
+    padding: 18,
+    borderRadius: 10,
     backgroundColor: "rgba(61, 163, 248, 0.95)",
     shadowColor: "#000",
     shadowOffset: {
@@ -381,20 +657,31 @@ const styles = StyleSheet.create({
   },
   subContainer: {
     backgroundColor: "#9cd2ffff",
-    padding: 20,
+    padding: 15,
     borderRadius: 16,
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
     color: "#196c57",
+    fontFamily: "ComicRelief-Regular",
     textAlign: "center",
     marginBottom: 20,
+  },
+  childIdText: {
+    textAlign: "center",
+    fontSize: 12,
+    color: "#196c57",
+    marginBottom: 10,
     fontFamily: "ComicRelief-Regular",
+    backgroundColor: "rgba(255,255,255,0.5)",
+    padding: 5,
+    borderRadius: 5,
   },
   inputsContainer: {
     gap: 16,
+    marginTop:10,
   },
   inputField: {
     marginBottom: 8,
@@ -416,6 +703,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#196c57",
+    fontFamily: "ComicRelief-Regular",
   },
   inputText: {
     backgroundColor: "#fff",
@@ -425,6 +713,7 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 14,
     color: "#333",
+    fontFamily: "ComicRelief-Regular",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -434,15 +723,71 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
+  inputWrapper: {
+    backgroundColor: "#fff",
+    borderColor: "#e0e0e0",
+    borderWidth: 2,
+    borderRadius: 12,
+    padding: 0,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    overflow: 'hidden',
+  },
+  webInput: {
+    width: '100%',
+    height: 44,
+    border: 'none',
+    outline: 'none',
+    fontSize: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    backgroundColor: 'transparent',
+    fontFamily: 'system-ui, -apple-system, sans-serif',
+  },
   multilineInput: {
     height: 80,
     textAlignVertical: "top",
   },
-  placeholderText: {
-    color: "#999",
+  actionButtons: {
+    flexDirection: "row",
+    gap: 12,
+    justifyContent:"center"
   },
-  dateText: {
-    color: "#333",
+  actionButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 25,
+    gap: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  cancelButton: {
+    backgroundColor: "#6c757d",
+  },
+  updateButton: {
+    backgroundColor: "#FFA000",
+  },
+  actionButtonText: {
+    fontSize: 16,
+    fontWeight: 600,
+    color: "#fff",
+    fontFamily: "ComicRelief-Regular",
   },
   createButton: {
     flexDirection: "row",
@@ -452,7 +797,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 18,
     borderRadius: 25,
-    marginTop: 20,
+    marginTop: 10,
     gap: 10,
     shadowColor: "#000",
     shadowOffset: {
@@ -465,14 +810,34 @@ const styles = StyleSheet.create({
   },
   createButtonText: {
     fontSize: 16,
-    fontWeight:600,
+    fontWeight: 600,
     color: "#fff",
     fontFamily: "ComicRelief-Regular",
+  },
+  loadingContainer: {
+    alignItems: "center",
+    padding: 40,
+  },
+  loadingText: {
+    marginTop: 10,
+    color: "#196c57",
+    fontFamily: "ComicRelief-Regular",
+    fontSize: 16,
   },
   remindersContainer: {
     backgroundColor: "#9cd2ffff",
     padding: 20,
     borderRadius: 16,
+  },
+  remindersHeader: {
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  remindersCount: {
+    fontSize: 14,
+    color: "#666",
+    fontFamily: "ComicRelief-Regular",
+    marginTop: 5,
   },
   remindersList: {
     gap: 12,
@@ -502,10 +867,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     color: "#196c57",
+    fontFamily: "ComicRelief-Regular",
+  },
+  reminderActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  editButton: {
+    padding: 6,
+    borderRadius: 6,
+    backgroundColor: '#E8F5E8',
+  },
+  deleteButton: {
+    padding: 6,
+    borderRadius: 6,
+    backgroundColor: '#FFEBEE',
   },
   reminderMessage: {
     fontSize: 14,
     color: "#666",
+    fontFamily: "ComicRelief-Regular",
     marginBottom: 8,
   },
   reminderDateTime: {
@@ -515,9 +896,31 @@ const styles = StyleSheet.create({
   reminderDate: {
     fontSize: 12,
     color: "#888",
+    fontFamily: "ComicRelief-Regular",
   },
   reminderTime: {
     fontSize: 12,
     color: "#888",
+    fontFamily: "ComicRelief-Regular",
+  },
+  noRemindersContainer: {
+    alignItems: "center",
+    padding: 40,
+    backgroundColor: "#9cd2ffff",
+    borderRadius: 16,
+  },
+  noRemindersText: {
+    fontSize: 18,
+    color: "#666",
+    marginTop: 10,
+    fontFamily: "ComicRelief-Regular",
+    fontWeight: "600",
+  },
+  noRemindersSubText: {
+    fontSize: 14,
+    color: "#888",
+    marginTop: 5,
+    textAlign: "center",
+    fontFamily: "ComicRelief-Regular",
   },
 });

@@ -15,6 +15,7 @@ import {
   Platform,
   ActivityIndicator,
   FlatList,
+  Animated,
 } from "react-native";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -29,53 +30,33 @@ export default function Profile() {
   const [childId, setChildId] = useState(null);
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [avatarLoading, setAvatarLoading] = useState(true);
-  const [isSwitchCareerModalVisible, setIsSwitchCareerModalVisible] =
-    useState(false);
+  const [isSwitchCareerModalVisible, setIsSwitchCareerModalVisible] = useState(false);
   const [selectedCareer, setSelectedCareer] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
 
-  // Dropdown states
+  const [bounceAnim] = useState(new Animated.Value(1));
+  const [slideAnim] = useState(new Animated.Value(0));
+
   const [showGenderDropdown, setShowGenderDropdown] = useState(false);
   const [showCareerDropdown, setShowCareerDropdown] = useState(false);
-  const [showOptionalCareer1Dropdown, setShowOptionalCareer1Dropdown] =
-    useState(false);
-  const [showOptionalCareer2Dropdown, setShowOptionalCareer2Dropdown] =
-    useState(false);
+  const [showOptionalCareer1Dropdown, setShowOptionalCareer1Dropdown] = useState(false);
+  const [showOptionalCareer2Dropdown, setShowOptionalCareer2Dropdown] = useState(false);
 
   // Dropdown options
   const genderOptions = ["female", "male", "other"];
   const careerOptions = [
-    "Doctor",
-    "Engineer",
-    "Teacher",
-    "Scientist",
-    "Artist",
-    "Athlete",
-    "Astronaut",
-    "Veterinarian",
-    "Actor/Actress",
-    "Singer",
-    "Police Officer",
-    "Pilot",
-    "Chef",
-    "FireFighter",
-    "Lawyer",
-    "Fashion Designer",
-    "Dancer",
-    "Writer/Author",
-    "Musician",
-    "Architect",
-    "Entrepreneur",
-    "Computer Programmer/Software Developer",
-    "Marine Biologist",
-    "Archaeologist",
-    "Environmental Scientist",
-    "Other",
+    "Doctor", "Engineer", "Teacher", "Scientist", "Artist", "Athlete", 
+    "Astronaut", "Veterinarian", "Actor/Actress", "Singer", "Police Officer", 
+    "Pilot", "Chef", "FireFighter", "Lawyer", "Fashion Designer", "Dancer", 
+    "Writer/Author", "Musician", "Architect", "Entrepreneur", 
+    "Computer Programmer/Software Developer", "Marine Biologist", 
+    "Archaeologist", "Environmental Scientist", "Other",
   ];
 
   useEffect(() => {
     loadChildId();
+    startAnimations();
   }, []);
 
   useEffect(() => {
@@ -90,6 +71,30 @@ export default function Profile() {
     }
   }, [childId, userData]);
 
+  const startAnimations = () => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(bounceAnim, {
+          toValue: 1.1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(bounceAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    // Slide in animation for content
+    Animated.timing(slideAnim, {
+      toValue: 1,
+      duration: 800,
+      useNativeDriver: true,
+    }).start();
+  };
+
   const loadChildId = async () => {
     try {
       const storedChildId = await AsyncStorage.getItem("childId");
@@ -98,12 +103,12 @@ export default function Profile() {
       if (storedChildId) {
         setChildId(storedChildId);
       } else {
-        Alert.alert("Error", "Child ID not found. Please login again.");
+        Alert.alert("Oops!", "We couldn't find your profile. Please login again.");
         router.push("/login");
       }
     } catch (error) {
       console.error("Error getting child ID:", error);
-      Alert.alert("Error", "Failed to initialize app");
+      Alert.alert("Oops!", "Something went wrong!");
     }
   };
 
@@ -111,11 +116,9 @@ export default function Profile() {
     try {
       setLoading(true);
       if (!childId) {
-        Alert.alert("Error", "Child ID not available");
+        Alert.alert("Oops!", "No child ID available");
         return;
       }
-
-      console.log("Fetching data for child ID:", childId);
 
       const response = await fetch(`${API_BASE}/child-profile/${childId}`, {
         method: "GET",
@@ -124,20 +127,16 @@ export default function Profile() {
         },
       });
 
-      console.log("Response status:", response.status);
-
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log("Fetched user data:", data);
-
       setUserData(data);
       setEditedData(data);
     } catch (error) {
       console.error("Error fetching user data:", error);
-      Alert.alert("Error", "Failed to load profile data");
+      Alert.alert("Oops!", "Couldn't load your profile");
     } finally {
       setLoading(false);
     }
@@ -146,13 +145,18 @@ export default function Profile() {
   const fetchAvatar = async () => {
     try {
       setAvatarLoading(true);
-      if (!childId || !userData) {
-        console.log("No child ID or user data available for avatar fetch");
+      if (!childId || !userData?.default_dream_career) {
+        console.log("Missing child ID or career data");
         return;
       }
 
-      console.log("Fetching avatar for child ID:", childId);
-      console.log("Dream career:", userData.default_dream_career);
+      const directUrl = `${API_BASE}/avatar/${childId}?t=${Date.now()}`;
+      const testResponse = await fetch(directUrl, { method: "HEAD" });
+
+      if (testResponse.ok) {
+        setAvatarUrl(directUrl);
+        return;
+      }
 
       const response = await fetch(`${API_BASE}/set-avatar`, {
         method: "POST",
@@ -166,26 +170,14 @@ export default function Profile() {
         }),
       });
 
-      console.log("Avatar response status:", response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Backend error:", errorText);
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log("Avatar response data:", data);
-
-      if (data.avatar) {
-        const avatarFullUrl = `${API_BASE.replace("/kids/v1", "")}/v1/avatars/${
-          data.avatar
-        }`;
-        console.log("Avatar URL set:", avatarFullUrl);
-        setAvatarUrl(avatarFullUrl);
-      } else {
-        console.warn("No avatar returned from backend");
-        setAvatarUrl(null);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.avatar_url) {
+          const fullUrl = `http://127.0.0.1:8000${data.avatar_url}?t=${Date.now()}`;
+          setAvatarUrl(fullUrl);
+        } else {
+          setAvatarUrl(null);
+        }
       }
     } catch (error) {
       console.error("Error fetching avatar:", error);
@@ -197,20 +189,18 @@ export default function Profile() {
 
   const handleAvatarError = (error) => {
     console.log("Failed to load avatar:", error.nativeEvent);
-    console.log("Failed URL:", avatarUrl);
     setAvatarUrl(null);
   };
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
     const date = new Date(dateString);
-    return date.toISOString().split("T")[0]; // Format as YYYY-MM-DD for input
+    return date.toISOString().split("T")[0];
   };
 
   const handleEditToggle = () => {
     if (isEditing) {
       setEditedData(userData);
-      // Close all dropdowns when canceling edit
       setShowGenderDropdown(false);
       setShowCareerDropdown(false);
       setShowOptionalCareer1Dropdown(false);
@@ -231,7 +221,7 @@ export default function Profile() {
       setIsSaving(true);
 
       if (!childId || !editedData) {
-        Alert.alert("Error", "No data to save");
+        Alert.alert("Oops!", "No data to save");
         setIsSaving(false);
         return;
       }
@@ -247,8 +237,6 @@ export default function Profile() {
         optional_dream_career_2: editedData.optional_dream_career_2,
       };
 
-      console.log("Saving profile data:", updateData);
-
       const response = await fetch(`${API_BASE}/edit-profile`, {
         method: "POST",
         headers: {
@@ -258,30 +246,22 @@ export default function Profile() {
         body: JSON.stringify(updateData),
       });
 
-      console.log("Save response status:", response.status);
-
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Backend error:", errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const result = await response.json();
-      console.log("Profile update result:", result);
-
-      // Update local state
       setUserData(editedData);
       setIsEditing(false);
 
-      // Refresh avatar if career changed
       if (userData.default_dream_career !== editedData.default_dream_career) {
         fetchAvatar();
       }
 
-      Alert.alert("Success", "Profile updated successfully!");
+      Alert.alert("Yay!", "Profile updated successfully! 🎉");
     } catch (error) {
       console.error("Error updating profile:", error);
-      Alert.alert("Error", "Failed to update profile");
+      Alert.alert("Oops!", "Couldn't update profile");
     } finally {
       setIsSaving(false);
     }
@@ -289,7 +269,7 @@ export default function Profile() {
 
   const handleSwitchCareer = async () => {
     if (!selectedCareer.trim()) {
-      Alert.alert("Error", "Please select a career to switch to");
+      Alert.alert("Wait!", "Please pick a new career! 🎯");
       setIsSwitching(false);
       return;
     }
@@ -300,8 +280,6 @@ export default function Profile() {
         child_id: parseInt(childId),
         selected_career: selectedCareer,
       };
-
-      console.log("Switching career:", switchData);
 
       const response = await fetch(`${API_BASE}/switch-career`, {
         method: "POST",
@@ -317,17 +295,15 @@ export default function Profile() {
       }
 
       const result = await response.json();
-      console.log("Career switch result:", result);
-
       await fetchUserData();
 
       setIsSwitchCareerModalVisible(false);
       setSelectedCareer("");
 
-      Alert.alert("Success", `Career switched to ${selectedCareer}`);
+      Alert.alert("Awesome!", `You're now a ${selectedCareer}! 🚀`);
     } catch (error) {
       console.error("Error switching career:", error);
-      Alert.alert("Error", "Failed to switch career");
+      Alert.alert("Oops!", "Couldn't switch career");
     } finally {
       setIsSwitching(false);
     }
@@ -358,6 +334,7 @@ export default function Profile() {
         activeOpacity={1}
       >
         <View style={styles.dropdownList}>
+          <Text style={styles.dropdownTitle}>Choose {dropdownType === "gender" ? "Gender" : "Career"} ✨</Text>
           <FlatList
             data={options}
             keyExtractor={(item, index) => index.toString()}
@@ -375,6 +352,11 @@ export default function Profile() {
     </Modal>
   );
 
+  const translateY = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [50, 0],
+  });
+
   if (loading) {
     return (
       <ImageBackground
@@ -382,8 +364,8 @@ export default function Profile() {
         style={styles.background}
       >
         <View style={styles.container}>
-          <ActivityIndicator size="small" color="#fff" style={styles.spinner} />
-          <Text style={styles.loadingText}>Loading profile...</Text>
+          <ActivityIndicator size="large" color="#FFD700" style={styles.spinner} />
+          <Text style={styles.loadingText}>Loading your awesome profile... 🌟</Text>
         </View>
       </ImageBackground>
     );
@@ -396,9 +378,9 @@ export default function Profile() {
         style={styles.background}
       >
         <View style={styles.container}>
-          <Text style={styles.errorText}>Failed to load profile data</Text>
+          <Text style={styles.errorText}>Couldn't load your profile 😢</Text>
           <TouchableOpacity style={styles.retryButton} onPress={fetchUserData}>
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <Text style={styles.retryButtonText}>Try Again 🔄</Text>
           </TouchableOpacity>
         </View>
       </ImageBackground>
@@ -415,307 +397,209 @@ export default function Profile() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <View style={styles.container}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => router.push("/(tabs)/chatbot")}
-            >
-              <Feather name="arrow-left" size={24} color={"#fff"} />
-              <Text style={styles.backButtonText}>Back to Home</Text>
-            </TouchableOpacity>
+          <Animated.View 
+            style={[
+              styles.container,
+              { transform: [{ translateY }] }
+            ]}
+          >
+            {/* Header */}
+            <View style={styles.header}>
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => router.push("/(tabs)/chatbot")}
+              >
+                <Feather name="arrow-left" size={24} color={"#fff"} />
+                <Text style={styles.backButtonText}>Back to Fun! 🏠</Text>
+              </TouchableOpacity>
+            </View>
 
-            <View style={styles.mainContainer}>
-              <View style={{ alignItems: "center" }}>
-                <Image
-                  source={
-                    avatarUrl
-                      ? { uri: avatarUrl }
-                      : require("@/assets/images/user.jpg")
-                  }
-                  style={styles.logo}
-                  onError={handleAvatarError}
-                />
+            {/* Profile Card */}
+            <View style={styles.profileCard}>
+              <View style={styles.avatarSection}>
+                <Animated.View style={{ transform: [{ scale: bounceAnim }] }}>
+                  <Image
+                    source={
+                      avatarUrl
+                        ? {
+                            uri: avatarUrl,
+                            cache: "reload",
+                          }
+                        : require("@/assets/images/user.jpg")
+                    }
+                    style={styles.avatar}
+                    onError={handleAvatarError}
+                    key={avatarUrl}
+                  />
+                </Animated.View>
+                
                 {avatarLoading && (
-                  <Text style={styles.avatarLoadingText}>
-                    Loading avatar...
-                  </Text>
+                  <Text style={styles.avatarLoadingText}>Creating your avatar... 🎨</Text>
                 )}
 
-                {isEditing ? (
-                  <>
-                    <TextInput
-                      style={[styles.editableInput, styles.userNameInput]}
-                      value={editedData.fullname}
-                      onChangeText={(text) =>
-                        handleInputChange("fullname", text)
-                      }
-                      placeholder="Full Name"
-                      placeholderTextColor="#888"
-                    />
-                    <TextInput
-                      style={[styles.editableInput, styles.usernameInput]}
-                      value={editedData.username}
-                      onChangeText={(text) =>
-                        handleInputChange("username", text)
-                      }
-                      placeholder="Username"
-                      placeholderTextColor="#888"
-                    />
-                  </>
-                ) : (
-                  <>
-                    <Text style={styles.userName}>{userData.fullname}</Text>
-                    <Text style={styles.username}>@{userData.username}</Text>
-                  </>
-                )}
+                <View style={styles.nameSection}>
+                  {isEditing ? (
+                    <>
+                      <TextInput
+                        style={[styles.editableInput, styles.userNameInput]}
+                        value={editedData.fullname}
+                        onChangeText={(text) => handleInputChange("fullname", text)}
+                        placeholder="Your Full Name"
+                        placeholderTextColor="#888"
+                      />
+                      <TextInput
+                        style={[styles.editableInput, styles.usernameInput]}
+                        value={editedData.username}
+                        onChangeText={(text) => handleInputChange("username", text)}
+                        placeholder="Cool Username"
+                        placeholderTextColor="#888"
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <Text style={styles.userName}>{userData.fullname}</Text>
+                      <Text style={styles.username}>@{userData.username} ✨</Text>
+                    </>
+                  )}
+                </View>
               </View>
 
-              <View style={styles.subContainer}>
-                <View style={styles.columnsContainer}>
-                  <View style={styles.column}>
-                    <View style={styles.inputField}>
-                      <Text style={styles.input}>Total Score</Text>
-                      <TextInput
-                        style={[styles.inputText, styles.nonEditableInput]}
-                        value={userData.credits?.total?.toString() || "0"}
-                        editable={false}
-                      />
-                    </View>
+              {/* Stats Grid */}
+              <View style={styles.statsGrid}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{userData.credits?.total?.toString() || "0"}</Text>
+                  <Text style={styles.statLabel}>Total Score⭐</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{userData.credits?.chat?.toString() || "0"}</Text>
+                  <Text style={styles.statLabel}>Chat 📚</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{userData.credits?.quiz?.toString() || "0"}</Text>
+                  <Text style={styles.statLabel}>Quiz 🧩</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{userData.credits?.game?.toString() || "0"}</Text>
+                  <Text style={styles.statLabel}>Game 🧩</Text>
+                </View>
+              </View>
 
-                    <View style={styles.inputField}>
-                      <Text style={styles.input}>Optional Dream Career 1</Text>
-                      {isEditing ? (
-                        <TouchableOpacity
-                          style={[
-                            styles.inputText,
-                            styles.editableInput,
-                            styles.dropdownButton,
-                          ]}
-                          onPress={() => setShowOptionalCareer1Dropdown(true)}
-                        >
-                          <Text
-                            style={[
-                              !editedData.optional_dream_career_1 && {
-                                color: "#888",
-                              },
-                            ]}
-                          >
-                            {editedData.optional_dream_career_1 ||
-                              "Optional Career 1"}
-                          </Text>
-                          <Feather
-                            name="chevron-down"
-                            size={16}
-                            color="#F25F3B"
-                          />
-                        </TouchableOpacity>
-                      ) : (
-                        <TextInput
-                          style={[styles.inputText, styles.nonEditableInput]}
-                          value={userData.optional_dream_career_1}
-                          editable={false}
-                        />
-                      )}
-                    </View>
-
-                    <View style={styles.inputField}>
-                      <Text style={styles.input}>Gender</Text>
-                      {isEditing ? (
-                        <TouchableOpacity
-                          style={[
-                            styles.inputText,
-                            styles.editableInput,
-                            styles.dropdownButton,
-                          ]}
-                          onPress={() => setShowGenderDropdown(true)}
-                        >
-                          <Text
-                            style={[!editedData.gender && { color: "#888" }]}
-                          >
-                            {editedData.gender || "Select Gender"}
-                          </Text>
-                          <Feather
-                            name="chevron-down"
-                            size={16}
-                            color="#F25F3B"
-                          />
-                        </TouchableOpacity>
-                      ) : (
-                        <TextInput
-                          style={[styles.inputText, styles.nonEditableInput]}
-                          value={userData.gender}
-                          editable={false}
-                        />
-                      )}
-                    </View>
-
-                    <View style={styles.inputField}>
-                      <Text style={styles.input}>Story Score</Text>
-                      <TextInput
-                        style={[styles.inputText, styles.nonEditableInput]}
-                        value={userData.credits?.story?.toString() || "0"}
-                        editable={false}
-                      />
-                    </View>
-
-                    <View style={styles.inputField}>
-                      <Text style={styles.input}>Quiz Score</Text>
-                      <TextInput
-                        style={[styles.inputText, styles.nonEditableInput]}
-                        value={userData.credits?.quiz?.toString() || "0"}
-                        editable={false}
-                      />
-                    </View>
-                    <View style={styles.inputField}>
-                      <Text style={styles.input}>Chat Score</Text>
-                      <TextInput
-                        style={[styles.inputText, styles.nonEditableInput]}
-                        value={userData.credits?.chat?.toString() || "0"}
-                        editable={false}
-                      />
-                    </View>
+              {/* Profile Details */}
+              <View style={styles.detailsSection}>
+                <View style={styles.detailRow}>
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Dream Career</Text>
+                    {isEditing ? (
+                      <TouchableOpacity
+                        style={[styles.inputText, styles.editableInput, styles.dropdownButton]}
+                        onPress={() => setShowCareerDropdown(true)}
+                      >
+                        <Text style={[!editedData.default_dream_career && { color: "#888" }]}>
+                          {editedData.default_dream_career || "Pick Your Dream! ✨"}
+                        </Text>
+                        <Feather name="chevron-down" size={16} color="#FF6B6B" />
+                      </TouchableOpacity>
+                    ) : (
+                      <View style={[styles.inputText, styles.nonEditableInput]}>
+                        <Text style={styles.detailValue}>{userData.default_dream_career}</Text>
+                      </View>
+                    )}
                   </View>
 
-                  <View style={styles.column}>
-                    <View style={styles.inputField}>
-                      <Text style={styles.input}>Dream Career</Text>
-                      {isEditing ? (
-                        <TouchableOpacity
-                          style={[
-                            styles.inputText,
-                            styles.editableInput,
-                            styles.dropdownButton,
-                          ]}
-                          onPress={() => setShowCareerDropdown(true)}
-                        >
-                          <Text
-                            style={[
-                              !editedData.default_dream_career && {
-                                color: "#888",
-                              },
-                            ]}
-                          >
-                            {editedData.default_dream_career ||
-                              "Select Dream Career"}
-                          </Text>
-                          <Feather
-                            name="chevron-down"
-                            size={16}
-                            color="#F25F3B"
-                          />
-                        </TouchableOpacity>
-                      ) : (
-                        <TextInput
-                          style={[styles.inputText, styles.nonEditableInput]}
-                          value={userData.default_dream_career}
-                          editable={false}
-                        />
-                      )}
-                    </View>
-
-                    <View style={styles.inputField}>
-                      <Text style={styles.input}>Optional Dream Career 2</Text>
-                      {isEditing ? (
-                        <TouchableOpacity
-                          style={[
-                            styles.inputText,
-                            styles.editableInput,
-                            styles.dropdownButton,
-                          ]}
-                          onPress={() => setShowOptionalCareer2Dropdown(true)}
-                        >
-                          <Text
-                            style={[
-                              !editedData.optional_dream_career_2 && {
-                                color: "#888",
-                              },
-                            ]}
-                          >
-                            {editedData.optional_dream_career_2 ||
-                              "Optional Career 2"}
-                          </Text>
-                          <Feather
-                            name="chevron-down"
-                            size={16}
-                            color="#F25F3B"
-                          />
-                        </TouchableOpacity>
-                      ) : (
-                        <TextInput
-                          style={[styles.inputText, styles.nonEditableInput]}
-                          value={userData.optional_dream_career_2}
-                          editable={false}
-                        />
-                      )}
-                    </View>
-
-                    <View style={styles.inputField}>
-                      <Text style={styles.input}>DOB</Text>
-                      {isEditing ? (
-                        <TextInput
-                          style={[styles.inputText, styles.editableInput]}
-                          value={formatDate(editedData.dob)}
-                          onChangeText={(text) =>
-                            handleInputChange("dob", text)
-                          }
-                          placeholder="YYYY-MM-DD"
-                          placeholderTextColor="#888"
-                        />
-                      ) : (
-                        <TextInput
-                          style={[styles.inputText, styles.nonEditableInput]}
-                          value={formatDate(userData.dob)}
-                          editable={false}
-                        />
-                      )}
-                    </View>
-
-                    <View style={styles.inputField}>
-                      <Text style={styles.input}>Question Score</Text>
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Birthday</Text>
+                    {isEditing ? (
                       <TextInput
-                        style={[styles.inputText, styles.nonEditableInput]}
-                        value={userData.credits?.question?.toString() || "0"}
-                        editable={false}
+                        style={[styles.inputText, styles.editableInput]}
+                        value={formatDate(editedData.dob)}
+                        onChangeText={(text) => handleInputChange("dob", text)}
+                        placeholder="YYYY-MM-DD"
+                        placeholderTextColor="#888"
                       />
-                    </View>
+                    ) : (
+                      <View style={[styles.inputText, styles.nonEditableInput]}>
+                        <Text style={styles.detailValue}>{formatDate(userData.dob)}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
 
-                    <View style={styles.inputField}>
-                      <Text style={styles.input}>Joke Score</Text>
-                      <TextInput
-                        style={[styles.inputText, styles.nonEditableInput]}
-                        value={userData.credits?.joke?.toString() || "0"}
-                        editable={false}
-                      />
-                    </View>
-                    <View style={styles.inputField}>
-                      <Text style={styles.input}>Game Score</Text>
-                      <TextInput
-                        style={[styles.inputText, styles.nonEditableInput]}
-                        value={userData.credits?.game?.toString() || "0"}
-                        editable={false}
-                      />
-                    </View>
+                <View style={styles.detailRow}>
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Gender</Text>
+                    {isEditing ? (
+                      <TouchableOpacity
+                        style={[styles.inputText, styles.editableInput, styles.dropdownButton]}
+                        onPress={() => setShowGenderDropdown(true)}
+                      >
+                        <Text style={[!editedData.gender && { color: "#888" }]}>
+                          {editedData.gender || "Select"}
+                        </Text>
+                        <Feather name="chevron-down" size={16} color="#FF6B6B" />
+                      </TouchableOpacity>
+                    ) : (
+                      <View style={[styles.inputText, styles.nonEditableInput]}>
+                        <Text style={styles.detailValue}>{userData.gender}</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Other Career 1</Text>
+                    {isEditing ? (
+                      <TouchableOpacity
+                        style={[styles.inputText, styles.editableInput, styles.dropdownButton]}
+                        onPress={() => setShowOptionalCareer1Dropdown(true)}
+                      >
+                        <Text style={[!editedData.optional_dream_career_1 && { color: "#888" }]}>
+                          {editedData.optional_dream_career_1 || "Another Dream?"}
+                        </Text>
+                        <Feather name="chevron-down" size={16} color="#FF6B6B" />
+                      </TouchableOpacity>
+                    ) : (
+                      <View style={[styles.inputText, styles.nonEditableInput]}>
+                        <Text style={styles.detailValue}>{userData.optional_dream_career_1 || "Not set"}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Other Career 2</Text>
+                    {isEditing ? (
+                      <TouchableOpacity
+                        style={[styles.inputText, styles.editableInput, styles.dropdownButton]}
+                        onPress={() => setShowOptionalCareer2Dropdown(true)}
+                      >
+                        <Text style={[!editedData.optional_dream_career_2 && { color: "#888" }]}>
+                          {editedData.optional_dream_career_2 || "One More Dream?"}
+                        </Text>
+                        <Feather name="chevron-down" size={16} color="#FF6B6B" />
+                      </TouchableOpacity>
+                    ) : (
+                      <View style={[styles.inputText, styles.nonEditableInput]}>
+                        <Text style={styles.detailValue}>{userData.optional_dream_career_2 || "Not set"}</Text>
+                      </View>
+                    )}
                   </View>
                 </View>
               </View>
             </View>
 
+            {/* Action Buttons */}
             <View style={styles.buttonContainer}>
               {isEditing ? (
                 <View style={styles.buttonRow}>
                   <TouchableOpacity
-                    style={[styles.button, { backgroundColor: "#33b445ff" }]}
+                    style={[styles.button, styles.saveButton]}
                     onPress={handleSaveProfile}
                     disabled={isSaving}
                   >
                     {isSaving ? (
                       <View style={styles.loadingContainer}>
-                        <ActivityIndicator
-                          size="small"
-                          color="#fff"
-                          style={styles.spinner}
-                        />
-                        <Text style={styles.buttonText}> Saving...</Text>
+                        <ActivityIndicator size="small" color="#fff" style={styles.spinner} />
+                        <Text style={styles.buttonText}> Saving... </Text>
                       </View>
                     ) : (
                       <Text style={styles.buttonText}>Save Changes</Text>
@@ -723,7 +607,7 @@ export default function Profile() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.button, { backgroundColor: "#ff4b4bff" }]}
+                    style={[styles.button, styles.cancelButton]}
                     onPress={handleEditToggle}
                   >
                     <Text style={styles.buttonText}>Cancel</Text>
@@ -733,14 +617,14 @@ export default function Profile() {
                 <>
                   <View style={styles.buttonRow}>
                     <TouchableOpacity
-                      style={[styles.button, { backgroundColor: "#33b445ff" }]}
+                      style={[styles.button, styles.careerButton]}
                       onPress={() => setIsSwitchCareerModalVisible(true)}
                     >
                       <Text style={styles.buttonText}>Switch Career</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      style={[styles.button, { backgroundColor: "#ff4b4bff" }]}
+                      style={[styles.button, styles.rewardsButton]}
                       onPress={() => router.push("/(tabs)/redeemRewards")}
                     >
                       <Text style={styles.buttonText}>Redeem Rewards</Text>
@@ -749,7 +633,7 @@ export default function Profile() {
 
                   <View style={styles.buttonRow}>
                     <TouchableOpacity
-                      style={[styles.button, { backgroundColor: "#1bc7c5ff" }]}
+                      style={[styles.button, styles.editButton]}
                       onPress={handleEditToggle}
                     >
                       <Text style={styles.buttonText}>Edit Profile</Text>
@@ -758,7 +642,7 @@ export default function Profile() {
                 </>
               )}
             </View>
-          </View>
+          </Animated.View>
         </ScrollView>
 
         {/* Dropdown Modals */}
@@ -819,9 +703,9 @@ export default function Profile() {
             <View style={styles.modalOverlay}>
               <TouchableWithoutFeedback>
                 <View style={styles.modalContent}>
-                  <Text style={styles.modalTitle}>Switch Career</Text>
+                  <Text style={styles.modalTitle}>Switch Your Career! 🚀</Text>
                   <Text style={styles.modalSubtitle}>
-                    Current career: {userData.default_dream_career}
+                    Current: {userData.default_dream_career}
                   </Text>
 
                   <View style={styles.careerOptions}>
@@ -830,19 +714,21 @@ export default function Profile() {
                         key={index}
                         style={[
                           styles.careerOption,
-                          selectedCareer === career &&
-                            styles.selectedCareerOption,
+                          selectedCareer === career && styles.selectedCareerOption,
                         ]}
                         onPress={() => setSelectedCareer(career)}
                       >
                         <Text style={styles.careerOptionText}>{career}</Text>
+                        {selectedCareer === career && (
+                          <Feather name="check" size={20} color="#4ECDC4" />
+                        )}
                       </TouchableOpacity>
                     ))}
                   </View>
 
                   {getAvailableCareers().length === 0 && (
                     <Text style={styles.noCareersText}>
-                      No other careers available to switch to.
+                      No other careers to switch to yet! Add more career dreams first! 🌈
                     </Text>
                   )}
 
@@ -861,26 +747,18 @@ export default function Profile() {
                       style={[
                         styles.modalButton,
                         styles.confirmButton,
-                        (!selectedCareer ||
-                          getAvailableCareers().length === 0) &&
-                          styles.disabledButton,
+                        (!selectedCareer || getAvailableCareers().length === 0) && styles.disabledButton,
                       ]}
                       onPress={handleSwitchCareer}
-                      disabled={
-                        !selectedCareer || getAvailableCareers().length === 0
-                      }
+                      disabled={!selectedCareer || getAvailableCareers().length === 0}
                     >
                       {isSwitching ? (
                         <View style={styles.loadingContainer}>
-                          <ActivityIndicator
-                            size="small"
-                            color="#fff"
-                            style={styles.spinner}
-                          />
+                          <ActivityIndicator size="small" color="#fff" style={styles.spinner} />
                           <Text style={styles.buttonText}> Switching...</Text>
                         </View>
                       ) : (
-                        <Text style={styles.buttonText}>Switch</Text>
+                        <Text style={styles.buttonText}>Let's Go!</Text>
                       )}
                     </TouchableOpacity>
                   </View>
@@ -908,121 +786,177 @@ const styles = StyleSheet.create({
     padding: 20,
     justifyContent: "center",
   },
-  backButton: {
-    width: 160,
-    left: 0,
-    display: "flex",
+  header: {
     flexDirection: "row",
-    backgroundColor: "#f66c46ff",
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 20,
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 20,
+  },
+  backButton: {
+    flexDirection: "row",
+    backgroundColor: "#FF6B6B",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 25,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 6,
   },
   backButtonText: {
     color: "#fff",
     fontSize: 14,
-    fontWeight: "600",
-    marginTop: 4,
-    marginLeft: 5,
+    fontWeight: "bold",
+    marginLeft: 8,
     fontFamily: "ComicRelief-Regular",
   },
-  mainContainer: {
-    width: "100%",
-    padding: 12,
-    borderRadius: 4,
-    backgroundColor: "#67b8faff",
+  profileCard: {
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    borderRadius: 30,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+    borderWidth: 3,
+    borderColor: "#FFD700",
   },
-  subContainer: {
-    backgroundColor: "#9cd2ffff",
-    padding: 16,
-    justifyContent: "center",
-    borderRadius: 14,
-    marginTop: 16,
+  avatarSection: {
+    alignItems: "center",
+    marginBottom: 20,
   },
-  columnsContainer: {
-    display: "flex",
-    flexDirection: "row",
-    gap: 14,
-    justifyContent: "center",
-  },
-  column: {
-    flex: 1,
-  },
-  logo: {
-    width: 80,
-    height: 80,
-    borderRadius: 50,
-    borderWidth: 2,
-    borderColor: "#fff",
+  avatar: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 4,
+    borderColor: "#4ECDC4",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   avatarLoadingText: {
-    marginTop: 5,
+    marginTop: 8,
     fontSize: 12,
-    color: "#fff",
+    color: "#666",
     fontFamily: "ComicRelief-Regular",
+  },
+  nameSection: {
+    alignItems: "center",
+    marginTop: 16,
   },
   userName: {
-    marginTop: 10,
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: "bold",
-    color: "#fff",
+    color: "#333",
     textAlign: "center",
     fontFamily: "ComicRelief-Regular",
+    textShadowColor: "rgba(0, 0, 0, 0.1)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   userNameInput: {
-    marginTop: 10,
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: "bold",
     textAlign: "center",
     fontFamily: "ComicRelief-Regular",
-    color: "#000",
+    color: "#333",
+    borderBottomWidth: 2,
+    borderBottomColor: "#4ECDC4",
   },
   username: {
-    marginTop: 4,
-    fontSize: 14,
-    color: "#fff",
+    fontSize: 16,
+    color: "#666",
     textAlign: "center",
     fontFamily: "ComicRelief-Regular",
+    marginTop: 4,
   },
   usernameInput: {
-    marginTop: 4,
-    fontSize: 14,
+    fontSize: 16,
     textAlign: "center",
     fontFamily: "ComicRelief-Regular",
-    color: "#000",
+    color: "#666",
+    borderBottomWidth: 2,
+    borderBottomColor: "#4ECDC4",
   },
-  inputField: {
-    display: "flex",
-    flexDirection: "column",
-    marginBottom: 8,
+  statsGrid: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    backgroundColor: "rgba(78, 205, 196, 0.1)",
+    padding: 14,
+    borderRadius: 20,
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: "#4ECDC4",
   },
-  input: {
-    marginTop: 12,
+  statItem: {
+    alignItems: "center",
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#FF6B6B",
+    fontFamily: "ComicRelief-Regular",
+  },
+  statLabel: {
+    fontSize: 12,
+    color: "#666",
+    fontFamily: "ComicRelief-Regular",
+    textAlign: "center",
+    marginTop: 4,
+  },
+  detailsSection: {
+    marginBottom: 10,
+  },
+  detailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  detailItem: {
+    flex: 1,
+    marginHorizontal: 4,
+  },
+  detailLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#333",
+    fontFamily: "ComicRelief-Regular",
+    marginBottom: 6,
+  },
+  detailValue: {
     fontSize: 14,
-    fontWeight: "500",
-    color: "#222222ff",
+    color: "#333",
     fontFamily: "ComicRelief-Regular",
   },
   inputText: {
     width: "100%",
-    marginTop: 6,
     backgroundColor: "#fff",
     borderColor: "#ddd",
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 10,
+    borderWidth: 2,
+    borderRadius: 15,
+    padding: 12,
     fontSize: 14,
     fontFamily: "ComicRelief-Regular",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   nonEditableInput: {
-    backgroundColor: "#f5f5f5",
-    color: "#363636ff",
+    backgroundColor: "#F8F9FA",
+    borderColor: "#E9ECEF",
   },
   editableInput: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#FFFFFF",
     color: "#000000",
-    borderColor: "#56bbf1",
+    borderColor: "#4ECDC4",
     borderWidth: 2,
   },
   dropdownButton: {
@@ -1031,49 +965,57 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   buttonContainer: {
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    marginTop: 20,
+    marginTop: 24,
   },
   buttonRow: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 20,
+    gap: 16,
+    marginBottom: 12,
   },
   button: {
-    backgroundColor: "#56bbf1",
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-    borderRadius: 20,
-    marginTop: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 25,
     alignItems: "center",
     flex: 1,
-    minWidth: 160,
+    minWidth: 140,
     maxWidth: 160,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 6,
+  },
+  saveButton: {
+    backgroundColor: "#4ECDC4",
+  },
+  cancelButton: {
+    backgroundColor: "#FF6B6B",
+  },
+  careerButton: {
+    backgroundColor: "#FF9E7D",
+  },
+  rewardsButton: {
+    backgroundColor: "#FFD93D",
+  },
+  editButton: {
+    backgroundColor: "#6C5CE7",
   },
   buttonText: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "bold",
     color: "#fff",
     textAlign: "center",
     fontFamily: "ComicRelief-Regular",
-    lineHeight: 16,
   },
   loadingText: {
     color: "#fff",
     fontSize: 18,
-    fontWeight: 500,
+    fontWeight: "bold",
     textAlign: "center",
     fontFamily: "ComicRelief-Regular",
+    marginTop: 16,
   },
   errorText: {
     color: "#fff",
@@ -1083,42 +1025,47 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   retryButton: {
-    backgroundColor: "#f66c46ff",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 20,
+    backgroundColor: "#FF6B6B",
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 25,
     alignSelf: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 6,
   },
   retryButtonText: {
     color: "#fff",
     fontSize: 14,
+    fontWeight: "bold",
     fontFamily: "ComicRelief-Regular",
   },
   // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
   },
   modalContent: {
     backgroundColor: "white",
-    borderRadius: 20,
+    borderRadius: 30,
     padding: 24,
     width: "100%",
     maxWidth: 400,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+    borderWidth: 4,
+    borderColor: "#FFD700",
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: "bold",
     textAlign: "center",
     marginBottom: 8,
@@ -1126,40 +1073,44 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   modalSubtitle: {
-    fontSize: 14,
+    fontSize: 16,
     textAlign: "center",
-    marginBottom: 20,
+    marginBottom: 24,
     fontFamily: "ComicRelief-Regular",
     color: "#666",
   },
   careerOptions: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   careerOption: {
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#F8F9FA",
     padding: 16,
-    borderRadius: 12,
-    marginBottom: 10,
+    borderRadius: 15,
+    marginBottom: 12,
     borderWidth: 2,
     borderColor: "transparent",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   selectedCareerOption: {
-    borderColor: "#33b445ff",
-    backgroundColor: "#e8f5e8",
+    borderColor: "#4ECDC4",
+    backgroundColor: "#E8F5E8",
   },
   careerOptionText: {
     fontSize: 16,
-    textAlign: "center",
     fontFamily: "ComicRelief-Regular",
     color: "#333",
+    flex: 1,
   },
   noCareersText: {
     textAlign: "center",
     fontSize: 14,
     color: "#666",
     fontFamily: "ComicRelief-Regular",
-    marginBottom: 20,
+    marginBottom: 24,
     fontStyle: "italic",
+    lineHeight: 20,
   },
   modalButtons: {
     flexDirection: "row",
@@ -1168,41 +1119,61 @@ const styles = StyleSheet.create({
   },
   modalButton: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 20,
+    paddingVertical: 14,
+    borderRadius: 25,
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 6,
   },
   cancelButton: {
-    backgroundColor: "#ff4b4bff",
+    backgroundColor: "#FF6B6B",
   },
   confirmButton: {
-    backgroundColor: "#33b445ff",
+    backgroundColor: "#4ECDC4",
   },
   disabledButton: {
-    backgroundColor: "#cccccc",
+    backgroundColor: "#CCCCCC",
   },
   modalButtonText: {
     color: "white",
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "bold",
     fontFamily: "ComicRelief-Regular",
   },
   // Dropdown Styles
   dropdownList: {
     backgroundColor: "white",
-    borderRadius: 10,
-    padding: 10,
-    maxHeight: 300,
-    width: 250,
+    borderRadius: 20,
+    padding: 16,
+    maxHeight: 400,
+    width: 300,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+    borderWidth: 3,
+    borderColor: "#FFD700",
+  },
+  dropdownTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 16,
+    fontFamily: "ComicRelief-Regular",
+    color: "#333",
   },
   dropdownItem: {
-    padding: 15,
+    padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
   },
   dropdownItemText: {
     fontSize: 16,
-    color: "#F25F3B",
+    color: "#FF6B6B",
     fontFamily: "ComicRelief-Regular",
   },
   loadingContainer: {

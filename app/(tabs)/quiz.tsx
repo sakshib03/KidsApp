@@ -283,7 +283,6 @@ export default function Quiz() {
                     )}
                   </View>
 
-                  {/* Next Question Button - Only show after answer submission */}
                   {showResult && (
                     <TouchableOpacity
                       style={[

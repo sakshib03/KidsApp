@@ -203,7 +203,7 @@ export default function Dashboard() {
 
     const flaggedMessages = childrenData[selectedChild].flagged_messages;
 
-    if (!flaggedMessages || flaggedMessages.length === 0) return "No flagged messages! Great job! 🎉";
+    if (!flaggedMessages || flaggedMessages.length === 0) return "No flagged messages! Great job!";
 
     let flaggedWords = "";
 
@@ -377,9 +377,6 @@ export default function Dashboard() {
                                 color="#56BBF1" 
                               />
                               <Text style={styles.dateHeaderText}>{formattedDate}</Text>
-                              <Text style={styles.messageCount}>
-                                ({messages.length} messages)
-                              </Text>
                             </View>
                           </TouchableOpacity>
                           
