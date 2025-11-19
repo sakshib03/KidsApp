@@ -11,9 +11,18 @@ import {
   Alert,
   Animated,
   Easing,
+  Modal,
+  FlatList,
+  TouchableWithoutFeedback,
+  ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
-import { Feather, FontAwesome5, MaterialIcons } from "@expo/vector-icons";
+import {
+  Feather,
+  FontAwesome5,
+  MaterialIcons,
+  Ionicons,
+} from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE } from "./config";
 
@@ -25,6 +34,48 @@ export default function Dashboard() {
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(50));
   const [expandedDates, setExpandedDates] = useState(new Set());
+  const [blockedStatus, setBlockedStatus] = useState({});
+
+  // Credit History States
+  const [isCreditHistoryModalVisible, setIsCreditHistoryModalVisible] =
+    useState(false);
+  const [creditHistory, setCreditHistory] = useState([]);
+  const [creditHistoryLoading, setCreditHistoryLoading] = useState(false);
+
+  const [selectedDate, setSelectedDate] = useState("");
+  const [filteredCreditHistory, setFilteredCreditHistory] = useState([]);
+
+  useEffect(() => {
+    const loadBlockedStatus = async () => {
+      try {
+        const savedStatus = await AsyncStorage.getItem("blockedStatus");
+        if (savedStatus) {
+          setBlockedStatus(JSON.parse(savedStatus));
+        }
+      } catch (error) {
+        console.error("Error loading blocked status:", error);
+      }
+    };
+
+    loadBlockedStatus();
+  }, []);
+
+  useEffect(() => {
+    const saveBlockedStatus = async () => {
+      try {
+        await AsyncStorage.setItem(
+          "blockedStatus",
+          JSON.stringify(blockedStatus)
+        );
+      } catch (error) {
+        console.error("Error saving blocked status:", error);
+      }
+    };
+
+    if (Object.keys(blockedStatus).length > 0) {
+      saveBlockedStatus();
+    }
+  }, [blockedStatus]);
 
   useEffect(() => {
     fetchParentDashboard();
@@ -75,6 +126,16 @@ export default function Dashboard() {
       setParentData(data.parent);
       setChildrenData(data.children);
 
+      setBlockedStatus(prev=>{
+        const newStatus={...prev};
+        data.children.forEach(child => {
+        if (newStatus[child.profile.id] === undefined) {
+          newStatus[child.profile.id] = false; // Default to unblocked
+        }
+      });
+      return newStatus;
+    });
+
       await AsyncStorage.setItem("parentData", JSON.stringify(data.parent));
       await AsyncStorage.setItem("childrenData", JSON.stringify(data.children));
       await AsyncStorage.setItem(
@@ -86,6 +147,129 @@ export default function Dashboard() {
       Alert.alert("Error", "Failed to load dashboard data");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDateFilter = () => {
+    if (!selectedDate) {
+      setFilteredCreditHistory(creditHistory);
+      return;
+    }
+    const filtered = creditHistory.filter((item) => {
+      const itemDate = new Date(item.timestamp).toISOString().split("T")[0];
+      return itemDate === selectedDate;
+    });
+    setFilteredCreditHistory(filtered);
+  };
+
+  const handleClearFilter = () => {
+    setSelectedDate("");
+    setFilteredCreditHistory(creditHistory);
+  };
+
+  useEffect(() => {
+    setFilteredCreditHistory(creditHistory);
+  }, [creditHistory]);
+
+  // Fetch Credit History Function
+  const fetchCreditHistory = async () => {
+    try {
+      setCreditHistoryLoading(true);
+      setSelectedDate("");
+
+      const parentId = await AsyncStorage.getItem("parentId");
+      const accessToken = await AsyncStorage.getItem("accessToken");
+      const currentChildId = childrenData[selectedChild]?.profile?.id;
+
+      if (!parentId || !accessToken || !currentChildId) {
+        Alert.alert(
+          "Oops!",
+          "Missing required information to fetch credit history."
+        );
+        return;
+      }
+
+      const response = await fetch(
+        `${API_BASE}/credit-history/${parentId}/${currentChildId}`,
+        {
+          method: "GET",
+          headers: {
+            accept: "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setCreditHistory(data.credit_history || []);
+      setFilteredCreditHistory(data.credit_history || []);
+      setIsCreditHistoryModalVisible(true);
+    } catch (error) {
+      console.error("Error fetching credit history:", error);
+      Alert.alert("Oops!", "Couldn't load credit history");
+    } finally {
+      setCreditHistoryLoading(false);
+    }
+  };
+
+  const isChildBlocked = () => {
+    const currentChildId = childrenData[selectedChild]?.profile?.id;
+    return blockedStatus[currentChildId] === true;
+  };
+
+  const handleBlockChild = async () => {
+    try {
+      const parentId = await AsyncStorage.getItem("parentId");
+      const accessToken = await AsyncStorage.getItem("accessToken");
+      const currentChildId = childrenData[selectedChild]?.profile?.id;
+
+      if (!parentId || !accessToken || !currentChildId) {
+        Alert.alert("Error", "Missing required data to block child");
+        return;
+      }
+
+      const response = await fetch(`${API_BASE}/block-child`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          parent_id: parseInt(parentId),
+          child_id: currentChildId,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.status === 200 || response.status === 409) {
+        if (response.status === 200) {
+          Alert.alert("Success", "Child has been blocked successfully!");
+        } else {
+          Alert.alert("Info", result.detail || "Child is already blocked");
+        }
+        console.log("Child blocked successfully");
+
+        setBlockedStatus((prev) => ({
+          ...prev,
+          [currentChildId]: true,
+        }));
+      } else {
+        throw new Error(
+          result.detail || result.message || "Failed to block child"
+        );
+      }
+    } catch (error) {
+      console.error("Error in block child:", error);
+      Alert.alert(
+        "Error",
+        error.message || "Failed to block child. Please try again."
+      );
     }
   };
 
@@ -113,21 +297,31 @@ export default function Dashboard() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
       const result = await response.json();
 
-      if (result.message === "Child unblocked successfully") {
-        Alert.alert("Success", "Child has been unblocked successfully!");
-        fetchParentDashboard();
+      if (response.status === 200 || response.status === 409) {
+        if (response.status === 200) {
+          Alert.alert("Success", "Child has been unblocked successfully!");
+        } else {
+          Alert.alert("Info", result.detail || "Child is already unblocked");
+        }
+        console.log("Child unblocked successfully");
+
+        setBlockedStatus((prev) => ({
+          ...prev,
+          [currentChildId]: false,
+        }));
       } else {
-        Alert.alert("Error", result.message || "Failed to unblock child");
+        throw new Error(
+          result.detail || result.message || "Failed to unblock child"
+        );
       }
     } catch (error) {
       console.error("Error unblocking child:", error);
-      Alert.alert("Error", "Failed to unblock child. Please try again.");
+      Alert.alert(
+        "Error",
+        error.message || "Failed to unblock child. Please try again."
+      );
     }
   };
 
@@ -143,7 +337,7 @@ export default function Dashboard() {
         "parentData",
         "childrenData",
       ]);
-      router.replace("/(tabs)/login");
+      router.replace("/(tabs)/auth/login");
     } catch (error) {
       console.error("Error during logout:", error);
     }
@@ -166,13 +360,19 @@ export default function Dashboard() {
     } else if (date.toDateString() === yesterday.toDateString()) {
       return "Yesterday";
     } else {
-      return date.toLocaleDateString('en-US', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+      return date.toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       });
     }
+  };
+
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return "";
+    const date = new Date(timestamp);
+    return date.toLocaleString();
   };
 
   const toggleDateExpansion = (date) => {
@@ -189,12 +389,16 @@ export default function Dashboard() {
     if (!childrenData[selectedChild]?.chat_history) return [];
 
     const chatHistory = childrenData[selectedChild].chat_history;
-    const dates = Object.keys(chatHistory).sort((a, b) => new Date(b) - new Date(a));
-    
-    return dates.map(date => ({
+    const dates = Object.keys(chatHistory).sort(
+      (a, b) => new Date(b) - new Date(a)
+    );
+
+    return dates.map((date) => ({
       date,
       formattedDate: formatDateHeader(date),
-      messages: chatHistory[date].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+      messages: chatHistory[date].sort(
+        (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+      ),
     }));
   };
 
@@ -203,16 +407,54 @@ export default function Dashboard() {
 
     const flaggedMessages = childrenData[selectedChild].flagged_messages;
 
-    if (!flaggedMessages || flaggedMessages.length === 0) return "No flagged messages! Great job!";
+    if (!flaggedMessages || flaggedMessages.length === 0)
+      return "No flagged messages! Great job!";
 
     let flaggedWords = "";
 
     flaggedMessages.forEach((msg) => {
-      flaggedWords += `[${new Date(msg.timestamp).toLocaleString()}]\n${msg.message}\n\n`;
+      flaggedWords += `[${new Date(msg.timestamp).toLocaleString()}]\n${
+        msg.message
+      }\n\n`;
     });
 
     return flaggedWords;
   };
+
+  // Credit History Item Component
+  const CreditHistoryItem = ({ item, index }) => (
+    <View
+      style={[
+        styles.creditHistoryItem,
+        index % 2 === 0
+          ? styles.creditHistoryItemEven
+          : styles.creditHistoryItemOdd,
+      ]}
+    >
+      <View style={styles.creditHistoryLeft}>
+        <Text style={styles.creditActivity}>
+          {item.activity.charAt(0).toUpperCase() + item.activity.slice(1)}
+        </Text>
+        <Text style={styles.creditTimestamp}>
+          {formatTimestamp(item.timestamp)}
+        </Text>
+      </View>
+      <View style={styles.creditHistoryRight}>
+        {item.credits_earned > 0 && (
+          <View style={{ flexDirection: "row" }}>
+            <Text style={styles.creditEarned}>+{item.credits_earned}</Text>
+            <MaterialIcons name="monetization-on" size={24} color="gold" />
+          </View>
+        )}
+        {item.credits_lost > 0 && (
+          <View style={{ flexDirection: "row" }}>
+            <Text style={styles.creditLost}>-{item.credits_lost}</Text>
+            <MaterialIcons name="monetization-on" size={24} color="gold" />
+          </View>
+        )}
+      </View>
+    </View>
+  );
 
   if (loading) {
     return (
@@ -240,13 +482,13 @@ export default function Dashboard() {
       style={styles.background}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <Animated.View 
+        <Animated.View
           style={[
             styles.container,
             {
               opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }]
-            }
+              transform: [{ translateY: slideAnim }],
+            },
           ]}
         >
           {/* Header */}
@@ -255,6 +497,32 @@ export default function Dashboard() {
               <Feather name="log-out" size={20} color={"#fff"} />
               <Text style={styles.backButtonText}>Logout</Text>
             </TouchableOpacity>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <View style={styles.creditHistoryIcon}>
+                <View style={styles.statIcon}>
+                  <MaterialIcons
+                    name="monetization-on"
+                    size={24}
+                    color="gold"
+                  />
+                </View>
+                <Text style={styles.statValue}>
+                  {credits.total?.toString() || "0"}
+                </Text>
+                {/* <Text style={styles.creditHistoryText}>Score</Text> */}
+              </View>
+              <View>
+                <TouchableOpacity
+                  style={styles.creditHistoryIcon}
+                  onPress={fetchCreditHistory}
+                >
+                  <Ionicons name="card-outline" size={28} color="gold" />
+                  <Text style={[styles.creditHistoryText, { marginLeft: 4 }]}>
+                    Credits
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
 
           {/* Child Selection */}
@@ -271,15 +539,16 @@ export default function Dashboard() {
                     ]}
                     onPress={() => setSelectedChild(index)}
                   >
-                    <MaterialIcons 
-                      name="child-care" 
-                      size={16} 
-                      color={selectedChild === index ? "#FF6B8B" : "#56BBF1"} 
+                    <MaterialIcons
+                      name="child-care"
+                      size={16}
+                      color={selectedChild === index ? "#FF6B8B" : "#56BBF1"}
                     />
                     <Text
                       style={[
                         styles.childOptionText,
-                        selectedChild === index && styles.childOptionTextSelected,
+                        selectedChild === index &&
+                          styles.childOptionTextSelected,
                       ]}
                     >
                       {child.profile.fullname}
@@ -299,7 +568,14 @@ export default function Dashboard() {
                   source={require("@/assets/images/user.jpg")}
                   style={styles.avatar}
                 />
-                <View style={styles.onlineIndicator} />
+                <View
+                  style={[
+                    styles.onlineIndicator,
+                    isChildBlocked()
+                      ? styles.blockedIndicator
+                      : styles.activeIndicator,
+                  ]}
+                />
               </View>
               <View style={styles.profileInfo}>
                 <Text style={styles.childName}>
@@ -307,14 +583,15 @@ export default function Dashboard() {
                 </Text>
                 <View style={styles.lastLogin}>
                   <Text style={styles.lastLoginText}>
-                    Last login: {formatDate(currentChild?.profile?.last_login)}
+                    Status: {isChildBlocked() ? "Blocked" : "Active"} • Last
+                    login: {formatDate(currentChild?.profile?.last_login)}
                   </Text>
                 </View>
               </View>
             </View>
 
             {/* Stats Grid */}
-            <View style={styles.statsGrid}>
+            {/* <View style={styles.statsGrid}>
               <View style={styles.statCard}>
                 <View style={[styles.statIcon, { backgroundColor: '#FFD166' }]}>
                   <FontAwesome5 name="star" size={16} color="#fff" />
@@ -332,7 +609,7 @@ export default function Dashboard() {
                 </Text>
                 <Text style={styles.statLabel}>Dream Career</Text>
               </View>
-            </View>
+            </View> */}
 
             {/* Info Sections */}
             <View style={styles.infoSections}>
@@ -344,9 +621,7 @@ export default function Dashboard() {
                 </View>
                 <View style={styles.infoContent}>
                   <ScrollView style={styles.flaggedScroll} nestedScrollEnabled>
-                    <Text style={styles.infoText}>
-                      {getFlaggedWords()}
-                    </Text>
+                    <Text style={styles.infoText}>{getFlaggedWords()}</Text>
                   </ScrollView>
                 </View>
               </View>
@@ -364,46 +639,60 @@ export default function Dashboard() {
                         No chat history yet. Start chatting!
                       </Text>
                     ) : (
-                      chatHistoryByDate.map(({ date, formattedDate, messages }) => (
-                        <View key={date} style={styles.dateSection}>
-                          <TouchableOpacity 
-                            style={styles.dateHeader}
-                            onPress={() => toggleDateExpansion(date)}
-                          >
-                            <View style={styles.dateHeaderLeft}>
-                              <Feather 
-                                name={expandedDates.has(date) ? "chevron-down" : "chevron-right"} 
-                                size={16} 
-                                color="#56BBF1" 
-                              />
-                              <Text style={styles.dateHeaderText}>{formattedDate}</Text>
-                            </View>
-                          </TouchableOpacity>
-                          
-                          {expandedDates.has(date) && (
-                            <View style={styles.messagesContainer}>
-                              {messages.map((chat, index) => (
-                                <View key={index} style={styles.chatItem}>
-                                  <View style={styles.messageRow}>
-                                    <Text style={styles.userLabel}>You:</Text>
-                                    <Text style={styles.messageText}>{chat.message}</Text>
+                      chatHistoryByDate.map(
+                        ({ date, formattedDate, messages }) => (
+                          <View key={date} style={styles.dateSection}>
+                            <TouchableOpacity
+                              style={styles.dateHeader}
+                              onPress={() => toggleDateExpansion(date)}
+                            >
+                              <View style={styles.dateHeaderLeft}>
+                                <Feather
+                                  name={
+                                    expandedDates.has(date)
+                                      ? "chevron-down"
+                                      : "chevron-right"
+                                  }
+                                  size={16}
+                                  color="#56BBF1"
+                                />
+                                <Text style={styles.dateHeaderText}>
+                                  {formattedDate}
+                                </Text>
+                              </View>
+                            </TouchableOpacity>
+
+                            {expandedDates.has(date) && (
+                              <View style={styles.messagesContainer}>
+                                {messages.map((chat, index) => (
+                                  <View key={index} style={styles.chatItem}>
+                                    <View style={styles.messageRow}>
+                                      <Text style={styles.userLabel}>You:</Text>
+                                      <Text style={styles.messageText}>
+                                        {chat.message}
+                                      </Text>
+                                    </View>
+                                    <View style={styles.messageRow}>
+                                      <Text style={styles.botLabel}>AI:</Text>
+                                      <Text style={styles.messageText}>
+                                        {chat.response}
+                                      </Text>
+                                    </View>
+                                    <Text style={styles.timestamp}>
+                                      {new Date(
+                                        chat.timestamp
+                                      ).toLocaleTimeString([], {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })}
+                                    </Text>
                                   </View>
-                                  <View style={styles.messageRow}>
-                                    <Text style={styles.botLabel}>AI:</Text>
-                                    <Text style={styles.messageText}>{chat.response}</Text>
-                                  </View>
-                                  <Text style={styles.timestamp}>
-                                    {new Date(chat.timestamp).toLocaleTimeString([], { 
-                                      hour: '2-digit', 
-                                      minute: '2-digit' 
-                                    })}
-                                  </Text>
-                                </View>
-                              ))}
-                            </View>
-                          )}
-                        </View>
-                      ))
+                                ))}
+                              </View>
+                            )}
+                          </View>
+                        )
+                      )
                     )}
                   </ScrollView>
                 </View>
@@ -419,16 +708,28 @@ export default function Dashboard() {
                 onPress={() => router.push("/(tabs)/changePassword")}
               >
                 <MaterialIcons name="lock" size={20} color="#fff" />
-                <Text style={styles.actionButtonText}>Change Child Password</Text>
+                <Text style={styles.actionButtonText}>
+                  Change Child Password
+                </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.actionButton, styles.successButton]}
-                onPress={handleUnblockChild}
-              >
-                <MaterialIcons name="lock-open" size={20} color="#fff" />
-                <Text style={styles.actionButtonText}>Unblock Child</Text>
-              </TouchableOpacity>
+              {isChildBlocked() ? (
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.successButton]}
+                  onPress={handleUnblockChild}
+                >
+                  <MaterialIcons name="lock-open" size={20} color="#fff" />
+                  <Text style={styles.actionButtonText}>Unblock Child</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.warningButton]}
+                  onPress={handleBlockChild}
+                >
+                  <MaterialIcons name="block" size={20} color="#fff" />
+                  <Text style={styles.actionButtonText}>Block Child</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             <View style={styles.buttonRow}>
@@ -437,12 +738,106 @@ export default function Dashboard() {
                 onPress={() => router.push("/(tabs)/changeParentPass")}
               >
                 <Feather name="shield" size={20} color="#fff" />
-                <Text style={styles.actionButtonText}>Change Parent Password</Text>
+                <Text style={styles.actionButtonText}>
+                  Change Parent Password
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
         </Animated.View>
       </ScrollView>
+
+      {/* Credit History Modal */}
+      <Modal
+        visible={isCreditHistoryModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsCreditHistoryModalVisible(false)}
+      >
+        <TouchableWithoutFeedback
+          onPress={() => setIsCreditHistoryModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={[styles.modalContent, styles.creditHistoryModal]}>
+                <Text style={styles.modalTitle}>Credit History</Text>
+                <Text style={styles.modalSubtitle}>
+                  Track your child's coins journey! ✨
+                </Text>
+
+                {/* Date Filter Section - ADD THIS */}
+                <View style={styles.filterContainer}>
+                  <Text style={styles.filterLabel}>Filter by Date:</Text>
+                  <View style={styles.dateInputContainer}>
+                    <input
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      style={styles.dateInput}
+                      max={new Date().toISOString().split("T")[0]}
+                    />
+                  </View>
+                  <View style={styles.filterButtons}>
+                    <TouchableOpacity
+                      style={[styles.filterButton, styles.applyButton]}
+                      onPress={handleDateFilter}
+                    >
+                      <Text style={styles.filterButtonText}>Apply Filter</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.filterButton, styles.clearButton]}
+                      onPress={handleClearFilter}
+                    >
+                      <Text style={styles.filterButtonText}>Show All</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {creditHistoryLoading ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator
+                      size="large"
+                      color="#56BBF1"
+                      style={styles.spinner}
+                    />
+                    <Text style={styles.loadingText}>
+                      Loading credit history...
+                    </Text>
+                  </View>
+                ) : filteredCreditHistory.length > 0 ? (
+                  <View style={styles.creditHistoryList}>
+                    <FlatList
+                      data={filteredCreditHistory}
+                      keyExtractor={(item) => item.id.toString()}
+                      renderItem={CreditHistoryItem}
+                      showsVerticalScrollIndicator={false}
+                      style={styles.creditHistoryFlatList}
+                    />
+                  </View>
+                ) : (
+                  <View style={styles.noCreditHistory}>
+                    <Text style={styles.noCreditHistoryText}>
+                      {selectedDate
+                        ? "No credit history found for the selected date! 📅"
+                        : "No credit history yet! \nYour child hasn't earned any coins yet. \nEncourage them to start chatting and playing! 🌟"}
+                    </Text>
+                  </View>
+                )}
+
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.confirmButton]}
+                    onPress={() => setIsCreditHistoryModalVisible(false)}
+                  >
+                    <Text style={styles.modalButtonText}>Close</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </ImageBackground>
   );
 }
@@ -500,6 +895,25 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginLeft: 6,
     fontFamily: "ComicRelief-Regular",
+  },
+  creditHistoryIcon: {
+    alignItems: "center",
+    flexDirection: "row",
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  creditHistoryText: {
+    color: "#fabf36ff",
+    fontSize: 12,
+    fontFamily: "ComicRelief-Bold",
+    marginTop: 2,
   },
   childSelector: {
     marginBottom: 20,
@@ -617,12 +1031,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 8,
   },
   statValue: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
+    color: "#f4bb35ff",
     fontFamily: "ComicRelief-Bold",
     textAlign: "center",
   },
@@ -699,7 +1112,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 14,
+    padding: 8,
     backgroundColor: "#f8f9fa",
     borderBottomWidth: 1,
     borderBottomColor: "#e9ecef",
@@ -727,11 +1140,9 @@ const styles = StyleSheet.create({
   },
   chatItem: {
     backgroundColor: "#f8f9fa",
-    padding: 12,
+    padding: 6,
     borderRadius: 8,
     marginBottom: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: "#56bbf1",
   },
   messageRow: {
     flexDirection: "row",
@@ -779,8 +1190,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 16,
-    paddingHorizontal: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
     borderRadius: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -802,6 +1213,234 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
     marginLeft: 8,
+    fontFamily: "ComicRelief-Bold",
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: "white",
+    borderRadius: 24,
+    padding: 24,
+    width: "100%",
+    maxWidth: 400,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+    borderWidth: 4,
+    borderColor: "#FFD700",
+  },
+  creditHistoryModal: {
+    maxHeight: "80%",
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 8,
+    fontFamily: "ComicRelief-Bold",
+    color: "#FF6B8B",
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    textAlign: "center",
+    marginBottom: 20,
+    fontFamily: "ComicRelief-Regular",
+    color: "#666",
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 16,
+  },
+  modalButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 6,
+  },
+  confirmButton: {
+    backgroundColor: "#56BBF1",
+  },
+  modalButtonText: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "bold",
+    fontFamily: "ComicRelief-Bold",
+  },
+  // Credit History specific styles
+  creditHistoryList: {
+    maxHeight: 300,
+    marginBottom: 16,
+  },
+  creditHistoryFlatList: {
+    flexGrow: 0,
+  },
+  creditHistoryItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  creditHistoryItemEven: {
+    backgroundColor: "#F8F9FA",
+  },
+  creditHistoryItemOdd: {
+    backgroundColor: "#FFFFFF",
+  },
+  creditHistoryLeft: {
+    flex: 1,
+  },
+  creditHistoryRight: {
+    alignItems: "flex-end",
+  },
+  creditActivity: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+    fontFamily: "ComicRelief-Bold",
+    marginBottom: 4,
+  },
+  creditTimestamp: {
+    fontSize: 12,
+    color: "#666",
+    fontFamily: "ComicRelief-Regular",
+  },
+  creditEarned: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#4CD964",
+    fontFamily: "ComicRelief-Bold",
+  },
+  creditLost: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#FF6B8B",
+    fontFamily: "ComicRelief-Bold",
+  },
+  noCreditHistory: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 40,
+  },
+  noCreditHistoryText: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    fontFamily: "ComicRelief-Regular",
+    lineHeight: 24,
+  },
+  // Add these to your existing styles
+  filterContainer: {
+    padding: 2,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#e9ecef",
+    paddingHorizontal: 10,
+  },
+  filterLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8,
+    color: "#333",
+    fontFamily: "ComicRelief-Bold",
+    marginLeft: 6,
+  },
+  dateInputContainer: {
+    marginBottom: 15,
+  },
+  dateInput: {
+    width: "90%",
+    padding: 12,
+    borderWidth: 2,
+    borderTopColor: "#e0e0e0",
+    borderLeftColor: "#e0e0e0",
+    borderColor: "#e0e0e0",
+    borderRadius: 12,
+    fontSize: 14,
+    fontFamily: "ComicRelief-Regular",
+    backgroundColor: "#fff",
+    outline: "none",
+  },
+  filterButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  filterButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  applyButton: {
+    backgroundColor: "#56BBF1",
+  },
+  clearButton: {
+    backgroundColor: "#6c757d",
+  },
+  filterButtonText: {
+    color: "white",
+    fontWeight: "600",
+    fontSize: 14,
+    fontFamily: "ComicRelief-Bold",
+  },
+  resultsCount: {
+    fontSize: 14,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 10,
+    fontFamily: "ComicRelief-Regular",
+    fontStyle: "italic",
+  },
+  warningButton: {
+    backgroundColor: "#FF9500",
+  },
+  blockedIndicator: {
+    backgroundColor: "#FF3B30",
+  },
+  activeIndicator: {
+    backgroundColor: "#4CD964",
+  },
+  nameContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+  },
+  blockedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FF3B30",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  blockedText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "bold",
+    marginLeft: 4,
     fontFamily: "ComicRelief-Bold",
   },
 });

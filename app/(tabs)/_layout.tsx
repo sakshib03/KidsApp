@@ -9,7 +9,7 @@ export default function TabLayout() {
         name="index"
         options={{title: 'Home'}}
       />
-      <Stack.Screen
+      {/* <Stack.Screen
         name="login"
         options={{title: 'Login'}}
       />
@@ -69,6 +69,38 @@ export default function TabLayout() {
       name="verifyForgotPassword"
       options={{title:'VerifyForgotPassword'}}
       />
+      <Stack.Screen
+      name="landingPage"
+      options={{title:'LandingPage'}}
+      />
+      <Stack.Screen
+      name="welcomePage"
+      options={{title:'WelcomePage'}}
+      />
+      <Stack.Screen
+      name="fruitGame"
+      options={{title:'FruitGame'}}
+      />
+      <Stack.Screen
+      name="gamesDashboard"
+      options={{title:'GamesDashboard'}}
+      />
+      <Stack.Screen
+      name="progress"
+      options={{title:'Progress'}}
+      />
+      <Stack.Screen
+      name="levelComplete"
+      options={{title:'LevelComplete'}}
+      />
+      <Stack.Screen
+      name="settings"
+      options={{title:'Settings'}}
+      />
+      <Stack.Screen
+      name="selectLevel"
+      options={{title:'SelectLevel'}}
+      /> */}
     </Stack>
   );
 }

@@ -564,7 +564,7 @@ export default function ChatBot() {
         "userData",
         "parentData",
       ]);
-      router.replace("/(tabs)/login");
+      router.replace("/(tabs)/auth/login");
     } catch (error) {
       console.error("Error during logout:", error);
     }
@@ -833,14 +833,20 @@ export default function ChatBot() {
                     }}
                   >
                     <TouchableOpacity
-                      style={[styles.quickActionButton,{backgroundColor:"#c53737ff"}]}
+                      style={[
+                        styles.quickActionButton,
+                        { backgroundColor: "#c53737ff" },
+                      ]}
                       onPress={() => router.push("/(tabs)/quiz")}
                     >
                       <Text style={styles.quickActionText}>Go to Quiz</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      style={[styles.quickActionButton,{backgroundColor:"#37c537ff"}]}
+                      style={[
+                        styles.quickActionButton,
+                        { backgroundColor: "#37c537ff" },
+                      ]}
                       onPress={() => router.push("/(tabs)/story")}
                     >
                       <Text style={styles.quickActionText}>
@@ -857,7 +863,10 @@ export default function ChatBot() {
                     }}
                   >
                     <TouchableOpacity
-                     style={[styles.quickActionButton,{backgroundColor:"#4cabe6ff"}]}
+                      style={[
+                        styles.quickActionButton,
+                        { backgroundColor: "#4cabe6ff" },
+                      ]}
                       onPress={() => router.push("/(tabs)/question")}
                     >
                       <Text style={styles.quickActionText}>
@@ -865,7 +874,17 @@ export default function ChatBot() {
                       </Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={[styles.quickActionButton,{backgroundColor:"#ded755ff"}]}>
+                    <TouchableOpacity
+                      style={[
+                        styles.quickActionButton,
+                        { backgroundColor: "#ded755ff" },
+                      ]}
+                      onPress={() =>
+                        router.push(
+                          "/(tabs)/components/games/gamesDashboard"
+                        )
+                      }
+                    >
                       <Text style={styles.quickActionText}>Games</Text>
                     </TouchableOpacity>
                   </View>
@@ -878,7 +897,10 @@ export default function ChatBot() {
                     }}
                   >
                     <TouchableOpacity
-                      style={[styles.quickActionButton,{backgroundColor:"#db58afff"}]}
+                      style={[
+                        styles.quickActionButton,
+                        { backgroundColor: "#db58afff" },
+                      ]}
                       onPress={() => router.push("/(tabs)/joke")}
                     >
                       <Text style={styles.quickActionText}>
@@ -1186,7 +1208,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 60,
     bottom: 0,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#ffffffff",
     zIndex: 9999,
     justifyContent: "flex-start",
     elevation: 10,

@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     left: 0,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#35e54fff",
+    backgroundColor: "#51bdf8ff",
     paddingVertical: 8,
     paddingHorizontal: 15,
     borderRadius: 20,
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: "bold",
     marginTop: 60,
-    color: "#2ff04cff",
+    color: "#51bdf8ff",
     textAlign: "center",
     textShadowColor: "rgba(0,0,0,0.1)",
     textShadowOffset: { width: 1, height: 1 },
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
     fontFamily: "ComicRelief-Regular",
   },
   disabledButton: {
-    // Styles for disabled state
+  
   },
   disabledText: {
     color: "#ccc",

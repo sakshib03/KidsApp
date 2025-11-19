@@ -18,7 +18,7 @@ import {
   Animated,
 } from "react-native";
 import { router } from "expo-router";
-import { Feather } from "@expo/vector-icons";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE } from "./config";
 
@@ -30,28 +30,56 @@ export default function Profile() {
   const [childId, setChildId] = useState(null);
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [avatarLoading, setAvatarLoading] = useState(true);
-  const [isSwitchCareerModalVisible, setIsSwitchCareerModalVisible] = useState(false);
+  const [isSwitchCareerModalVisible, setIsSwitchCareerModalVisible] =
+    useState(false);
   const [selectedCareer, setSelectedCareer] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
+
+  // Credit History States
+  const [isCreditHistoryModalVisible, setIsCreditHistoryModalVisible] = useState(false);
+  const [creditHistory, setCreditHistory] = useState([]);
+  const [creditHistoryLoading, setCreditHistoryLoading] = useState(false);
 
   const [bounceAnim] = useState(new Animated.Value(1));
   const [slideAnim] = useState(new Animated.Value(0));
 
   const [showGenderDropdown, setShowGenderDropdown] = useState(false);
   const [showCareerDropdown, setShowCareerDropdown] = useState(false);
-  const [showOptionalCareer1Dropdown, setShowOptionalCareer1Dropdown] = useState(false);
-  const [showOptionalCareer2Dropdown, setShowOptionalCareer2Dropdown] = useState(false);
+  const [showOptionalCareer1Dropdown, setShowOptionalCareer1Dropdown] =
+    useState(false);
+  const [showOptionalCareer2Dropdown, setShowOptionalCareer2Dropdown] =
+    useState(false);
 
   // Dropdown options
   const genderOptions = ["female", "male", "other"];
   const careerOptions = [
-    "Doctor", "Engineer", "Teacher", "Scientist", "Artist", "Athlete", 
-    "Astronaut", "Veterinarian", "Actor/Actress", "Singer", "Police Officer", 
-    "Pilot", "Chef", "FireFighter", "Lawyer", "Fashion Designer", "Dancer", 
-    "Writer/Author", "Musician", "Architect", "Entrepreneur", 
-    "Computer Programmer/Software Developer", "Marine Biologist", 
-    "Archaeologist", "Environmental Scientist", "Other",
+    "Doctor",
+    "Engineer",
+    "Teacher",
+    "Scientist",
+    "Artist",
+    "Athlete",
+    "Astronaut",
+    "Veterinarian",
+    "Actor/Actress",
+    "Singer",
+    "Police Officer",
+    "Pilot",
+    "Chef",
+    "FireFighter",
+    "Lawyer",
+    "Fashion Designer",
+    "Dancer",
+    "Writer/Author",
+    "Musician",
+    "Architect",
+    "Entrepreneur",
+    "Computer Programmer/Software Developer",
+    "Marine Biologist",
+    "Archaeologist",
+    "Environmental Scientist",
+    "Other",
   ];
 
   useEffect(() => {
@@ -103,8 +131,11 @@ export default function Profile() {
       if (storedChildId) {
         setChildId(storedChildId);
       } else {
-        Alert.alert("Oops!", "We couldn't find your profile. Please login again.");
-        router.push("/login");
+        Alert.alert(
+          "Oops!",
+          "We couldn't find your profile. Please login again."
+        );
+        router.push("/auth/login");
       }
     } catch (error) {
       console.error("Error getting child ID:", error);
@@ -142,6 +173,49 @@ export default function Profile() {
     }
   };
 
+  // Fetch Credit History
+  const fetchCreditHistory = async () => {
+    try {
+      setCreditHistoryLoading(true);
+      
+      const parentId = await AsyncStorage.getItem("parentId");
+      
+      if (!parentId) {
+        Alert.alert("Oops!", "Parent information not found. Please login again.");
+        return;
+      }
+
+      if (!childId) {
+        Alert.alert("Oops!", "Child information not found.");
+        return;
+      }
+
+      const response = await fetch(
+        `${API_BASE}/credit-history/${parentId}/${childId}`,
+        {
+          method: "GET",
+          headers: {
+            accept: "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setCreditHistory(data.credit_history || []);
+      setIsCreditHistoryModalVisible(true);
+      
+    } catch (error) {
+      console.error("Error fetching credit history:", error);
+      Alert.alert("Oops!", "Couldn't load credit history");
+    } finally {
+      setCreditHistoryLoading(false);
+    }
+  };
+
   const fetchAvatar = async () => {
     try {
       setAvatarLoading(true);
@@ -173,7 +247,9 @@ export default function Profile() {
       if (response.ok) {
         const data = await response.json();
         if (data.avatar_url) {
-          const fullUrl = `http://127.0.0.1:8000${data.avatar_url}?t=${Date.now()}`;
+          const fullUrl = `http://127.0.0.1:8000${
+            data.avatar_url
+          }?t=${Date.now()}`;
           setAvatarUrl(fullUrl);
         } else {
           setAvatarUrl(null);
@@ -196,6 +272,12 @@ export default function Profile() {
     if (!dateString) return "";
     const date = new Date(dateString);
     return date.toISOString().split("T")[0];
+  };
+
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return "";
+    const date = new Date(timestamp);
+    return date.toLocaleString();
   };
 
   const handleEditToggle = () => {
@@ -334,7 +416,9 @@ export default function Profile() {
         activeOpacity={1}
       >
         <View style={styles.dropdownList}>
-          <Text style={styles.dropdownTitle}>Choose {dropdownType === "gender" ? "Gender" : "Career"} ✨</Text>
+          <Text style={styles.dropdownTitle}>
+            Choose {dropdownType === "gender" ? "Gender" : "Career"} ✨
+          </Text>
           <FlatList
             data={options}
             keyExtractor={(item, index) => index.toString()}
@@ -352,6 +436,35 @@ export default function Profile() {
     </Modal>
   );
 
+  // Credit History Item Component
+  const CreditHistoryItem = ({ item, index }) => (
+    <View style={[
+      styles.creditHistoryItem,
+      index % 2 === 0 ? styles.creditHistoryItemEven : styles.creditHistoryItemOdd
+    ]}>
+      <View style={styles.creditHistoryLeft}>
+        <Text style={styles.creditActivity}>
+          {item.activity.charAt(0).toUpperCase() + item.activity.slice(1)}
+        </Text>
+        <Text style={styles.creditTimestamp}>
+          {formatTimestamp(item.timestamp)}
+        </Text>
+      </View>
+      <View style={styles.creditHistoryRight}>
+        {item.credits_earned > 0 && (
+          <Text style={styles.creditEarned}>
+            +{item.credits_earned} ⭐
+          </Text>
+        )}
+        {item.credits_lost > 0 && (
+          <Text style={styles.creditLost}>
+            -{item.credits_lost} ⭐
+          </Text>
+        )}
+      </View>
+    </View>
+  );
+
   const translateY = slideAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [50, 0],
@@ -363,9 +476,15 @@ export default function Profile() {
         source={require("@/assets/images/theme1.png")}
         style={styles.background}
       >
-        <View style={styles.container}>
-          <ActivityIndicator size="large" color="#FFD700" style={styles.spinner} />
-          <Text style={styles.loadingText}>Loading your awesome profile... 🌟</Text>
+        <View style={styles.loadingCon}>
+          <ActivityIndicator
+            size="large"
+            color="#FFD700"
+            style={styles.spinner}
+          />
+          <Text style={{color:"#fa6f6fff", marginTop:20, fontFamily: "ComicRelief-Regular", fontSize:18}}>
+            Loading your awesome profile... 🌟
+          </Text>
         </View>
       </ImageBackground>
     );
@@ -397,11 +516,8 @@ export default function Profile() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <Animated.View 
-            style={[
-              styles.container,
-              { transform: [{ translateY }] }
-            ]}
+          <Animated.View
+            style={[styles.container, { transform: [{ translateY }] }]}
           >
             {/* Header */}
             <View style={styles.header}>
@@ -416,6 +532,13 @@ export default function Profile() {
 
             {/* Profile Card */}
             <View style={styles.profileCard}>
+              <TouchableOpacity 
+                style={styles.creditHistoryIcon}
+                onPress={fetchCreditHistory}
+              >
+                <Ionicons name="card-outline" size={28} color="#f4bb35ff" />
+                <Text style={styles.creditHistoryText}>Credits</Text>
+              </TouchableOpacity>
               <View style={styles.avatarSection}>
                 <Animated.View style={{ transform: [{ scale: bounceAnim }] }}>
                   <Image
@@ -432,9 +555,11 @@ export default function Profile() {
                     key={avatarUrl}
                   />
                 </Animated.View>
-                
+
                 {avatarLoading && (
-                  <Text style={styles.avatarLoadingText}>Creating your avatar... 🎨</Text>
+                  <Text style={styles.avatarLoadingText}>
+                    Creating your avatar... 🎨
+                  </Text>
                 )}
 
                 <View style={styles.nameSection}>
@@ -443,14 +568,18 @@ export default function Profile() {
                       <TextInput
                         style={[styles.editableInput, styles.userNameInput]}
                         value={editedData.fullname}
-                        onChangeText={(text) => handleInputChange("fullname", text)}
+                        onChangeText={(text) =>
+                          handleInputChange("fullname", text)
+                        }
                         placeholder="Your Full Name"
                         placeholderTextColor="#888"
                       />
                       <TextInput
                         style={[styles.editableInput, styles.usernameInput]}
                         value={editedData.username}
-                        onChangeText={(text) => handleInputChange("username", text)}
+                        onChangeText={(text) =>
+                          handleInputChange("username", text)
+                        }
                         placeholder="Cool Username"
                         placeholderTextColor="#888"
                       />
@@ -458,7 +587,9 @@ export default function Profile() {
                   ) : (
                     <>
                       <Text style={styles.userName}>{userData.fullname}</Text>
-                      <Text style={styles.username}>@{userData.username} ✨</Text>
+                      <Text style={styles.username}>
+                        @{userData.username} ✨
+                      </Text>
                     </>
                   )}
                 </View>
@@ -467,19 +598,27 @@ export default function Profile() {
               {/* Stats Grid */}
               <View style={styles.statsGrid}>
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{userData.credits?.total?.toString() || "0"}</Text>
+                  <Text style={styles.statValue}>
+                    {userData.credits?.total?.toString() || "0"}
+                  </Text>
                   <Text style={styles.statLabel}>Total Score⭐</Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{userData.credits?.chat?.toString() || "0"}</Text>
+                  <Text style={styles.statValue}>
+                    {userData.credits?.chat?.toString() || "0"}
+                  </Text>
                   <Text style={styles.statLabel}>Chat 📚</Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{userData.credits?.quiz?.toString() || "0"}</Text>
+                  <Text style={styles.statValue}>
+                    {userData.credits?.quiz?.toString() || "0"}
+                  </Text>
                   <Text style={styles.statLabel}>Quiz 🧩</Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{userData.credits?.game?.toString() || "0"}</Text>
+                  <Text style={styles.statValue}>
+                    {userData.credits?.game?.toString() || "0"}
+                  </Text>
                   <Text style={styles.statLabel}>Game 🧩</Text>
                 </View>
               </View>
@@ -491,17 +630,34 @@ export default function Profile() {
                     <Text style={styles.detailLabel}>Dream Career</Text>
                     {isEditing ? (
                       <TouchableOpacity
-                        style={[styles.inputText, styles.editableInput, styles.dropdownButton]}
+                        style={[
+                          styles.inputText,
+                          styles.editableInput,
+                          styles.dropdownButton,
+                        ]}
                         onPress={() => setShowCareerDropdown(true)}
                       >
-                        <Text style={[!editedData.default_dream_career && { color: "#888" }]}>
-                          {editedData.default_dream_career || "Pick Your Dream! ✨"}
+                        <Text
+                          style={[
+                            !editedData.default_dream_career && {
+                              color: "#888",
+                            },
+                          ]}
+                        >
+                          {editedData.default_dream_career ||
+                            "Pick Your Dream! ✨"}
                         </Text>
-                        <Feather name="chevron-down" size={16} color="#FF6B6B" />
+                        <Feather
+                          name="chevron-down"
+                          size={16}
+                          color="#FF6B6B"
+                        />
                       </TouchableOpacity>
                     ) : (
                       <View style={[styles.inputText, styles.nonEditableInput]}>
-                        <Text style={styles.detailValue}>{userData.default_dream_career}</Text>
+                        <Text style={styles.detailValue}>
+                          {userData.default_dream_career}
+                        </Text>
                       </View>
                     )}
                   </View>
@@ -518,7 +674,9 @@ export default function Profile() {
                       />
                     ) : (
                       <View style={[styles.inputText, styles.nonEditableInput]}>
-                        <Text style={styles.detailValue}>{formatDate(userData.dob)}</Text>
+                        <Text style={styles.detailValue}>
+                          {formatDate(userData.dob)}
+                        </Text>
                       </View>
                     )}
                   </View>
@@ -529,17 +687,27 @@ export default function Profile() {
                     <Text style={styles.detailLabel}>Gender</Text>
                     {isEditing ? (
                       <TouchableOpacity
-                        style={[styles.inputText, styles.editableInput, styles.dropdownButton]}
+                        style={[
+                          styles.inputText,
+                          styles.editableInput,
+                          styles.dropdownButton,
+                        ]}
                         onPress={() => setShowGenderDropdown(true)}
                       >
                         <Text style={[!editedData.gender && { color: "#888" }]}>
                           {editedData.gender || "Select"}
                         </Text>
-                        <Feather name="chevron-down" size={16} color="#FF6B6B" />
+                        <Feather
+                          name="chevron-down"
+                          size={16}
+                          color="#FF6B6B"
+                        />
                       </TouchableOpacity>
                     ) : (
                       <View style={[styles.inputText, styles.nonEditableInput]}>
-                        <Text style={styles.detailValue}>{userData.gender}</Text>
+                        <Text style={styles.detailValue}>
+                          {userData.gender}
+                        </Text>
                       </View>
                     )}
                   </View>
@@ -548,17 +716,34 @@ export default function Profile() {
                     <Text style={styles.detailLabel}>Other Career 1</Text>
                     {isEditing ? (
                       <TouchableOpacity
-                        style={[styles.inputText, styles.editableInput, styles.dropdownButton]}
+                        style={[
+                          styles.inputText,
+                          styles.editableInput,
+                          styles.dropdownButton,
+                        ]}
                         onPress={() => setShowOptionalCareer1Dropdown(true)}
                       >
-                        <Text style={[!editedData.optional_dream_career_1 && { color: "#888" }]}>
-                          {editedData.optional_dream_career_1 || "Another Dream?"}
+                        <Text
+                          style={[
+                            !editedData.optional_dream_career_1 && {
+                              color: "#888",
+                            },
+                          ]}
+                        >
+                          {editedData.optional_dream_career_1 ||
+                            "Another Dream?"}
                         </Text>
-                        <Feather name="chevron-down" size={16} color="#FF6B6B" />
+                        <Feather
+                          name="chevron-down"
+                          size={16}
+                          color="#FF6B6B"
+                        />
                       </TouchableOpacity>
                     ) : (
                       <View style={[styles.inputText, styles.nonEditableInput]}>
-                        <Text style={styles.detailValue}>{userData.optional_dream_career_1 || "Not set"}</Text>
+                        <Text style={styles.detailValue}>
+                          {userData.optional_dream_career_1 || "Not set"}
+                        </Text>
                       </View>
                     )}
                   </View>
@@ -569,17 +754,34 @@ export default function Profile() {
                     <Text style={styles.detailLabel}>Other Career 2</Text>
                     {isEditing ? (
                       <TouchableOpacity
-                        style={[styles.inputText, styles.editableInput, styles.dropdownButton]}
+                        style={[
+                          styles.inputText,
+                          styles.editableInput,
+                          styles.dropdownButton,
+                        ]}
                         onPress={() => setShowOptionalCareer2Dropdown(true)}
                       >
-                        <Text style={[!editedData.optional_dream_career_2 && { color: "#888" }]}>
-                          {editedData.optional_dream_career_2 || "One More Dream?"}
+                        <Text
+                          style={[
+                            !editedData.optional_dream_career_2 && {
+                              color: "#888",
+                            },
+                          ]}
+                        >
+                          {editedData.optional_dream_career_2 ||
+                            "One More Dream?"}
                         </Text>
-                        <Feather name="chevron-down" size={16} color="#FF6B6B" />
+                        <Feather
+                          name="chevron-down"
+                          size={16}
+                          color="#FF6B6B"
+                        />
                       </TouchableOpacity>
                     ) : (
                       <View style={[styles.inputText, styles.nonEditableInput]}>
-                        <Text style={styles.detailValue}>{userData.optional_dream_career_2 || "Not set"}</Text>
+                        <Text style={styles.detailValue}>
+                          {userData.optional_dream_career_2 || "Not set"}
+                        </Text>
                       </View>
                     )}
                   </View>
@@ -598,8 +800,12 @@ export default function Profile() {
                   >
                     {isSaving ? (
                       <View style={styles.loadingContainer}>
-                        <ActivityIndicator size="small" color="#fff" style={styles.spinner} />
-                        <Text style={styles.buttonText}> Saving... </Text>
+                        <ActivityIndicator
+                          size="small"
+                          color="#fff"
+                          style={styles.spinner}
+                        />
+                        <Text style={styles.buttonText}>Saving...</Text>
                       </View>
                     ) : (
                       <Text style={styles.buttonText}>Save Changes</Text>
@@ -714,7 +920,8 @@ export default function Profile() {
                         key={index}
                         style={[
                           styles.careerOption,
-                          selectedCareer === career && styles.selectedCareerOption,
+                          selectedCareer === career &&
+                            styles.selectedCareerOption,
                         ]}
                         onPress={() => setSelectedCareer(career)}
                       >
@@ -728,7 +935,8 @@ export default function Profile() {
 
                   {getAvailableCareers().length === 0 && (
                     <Text style={styles.noCareersText}>
-                      No other careers to switch to yet! Add more career dreams first! 🌈
+                      No other careers to switch to yet! Add more career dreams
+                      first! 🌈
                     </Text>
                   )}
 
@@ -747,19 +955,88 @@ export default function Profile() {
                       style={[
                         styles.modalButton,
                         styles.confirmButton,
-                        (!selectedCareer || getAvailableCareers().length === 0) && styles.disabledButton,
+                        (!selectedCareer ||
+                          getAvailableCareers().length === 0) &&
+                          styles.disabledButton,
                       ]}
                       onPress={handleSwitchCareer}
-                      disabled={!selectedCareer || getAvailableCareers().length === 0}
+                      disabled={
+                        !selectedCareer || getAvailableCareers().length === 0
+                      }
                     >
                       {isSwitching ? (
                         <View style={styles.loadingContainer}>
-                          <ActivityIndicator size="small" color="#fff" style={styles.spinner} />
-                          <Text style={styles.buttonText}> Switching...</Text>
+                          <ActivityIndicator
+                            size="small"
+                            color="#fff"
+                            style={styles.spinner}
+                          />
+                          <Text style={styles.buttonText}>Switching</Text>
                         </View>
                       ) : (
                         <Text style={styles.buttonText}>Let's Go!</Text>
                       )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+
+        <Modal
+          visible={isCreditHistoryModalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setIsCreditHistoryModalVisible(false)}
+        >
+          <TouchableWithoutFeedback
+            onPress={() => setIsCreditHistoryModalVisible(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <TouchableWithoutFeedback>
+                <View style={[styles.modalContent, styles.creditHistoryModal]}>
+                  <Text style={styles.modalTitle}>Credit History 💫</Text>
+                  <Text style={styles.modalSubtitle}>
+                    Your amazing journey of earning stars!✨
+                  </Text>
+
+                  {creditHistoryLoading ? (
+                    <View style={styles.loadingContainer}>
+                      <ActivityIndicator
+                        size="large"
+                        color="#4ECDC4"
+                        style={styles.spinner}
+                      />
+                      <Text style={styles.loadingText}>
+                        Loading your credit history...
+                      </Text>
+                    </View>
+                  ) : creditHistory.length > 0 ? (
+                    <View style={styles.creditHistoryList}>
+                      <FlatList
+                        data={creditHistory}
+                        keyExtractor={(item) => item.id.toString()}
+                        renderItem={CreditHistoryItem}
+                        showsVerticalScrollIndicator={false}
+                        style={styles.creditHistoryFlatList}
+                      />
+                    </View>
+                  ) : (
+                    <View style={styles.noCreditHistory}>
+                      <Text style={styles.noCreditHistoryText}>
+                        No credit history yet! {"\n"}
+                        Start chatting, playing games, and taking quizzes to earn stars! 🌟
+                      </Text>
+                    </View>
+                  )}
+
+                  <View style={styles.modalButtons}>
+                    <TouchableOpacity
+                      style={[styles.modalButton, styles.confirmButton]}
+                      onPress={() => setIsCreditHistoryModalVisible(false)}
+                    >
+                      <Text style={styles.modalButtonText}>Got It! 👍</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -823,6 +1100,28 @@ const styles = StyleSheet.create({
     elevation: 10,
     borderWidth: 3,
     borderColor: "#FFD700",
+  },
+  creditHistoryIcon: {
+    position: "absolute",
+    right: 20,
+    top: 20,
+    alignItems: "center",
+    borderRadius: 20,
+    zIndex: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    padding: 8,
+    borderRadius: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  creditHistoryText: {
+    color: "#f85c5cff",
+    fontSize: 12,
+    fontFamily: "ComicRelief-Bold",
+    marginTop: 2,
   },
   avatarSection: {
     alignItems: "center",
@@ -991,10 +1290,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#4ECDC4",
   },
   cancelButton: {
-    backgroundColor: "#FF6B6B",
+    backgroundColor: "#ff5353ff",
   },
   careerButton: {
-    backgroundColor: "#FF9E7D",
+    backgroundColor: "#fc7346ff",
   },
   rewardsButton: {
     backgroundColor: "#FFD93D",
@@ -1063,6 +1362,9 @@ const styles = StyleSheet.create({
     elevation: 10,
     borderWidth: 4,
     borderColor: "#FFD700",
+  },
+  creditHistoryModal: {
+    maxHeight: "80%",
   },
   modalTitle: {
     fontSize: 24,
@@ -1180,8 +1482,82 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    padding: 20,
   },
   spinner: {
-    marginRight: 8,
+    marginRight: 4,
   },
+  // Credit History Styles
+  creditHistoryList: {
+    maxHeight: 300,
+    marginBottom: 20,
+  },
+  creditHistoryFlatList: {
+    flexGrow: 0,
+  },
+  creditHistoryItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  creditHistoryItemEven: {
+    backgroundColor: "#F8F9FA",
+  },
+  creditHistoryItemOdd: {
+    backgroundColor: "#FFFFFF",
+  },
+  creditHistoryLeft: {
+    flex: 1,
+  },
+  creditHistoryRight: {
+    alignItems: "flex-end",
+  },
+  creditActivity: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+    fontFamily: "ComicRelief-Regular",
+    marginBottom: 4,
+  },
+  creditTimestamp: {
+    fontSize: 12,
+    color: "#666",
+    fontFamily: "ComicRelief-Regular",
+  },
+  creditEarned: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#4ECDC4",
+    fontFamily: "ComicRelief-Regular",
+  },
+  creditLost: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#FF6B6B",
+    fontFamily: "ComicRelief-Regular",
+  },
+  noCreditHistory: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 40,
+  },
+  noCreditHistoryText: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    fontFamily: "ComicRelief-Regular",
+    lineHeight: 24,
+  },
+  loadingCon:{
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 10,
+    marginHorizontal: 20,
+    marginVertical:50,
+    backgroundColor:"#fff",
+  }
 });

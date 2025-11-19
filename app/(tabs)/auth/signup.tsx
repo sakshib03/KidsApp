@@ -1,21 +1,21 @@
 import { Feather } from "@expo/vector-icons";
+import * as Font from "expo-font";
 import { router } from "expo-router";
-import React, { useState, useEffect, useRef } from "react";
+import moment from "moment";
+import React, { useEffect, useRef, useState } from "react";
 import {
+  Alert,
+  FlatList,
   ImageBackground,
+  Modal,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  Modal,
-  FlatList,
-  Alert,
 } from "react-native";
-import { API_BASE } from "./config";
-import * as Font from "expo-font";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import moment from "moment";
+import { API_BASE } from "../config";
 
 export default function SignUpScreen() {
   const [secureChild, setSecureChild] = useState(true);
@@ -82,8 +82,8 @@ export default function SignUpScreen() {
 
   useEffect(() => {
     Font.loadAsync({
-      "ComicRelief-Bold": require("../../assets/fonts/ComicRelief-Regular.ttf"),
-      "ComicRelief-Regular": require("../../assets/fonts/ComicRelief-Regular.ttf"),
+      "ComicRelief-Bold": require("../../../assets/fonts/ComicRelief-Regular.ttf"),
+      "ComicRelief-Regular": require("../../../assets/fonts/ComicRelief-Regular.ttf"),
     }).then(() => setFontsLoaded(true));
   }, []);
 
@@ -327,7 +327,7 @@ export default function SignUpScreen() {
         if (response.status === 409) {
           setIsAlreadyRegistered(true);
           Alert.alert("Registration Error", data.message || "This account is already registered. Please try logging in.");
-          router.push("/(tabs)/login")
+          router.push("/(tabs)/auth/login")
         } else {
           Alert.alert("Error", data.message || "Invalid OTP");
         }
@@ -403,18 +403,18 @@ export default function SignUpScreen() {
 
   return (
     <ImageBackground
-      source={require("@/assets/images/background.png")}
+      source={require("@/assets/images/login/bg1.png")}
       style={styles.background}
     >
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <View style={{ justifyContent: "center", alignItems: "center", marginBottom: 12 }}>
-          <Text style={{ fontSize: 22, fontWeight: 600, color: '#F25F3B' }}>Welcome, SignUp to Continue</Text>
+        <View style={{ justifyContent: "center", alignItems: "center", marginBottom: 10}}>
+          <Text style={{ fontSize: 22, fontWeight: 600, color: '#0F6424' }}>Welcome, SignUp to Continue</Text>
         </View>
 
         <View style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
           {step === "child" && (
-            <View style={{ display: "flex", flexDirection: "column", marginBottom: 14, alignItems: "center", justifyContent: "center" }}>
-              <Text style={{ fontSize: 16, color: "#F25F3B", fontWeight: 400, marginTop: 10, fontFamily: "ComicRelief-Regular" }}>
+            <View style={{ display: "flex", flexDirection: "column", marginBottom: 14, alignItems: "center", justifyContent: "center" , backgroundColor:"#f7f4aeff", paddingVertical:10, paddingHorizontal:20, borderRadius:10}}>
+              <Text style={{ fontSize: 16, color: "#0F6424", fontWeight: 400, marginTop: 10, fontFamily: "ComicRelief-Regular" }}>
                 Child Information
               </Text>
               
@@ -422,7 +422,7 @@ export default function SignUpScreen() {
                 <TextInput
                   style={styles.inputText}
                   placeholder="Full Name"
-                  placeholderTextColor="#F25F3B"
+                  placeholderTextColor="#0F6424"
                   value={childFullName}
                   onChangeText={setChildFullName}
                 />
@@ -432,7 +432,7 @@ export default function SignUpScreen() {
                 <TextInput
                   style={styles.inputText}
                   placeholder="Username"
-                  placeholderTextColor="#F25F3B"
+                  placeholderTextColor="#0F6424"
                   value={childUsername}
                   onChangeText={setChildUsername}
                 />
@@ -442,13 +442,13 @@ export default function SignUpScreen() {
                 <TextInput
                   style={styles.inputText}
                   placeholder="Password"
-                  placeholderTextColor="#F25F3B"
+                  placeholderTextColor="#0F6424"
                   secureTextEntry={secureChild}
                   value={childPassword}
                   onChangeText={setChildPassword}
                 />
                 <TouchableOpacity onPress={() => setSecureChild(!secureChild)}>
-                  <Feather name={secureChild ? "eye-off" : "eye"} size={16} marginTop={12} color="#F25F3B" />
+                  <Feather name={secureChild ? "eye-off" : "eye"} size={16} marginTop={12} color="#0F6424" />
                 </TouchableOpacity>
               </View>
 
@@ -456,19 +456,19 @@ export default function SignUpScreen() {
                 <TextInput
                   style={styles.inputText}
                   placeholder="Confirm Password"
-                  placeholderTextColor="#F25F3B"
+                  placeholderTextColor="#0F6424"
                   secureTextEntry={secureConfirmChild}
                   value={childConfirmPassword}
                   onChangeText={setChildConfirmPassword}
                 />
                 <TouchableOpacity onPress={() => setSecureConfirmChild(!secureConfirmChild)}>
-                  <Feather name={secureConfirmChild ? "eye-off" : "eye"} size={16} marginTop={12} color="#F25F3B" />
+                  <Feather name={secureConfirmChild ? "eye-off" : "eye"} size={16} marginTop={12} color="#0F6424" />
                 </TouchableOpacity>
               </View>
 
               <View>
                 <TouchableOpacity style={styles.input} onPress={showDatePicker}>
-                  <Text style={[styles.inputText, { paddingVertical: 10 }]}>
+                  <Text style={[styles.inputText,]}>
                     {dob ? moment(dob).format("MM-DD-YYYY") : "Enter Date of Birth"}
                   </Text>
                 </TouchableOpacity>
@@ -482,43 +482,43 @@ export default function SignUpScreen() {
               </View>
 
               <TouchableOpacity
-                style={[styles.input, { display: "flex", flexDirection: "row", justifyContent: "space-between" }]}
+                style={[styles.input, { display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems:"center" }]}
                 onPress={() => setShowGenderDropdown(true)}
               >
-                <Text style={[styles.inputText, !gender && { color: "#F25F3B" }, { paddingVertical: 10 }]}>
+                <Text style={[styles.inputText, !gender && { color: "#0F6424" }]}>
                   {gender ? gender : "Select Gender"}
                 </Text>
-                <Feather name="chevron-down" size={16} marginTop={14} color="#F25F3B" />
+                <Feather name="chevron-down" size={16} marginTop={14} color="#0F6424" />
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.input, { display: "flex", flexDirection: "row", justifyContent: "space-between" }]}
+                style={[styles.input, { display: "flex", flexDirection: "row", justifyContent: "space-between" , alignItems:"center"}]}
                 onPress={() => setShowCareerDropdown(true)}
               >
-                <Text style={[styles.inputText, !dreamCareer && { color: "#F25F3B" }, { paddingVertical: 10 }]}>
+                <Text style={[styles.inputText, !dreamCareer && { color: "#0F6424" },]}>
                   {dreamCareer ? dreamCareer : "Select Dream Career"}
                 </Text>
-                <Feather name="chevron-down" size={16} marginTop={14} color="#F25F3B" />
+                <Feather name="chevron-down" size={16} color="#0F6424" />
               </TouchableOpacity>
 
               <TouchableOpacity
-              style={[styles.input, { display: "flex", flexDirection: "row", justifyContent: "space-between" }]}
+              style={[styles.input, { display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems:"center" }]}
               onPress={() => setShowCareerDropdown1(true)}
               >
-                <Text style={[styles.inputText, !dreamCareer1 && { color: "#F25F3B" }, { paddingVertical: 10 }]}>
+                <Text style={[styles.inputText, !dreamCareer1 && { color: "#0F6424" }, ]}>
                   {dreamCareer1 ? dreamCareer1 : "Optional Dream Career 1"}
                 </Text>
-                <Feather name="chevron-down" size={16} marginTop={14} color="#F25F3B" />
+                <Feather name="chevron-down" size={16} color="#0F6424" />
               </TouchableOpacity>
 
               <TouchableOpacity
-              style={[styles.input, { display: "flex", flexDirection: "row", justifyContent: "space-between" }]}
+              style={[styles.input, { display: "flex", flexDirection: "row", justifyContent: "space-between",alignItems:"center" }]}
               onPress={() => setShowCareerDropdown2(true)}
               >
-                <Text style={[styles.inputText, !dreamCareer2 && { color: "#F25F3B" }, { paddingVertical: 10 }]}>
+                <Text style={[styles.inputText, !dreamCareer2 && { color: "#0F6424" },]}>
                   {dreamCareer2 ? dreamCareer2 : "Optional Dream Career 2"}
                 </Text>
-                <Feather name="chevron-down" size={16} marginTop={14} color="#F25F3B" />
+                <Feather name="chevron-down" size={16} color="#0F6424" />
               </TouchableOpacity>
 
               <TouchableOpacity 
@@ -531,8 +531,8 @@ export default function SignUpScreen() {
           )}
 
           {step === "parent" && (
-            <View style={{ display: "flex", flexDirection: "column", marginBottom: 16, justifyContent: "center", alignItems: "center" }}>
-              <Text style={{ fontSize: 16, color: "#F25F3B", fontWeight: 400, marginTop: 10, fontFamily: "ComicRelief-Regular" }}>
+            <View style={{ display: "flex", flexDirection: "column", marginBottom: 16, justifyContent: "center", alignItems: "center" ,backgroundColor:"#f7f4aeff", paddingVertical:10, paddingHorizontal:20, borderRadius:10}}>
+              <Text style={{ fontSize: 16, color: "#0F6424", fontWeight: 400, marginTop: 10, fontFamily: "ComicRelief-Regular" }}>
                 Parent Information
               </Text>
               
@@ -540,7 +540,7 @@ export default function SignUpScreen() {
                 <TextInput
                   style={styles.inputText}
                   placeholder="Full Name"
-                  placeholderTextColor="#F25F3B"
+                  placeholderTextColor="#0F6424"
                   value={parentFullName}
                   onChangeText={setParentFullName}
                 />
@@ -550,7 +550,7 @@ export default function SignUpScreen() {
                 <TextInput
                   style={styles.inputText}
                   placeholder="Parent email"
-                  placeholderTextColor="#F25F3B"
+                  placeholderTextColor="#0F6424"
                   value={parentEmail}
                   onChangeText={setParentEmail}
                   keyboardType="email-address"
@@ -562,13 +562,13 @@ export default function SignUpScreen() {
                 <TextInput
                   style={styles.inputText}
                   placeholder="Password"
-                  placeholderTextColor="#F25F3B"
+                  placeholderTextColor="#0F6424"
                   secureTextEntry={secureParent}
                   value={parentPassword}
                   onChangeText={setParentPassword}
                 />
                 <TouchableOpacity onPress={() => setSecureParent(!secureParent)}>
-                  <Feather name={secureParent ? "eye-off" : "eye"} size={16} marginTop={12} color="#F25F3B" />
+                  <Feather name={secureParent ? "eye-off" : "eye"} size={16} marginTop={12} color="#0F6424" />
                 </TouchableOpacity>
               </View>
 
@@ -576,34 +576,34 @@ export default function SignUpScreen() {
                 <TextInput
                   style={styles.inputText}
                   placeholder="Confirm Password"
-                  placeholderTextColor="#F25F3B"
+                  placeholderTextColor="#0F6424"
                   secureTextEntry={secureConfirmParent}
                   value={parentConfirmPassword}
                   onChangeText={setParentConfirmPassword}
                 />
                 <TouchableOpacity onPress={() => setSecureConfirmParent(!secureConfirmParent)}>
-                  <Feather name={secureConfirmParent ? "eye-off" : "eye"} size={16} marginTop={12} color="#F25F3B" />
+                  <Feather name={secureConfirmParent ? "eye-off" : "eye"} size={16} marginTop={12} color="#0F6424" />
                 </TouchableOpacity>
               </View>
 
               <TouchableOpacity
-                style={[styles.input, { display: "flex", flexDirection: "row", justifyContent: "space-between" }]}
+                style={[styles.input, { display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems:"center"}]}
                 onPress={() => setShowParentGenderDropdown(true)}
               >
-                <Text style={[styles.inputText, !parentGender && { color: "#F25F3B" }, { paddingVertical: 10 }]}>
+                <Text style={[styles.inputText, !parentGender && { color: "#0F6424" },]}>
                   {parentGender ? parentGender : "Select Gender"}
                 </Text>
-                <Feather name="chevron-down" size={16} marginTop={14} color="#F25F3B" />
+                <Feather name="chevron-down" size={16} marginTop={14} color="#0F6424" />
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.input, { display: "flex", flexDirection: "row", justifyContent: "space-between" }]}
+                style={[styles.input, { display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems:"center" }]}
                 onPress={() => setShowRelationDropdown(true)}
               >
-                <Text style={[styles.inputText, !relation && { color: "#F25F3B" }, { paddingVertical: 10 }]}>
+                <Text style={[styles.inputText, !relation && { color: "#0F6424" }]}>
                   {relation ? relation : "Select Relation"}
                 </Text>
-                <Feather name="chevron-down" size={16} marginTop={14} color="#F25F3B" />
+                <Feather name="chevron-down" size={16} marginTop={14} color="#0F6424" />
               </TouchableOpacity>
 
               <TouchableOpacity 
@@ -620,10 +620,10 @@ export default function SignUpScreen() {
           )}
 
           {step === "otp" && (
-            <View style={{ display: "flex", flexDirection: "column", marginBottom: 20, justifyContent: "center", alignItems: "center" }}>
+            <View style={{ display: "flex", flexDirection: "column", marginBottom: 20, justifyContent: "center", alignItems: "center", backgroundColor:"#f7f4aeff", paddingVertical:10, paddingHorizontal:20, borderRadius:10 }}>
               
               <View style={{ marginTop: 20, width: 300 }}>
-                <Text style={{ color: "#F25F3B", fontSize: 14, marginBottom: 10, }}>
+                <Text style={{ color: "#0F6424", fontSize: 14, marginBottom: 10, }}>
                   Enter OTP sent to {parentEmail}
                 </Text>
 
@@ -638,9 +638,9 @@ export default function SignUpScreen() {
                         textAlign: "center",
                         fontSize: 20,
                         borderWidth: 1,
-                        borderColor: "#F25F3B",
+                        borderColor: "#0F6424",
                         borderRadius: 5,
-                        color: "#F25F3B",
+                        color: "#0F6424",
                       }}
                       maxLength={1}
                       keyboardType="numeric"
@@ -652,7 +652,7 @@ export default function SignUpScreen() {
                 </View>
                 
                 {countdown > 0 && (
-                  <Text style={{ fontSize: 12, color: "#F25F3B", marginBottom: 10, textAlign: "center" }}>
+                  <Text style={{ fontSize: 12, color: "#0F6424", marginBottom: 10, textAlign: "center" }}>
                     OTP expires in {Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, "0")}
                   </Text>
                 )}
@@ -669,7 +669,7 @@ export default function SignUpScreen() {
 
                 {countdown <= 0 && (
                   <TouchableOpacity style={{ marginTop: 15, alignItems: "center" }} onPress={handleResendOTP}>
-                    <Text style={{ color: "#F25F3B", fontSize: 14, fontFamily: "ComicRelief-Regular" }}>
+                    <Text style={{ color: "#0F6424", fontSize: 14, fontFamily: "ComicRelief-Regular" }}>
                       Resend OTP
                     </Text>
                   </TouchableOpacity>
@@ -678,9 +678,9 @@ export default function SignUpScreen() {
             </View>
           )}
 
-          <Text style={{ fontFamily: "ComicRelief-Regular", color: '#F25F3B',}}>
+          <Text style={{ fontFamily: "ComicRelief-Regular", color: '#0F6424',}}>
             Already have an account?{" "}
-            <Text style={{ color: "#F25F3B", fontFamily: "ComicRelief-Regular", textDecorationLine: "underline" }} onPress={() => router.push("/")}>
+            <Text style={{ color: "#0F6424", fontFamily: "ComicRelief-Regular", textDecorationLine: "underline" }} onPress={() => router.push("/")}>
               Login
             </Text>
           </Text>
@@ -746,12 +746,11 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   input: {
-    width: 300,
+    width: 280,
     marginTop: 18,
-    borderColor:'#F25F3B',
+    borderColor:'#0F6424',
     borderWidth:1,
-    padding: 8,
-    paddingVertical: 2,
+    paddingVertical: 6,
     paddingHorizontal: 25,
     borderRadius: 30,
   },
@@ -759,12 +758,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "ComicRelief-Regular",
     fontWeight: 500,
-    color: "#F25F3B",
+    color: "#0F6424",
   },
   button: {
-    width: 300,
-    marginTop: 40,
-    backgroundColor: "#F25F3B",
+    width: 280,
+    marginTop: 30,
+    backgroundColor: "#0F6424",
     padding: 12,
     paddingVertical: 10,
     paddingHorizontal: 30,
@@ -798,7 +797,7 @@ const styles = StyleSheet.create({
   },
   dropdownItemText: {
     fontSize: 16,
-    color: "#F25F3B",
+    color: "#0F6424",
     fontFamily: "ComicRelief-Regular",
   },
 });

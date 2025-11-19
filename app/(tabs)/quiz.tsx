@@ -67,7 +67,10 @@ export default function Quiz() {
         setDailyLimitReached(true);
         setQuizData(null);
         setLoading(false);
-        Alert.alert("Daily Limit Reached", "You've completed 5 questions today. Try again tomorrow!");
+        Alert.alert(
+          "Daily Limit Reached",
+          "You've completed 5 questions today. Try again tomorrow!"
+        );
         return;
       }
 
@@ -79,7 +82,7 @@ export default function Quiz() {
         body: JSON.stringify({
           child_id: id,
           topic: userTopic,
-          timestamp:Date.now()
+          timestamp: Date.now(),
         }),
       });
 
@@ -87,7 +90,9 @@ export default function Quiz() {
         if (response.status === 429) {
           const errorData = await response.json();
           setDailyLimitReached(true);
-          throw new Error(errorData.detail || "Daily quiz limit reached! Try again tomorrow.");
+          throw new Error(
+            errorData.detail || "Daily quiz limit reached! Try again tomorrow."
+          );
         }
         throw new Error("Failed to fetch quiz");
       }
@@ -95,9 +100,9 @@ export default function Quiz() {
       const data = await response.json();
       console.log("Full API response:", data);
       setQuizData(data.quiz);
-      
+
       // Increment question count
-      setQuestionCount(prev => {
+      setQuestionCount((prev) => {
         const newCount = prev + 1;
         if (newCount > 5) {
           setDailyLimitReached(true);
@@ -106,7 +111,10 @@ export default function Quiz() {
       });
     } catch (error) {
       console.error("Error fetching quiz:", error);
-      Alert.alert("Error", error.message || "Failed to load quiz. Please try again.");
+      Alert.alert(
+        "Error",
+        error.message || "Failed to load quiz. Please try again."
+      );
       setQuizData(null);
     } finally {
       setLoading(false);
@@ -167,10 +175,13 @@ export default function Quiz() {
       if (questionCount >= 5) {
         setDailyLimitReached(true);
         setQuizData(null);
-        Alert.alert("Daily Limit Reached", "You've completed 5 questions today. Try again tomorrow!");
+        Alert.alert(
+          "Daily Limit Reached",
+          "You've completed 5 questions today. Try again tomorrow!"
+        );
         return;
       }
-      
+
       // Keep the same topic for next question
       setQuizData(null);
       setShowResult(false);
@@ -194,22 +205,36 @@ export default function Quiz() {
     return styles.optionButton;
   };
 
-  
-
   return (
     <ImageBackground
-      source={require("@/assets/images/background.png")}
+      source={require("@/assets/images/bg6.jpg")}
       style={styles.background}
     >
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.push("/(tabs)/chatbot")}
-          >
-            <Feather name="arrow-left" size={24} color={"#fff"} />
-            <Text style={styles.backButtonText}>Back to Home</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: "row", gap: 50 }}>
+            <View>
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => router.push("/(tabs)/chatbot")}
+              >
+                <Feather name="arrow-left" size={24} color={"#fff"} />
+                <Text style={styles.backButtonText}>Back to Home</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View>
+              {currentTopic && questionCount > 0 && !dailyLimitReached && (
+                <View
+                  style={{
+                    marginTop: 10,
+                  }}
+                >
+                  <Text style={styles.topicText}>Topic: {currentTopic}</Text>
+                </View>
+              )}
+            </View>
+          </View>
 
           <View style={styles.inputSection}>
             <View style={styles.inputContainer}>
@@ -217,7 +242,7 @@ export default function Quiz() {
                 <TextInput
                   style={styles.inputText}
                   placeholder="Enter a Topic"
-                  placeholderTextColor="#595959ff"  
+                  placeholderTextColor="#595959ff"
                   value={topic}
                   onChangeText={setTopic}
                   onSubmitEditing={handleSend}
@@ -228,15 +253,6 @@ export default function Quiz() {
                 </TouchableOpacity>
               </View>
             </View>
-            {/* Show question counter and current topic */}
-            {currentTopic && questionCount > 0 && !dailyLimitReached && (
-              <View style={{display:"flex", flexDirection:"row", gap:60, marginTop:30}}>
-                <Text style={styles.topicText}>Topic: {currentTopic}</Text>
-                <Text style={styles.counterText}>
-                  Question {questionCount} of 5
-                </Text>
-              </View>
-            )}
           </View>
         </View>
 
@@ -249,12 +265,37 @@ export default function Quiz() {
             {loading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#f35a5aff" />
-                <Text style={styles.loadingText}>Generating your question...</Text>
+                <Text style={styles.loadingText}>
+                  Generating your question...
+                </Text>
               </View>
             ) : quizData && quizData.question ? (
               <View style={styles.questionWrapper}>
                 <View style={styles.questionContainer}>
-                  <Text style={styles.questionTitle}>Question:</Text>
+                  <View style={{ flexDirection: "row", gap: 70 }}>
+                    <View>
+                      <Text style={styles.questionTitle}>Question:</Text>
+                    </View>
+                    <View>
+                      {currentTopic &&
+                        questionCount > 0 &&
+                        !dailyLimitReached && (
+                          <View
+                            style={{
+                              display: "flex",
+                              flexDirection: "row",
+                              gap: 60,
+                              marginTop: 5,
+                            }}
+                          >
+                            <Text style={styles.counterText}>
+                              Question {questionCount} of 5
+                            </Text>
+                          </View>
+                        )}
+                    </View>
+                  </View>
+
                   <ScrollView
                     style={styles.questionScroll}
                     showsVerticalScrollIndicator={false}
@@ -287,15 +328,20 @@ export default function Quiz() {
                     <TouchableOpacity
                       style={[
                         styles.nextButton,
-                        (dailyLimitReached || questionCount >= 5) && styles.disabledButton
+                        (dailyLimitReached || questionCount >= 5) &&
+                          styles.disabledButton,
                       ]}
                       onPress={handleNextQuestion}
-                      disabled={loading || dailyLimitReached || questionCount >= 5}
+                      disabled={
+                        loading || dailyLimitReached || questionCount >= 5
+                      }
                     >
                       {loading ? (
                         <ActivityIndicator size="small" color="#fff" />
                       ) : dailyLimitReached || questionCount >= 5 ? (
-                        <Text style={styles.nextButtonText}>Daily Limit Reached</Text>
+                        <Text style={styles.nextButtonText}>
+                          Daily Limit Reached
+                        </Text>
                       ) : (
                         <Text style={styles.nextButtonText}>Next Question</Text>
                       )}
@@ -332,7 +378,11 @@ export default function Quiz() {
               <View style={styles.initialStateContainer}>
                 {dailyLimitReached ? (
                   <>
-                    <Feather name="alert-triangle" size={60} color="#f35a5aff" />
+                    <Feather
+                      name="alert-triangle"
+                      size={60}
+                      color="#f35a5aff"
+                    />
                     <Text style={styles.limitErrorText}>
                       Daily quiz limit reached!
                     </Text>
@@ -376,9 +426,9 @@ const styles = StyleSheet.create({
   header: {
     alignItems: "flex-start",
     marginTop: 20,
-    marginBottom: 30,
+    marginBottom: 10,
     flexDirection: "column",
-    gap: 20,
+    gap: 10,
     paddingHorizontal: 10,
   },
   backButton: {
@@ -434,7 +484,7 @@ const styles = StyleSheet.create({
     padding: 0,
     margin: 0,
     textAlignVertical: "top",
-    minHeight: 40,
+    minHeight: 35,
   },
   counterText: {
     fontSize: 14,
@@ -442,7 +492,7 @@ const styles = StyleSheet.create({
     fontFamily: "ComicRelief-Regular",
     fontWeight: "bold",
   },
-  topicText:{
+  topicText: {
     fontSize: 14,
     color: "#f35a5aff",
     fontFamily: "ComicRelief-Regular",
@@ -468,7 +518,7 @@ const styles = StyleSheet.create({
     padding: 25,
   },
   questionScroll: {
-    maxHeight: 150,
+    maxHeight: 130,
     marginBottom: 20,
   },
   questionTitle: {
@@ -479,14 +529,14 @@ const styles = StyleSheet.create({
     fontFamily: "ComicRelief-Regular",
   },
   questionText: {
-    fontSize: 18,
+    fontSize: 16,
     lineHeight: 28,
     color: "#333",
     textAlign: "left",
     fontFamily: "ComicRelief-Regular",
   },
   optionsContainer: {
-    marginTop: 10,
+    marginTop: 2,
   },
   celebrationGif: {
     width: 170,
@@ -560,14 +610,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   resultTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "bold",
     textAlign: "center",
     marginBottom: 10,
     fontFamily: "ComicRelief-Regular",
   },
   resultExplanation: {
-    fontSize: 18,
+    fontSize: 20,
     color: "#39a247ff",
     textAlign: "center",
     fontWeight: "600",

@@ -94,7 +94,7 @@ export default function Joke() {
 
   return (
     <ImageBackground
-      source={require("@/assets/images/background.png")}
+      source={require("@/assets/images/bg5.jpg")}
       style={styles.background}
     >
       <View style={styles.container}>
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    padding: 20,
+    padding: 25,
   },
   header: {
     alignItems: "center",
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
     borderRadius: 20,
-    padding: 25,
+    padding: 20,
     marginBottom: 20,
     shadowColor: "#000",
     shadowOffset: {

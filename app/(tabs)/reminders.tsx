@@ -75,7 +75,7 @@ export default function Reminders() {
         await loadReminders(storedChildId);
       } else {
         Alert.alert("Error", "Child ID not found. Please login again.");
-        router.push("/login");
+        router.push("/(tabs)/auth/login");
       }
     } catch (error) {
       console.error("Error initializing data:", error);

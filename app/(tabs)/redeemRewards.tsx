@@ -16,6 +16,14 @@ import { API_BASE } from "./config";
 import * as Font from "expo-font";
 
 export default function RedeemRewards() {
+  const [fontsLoaded, setFontsLoaded] = useState(false);
+
+  useEffect(() => {
+      Font.loadAsync({
+        "ComicRelief-Bold": require("../../assets/fonts/ComicRelief-Bold.ttf"),
+        "ComicRelief-Regular": require("../../assets/fonts/ComicRelief-Regular.ttf"),
+      }).then(() => setFontsLoaded(true));
+    }, []);
   return (
     <ImageBackground
       source={require("@/assets/images/theme1.png")}
@@ -35,8 +43,9 @@ export default function RedeemRewards() {
               style={{
                 marginTop: 10,
                 fontSize: 22,
-                fontWeight: 500,
-                color: "#fff",
+                fontWeight: 600,
+                color: "#18561fff",
+                fontFamily: "ComicRelief-Bold",
               }}
             >
               Redeem Rewards
@@ -47,6 +56,7 @@ export default function RedeemRewards() {
                 fontSize: 16,
                 fontWeight: 400,
                 color: "#fff",
+                fontFamily: "ComicRelief-Regular",
               }}
             >
               Use your scores to redeem cool rewards!
@@ -60,21 +70,8 @@ export default function RedeemRewards() {
 
               <View>
                  <Text>Unlock Themes</Text>
-                 <View>
-                  <View>
-
-                  </View>
-                  <View>
-                    
-                  </View>
-                 </View>
-              </View>
-           
-          </View>
-
-          <View
+                  <View
             style={{
-              backgroundColor: "#1cc29bff",
               padding: 16,
               flexDirection: "row",
               justifyContent: "center",
@@ -82,13 +79,18 @@ export default function RedeemRewards() {
               gap: 20,
             }}
           >
-            <View>
-              <Text>hiiii</Text>
+            <View style={{backgroundColor:"#fff", padding:20, width:"250"}}>
+              <Text>Theme 1</Text>
             </View>
-            <view>
-              <Text>Hello</Text>
-            </view>
+            <View style={{backgroundColor:"#fff", padding:20, width:"250"}}>
+              <Text>Theme 2</Text>
+            </View>
           </View>
+              </View>
+           
+          </View>
+
+         
         </View>
       </View>
     </ImageBackground>
@@ -145,11 +147,13 @@ const styles = StyleSheet.create({
   inputField: {
     display: "flex",
     flexDirection: "column",
+
   },
   input: {
     marginTop: 12,
     fontSize: 16,
     fontWeight: 500,
+    fontFamily: "ComicRelief-Regular",
   },
   inputText: {
     width: 220,
@@ -161,6 +165,7 @@ const styles = StyleSheet.create({
     padding: 12,
     paddingVertical: 2,
     paddingHorizontal: 25,
+    fontFamily: "ComicRelief-Regular",
   },
   button: {
     backgroundColor: "#56bbf1",

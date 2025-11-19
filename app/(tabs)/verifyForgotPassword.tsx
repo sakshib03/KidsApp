@@ -112,7 +112,7 @@ export default function VerifyForgotPassword() {
         console.log("Password reset successful - navigating to login");
         await AsyncStorage.multiRemove(["resetUsername", "resetEmail"]);
 
-        router.replace("/(tabs)/login");
+        router.replace("/(tabs)/auth/login");
       } else {
         const errorMessage =
           data.detail ||

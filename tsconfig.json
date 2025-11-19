@@ -13,5 +13,5 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-, "app/(tabs)/login.tsx", "app/(tabs)/AuthCheck.tsx", "app/(tabs)/_layout.tsx", "app/(tabs)/changeParentPass.tsx", "app/(tabs)/changePassword.tsx", "app/(tabs)/chatbot.tsx", "app/(tabs)/config.tsx", "app/(tabs)/dashboard.tsx", "app/(tabs)/forgotPassParent.tsx", "app/(tabs)/forgotPassword.tsx", "app/(tabs)/index.tsx", "app/(tabs)/joke.tsx", "app/(tabs)/profile.tsx", "app/(tabs)/question.tsx", "app/(tabs)/quiz.tsx", "app/(tabs)/redeemRewards.tsx", "app/(tabs)/reminders.tsx", "app/(tabs)/signup.tsx", "app/(tabs)/story.tsx", "app/(tabs)/verifyForgotPassword.tsx", "app/_layout.tsx"  ]
+, "app/(tabs)/auth/login.tsx", "app/(tabs)/AuthCheck.tsx", "app/(tabs)/_layout.tsx", "app/(tabs)/changeParentPass.tsx", "app/(tabs)/changePassword.tsx", "app/(tabs)/chatbot.tsx", "app/(tabs)/config.tsx", "app/(tabs)/dashboard.tsx", "app/(tabs)/forgotPassParent.tsx", "app/(tabs)/forgotPassword.tsx", "app/(tabs)/index.tsx", "app/(tabs)/joke.tsx", "app/(tabs)/profile.tsx", "app/(tabs)/question.tsx", "app/(tabs)/quiz.tsx", "app/(tabs)/redeemRewards.tsx", "app/(tabs)/reminders.tsx", "app/(tabs)/auth/signup.tsx", "app/(tabs)/story.tsx", "app/(tabs)/verifyForgotPassword.tsx", "app/_layout.tsx"  ]
 }

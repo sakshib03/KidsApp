@@ -1,20 +1,19 @@
-import React, { useState, useEffect, useRef, Children } from "react";
-import {
-  View,
-  Text,
-  Button,
-  StyleSheet,
-  ImageBackground,
-  TouchableOpacity,
-  TextInput,
-  Image,
-  Alert,
-} from "react-native";
-import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import * as Font from "expo-font";
-import { API_BASE } from "./config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Font from "expo-font";
+import { router } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  Alert,
+  Image,
+  ImageBackground,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { API_BASE } from "../config";
 
 export default function LoginScreen() {
   const [secure, setSecure] = useState(true);
@@ -36,8 +35,8 @@ export default function LoginScreen() {
 
   useEffect(() => {
     Font.loadAsync({
-      "ComicRelief-Bold": require("../../assets/fonts/ComicRelief-Bold.ttf"),
-      "ComicRelief-Regular": require("../../assets/fonts/ComicRelief-Regular.ttf"),
+      "ComicRelief-Bold": require("../../../assets/fonts/ComicRelief-Bold.ttf"),
+      "ComicRelief-Regular": require("../../../assets/fonts/ComicRelief-Regular.ttf"),
     }).then(() => setFontsLoaded(true));
 
     checkExistingAuth();
@@ -52,7 +51,7 @@ export default function LoginScreen() {
 
       if (loginTime && accessToken && userType) {
         const isTokenValid = checkTokenValidity(loginTime);
-        
+
         if (isTokenValid) {
           if (userType === "child") {
             router.replace("/(tabs)/chatbot");
@@ -73,7 +72,7 @@ export default function LoginScreen() {
     const FIFTEEN_DAYS_IN_MS = 15 * 24 * 60 * 60 * 1000;
     const currentTime = new Date().getTime();
     const loginTimestamp = parseInt(loginTime);
-    
+
     return currentTime - loginTimestamp < FIFTEEN_DAYS_IN_MS;
   };
 
@@ -82,12 +81,12 @@ export default function LoginScreen() {
     try {
       await AsyncStorage.multiRemove([
         "accessToken",
-        "loginTime", 
+        "loginTime",
         "userType",
         "childId",
         "parentId",
         "userData",
-        "parentData"
+        "parentData",
       ]);
     } catch (error) {
       console.error("Error clearing auth storage:", error);
@@ -98,11 +97,11 @@ export default function LoginScreen() {
   const storeAuthData = async (userType, data) => {
     try {
       const loginTime = new Date().getTime().toString();
-      
+
       await AsyncStorage.multiSet([
         ["accessToken", data.access_token || `token_${loginTime}`],
         ["loginTime", loginTime],
-        ["userType", userType]
+        ["userType", userType],
       ]);
 
       // Store user-specific data
@@ -120,8 +119,11 @@ export default function LoginScreen() {
         );
       } else if (userType === "parent") {
         await AsyncStorage.setItem("parentId", data.parent_id.toString());
-        if(data.children && data.children.length >0){
-          await AsyncStorage.setItem("childId", data.children[0].child_id.toString());
+        if (data.children && data.children.length > 0) {
+          await AsyncStorage.setItem(
+            "childId",
+            data.children[0].child_id.toString()
+          );
         }
         await AsyncStorage.setItem(
           "parentData",
@@ -170,6 +172,11 @@ export default function LoginScreen() {
       const data = await response.json();
 
       if (response.ok) {
+         if (data.message && data.message.includes("blocked")) {
+          Alert.alert("Account Blocked", data.message);
+          console.log("Blocked login attempt:", data.message);
+          return;
+        }
         await storeAuthData("child", data);
 
         Alert.alert("Success", "Login successful!");
@@ -222,7 +229,6 @@ export default function LoginScreen() {
     }
   };
 
-
   const handleLogin = () => {
     if (openChild) {
       handleChildLogin();
@@ -254,27 +260,27 @@ export default function LoginScreen() {
 
   return (
     <ImageBackground
-      source={require("@/assets/images/background.png")}
+      source={require("@/assets/images/login/bg1.png")}
       style={styles.background}
     >
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <View style={{ justifyContent: "center", alignItems: "center" }}>
           <Image
-            source={require("@/assets/images/logo1.png")}
+            source={require("@/assets/images/login/logo.png")}
             style={styles.logo}
           />
           <Text
             style={{
               fontSize: 20,
               marginBottom: 2,
-              color: "#F25F3B",
+              color: "#0F6424",
               fontWeight: 600,
               marginTop: 10,
             }}
           >
             Welcome Back!
           </Text>
-          <Text style={{ fontFamily: "ComicRelief-Regular", color: "#F25F3B" }}>
+          <Text style={{ fontFamily: "ComicRelief-Regular", color: "#0F6424" }}>
             Login to Continue your adventure.
           </Text>
         </View>
@@ -285,6 +291,7 @@ export default function LoginScreen() {
             flexDirection: "column",
             marginBottom: 30,
             marginTop: 30,
+            
           }}
         >
           <View
@@ -295,7 +302,7 @@ export default function LoginScreen() {
                 styles.signupFor,
                 {
                   marginRight: 2,
-                  backgroundColor: openChild ? "#F25F3B" : "#f8a792",
+                  backgroundColor: openChild ? "#0F6424" : "#8dff98ff",
                 },
               ]}
               onPress={switchToChild}
@@ -305,7 +312,7 @@ export default function LoginScreen() {
             <TouchableOpacity
               style={[
                 styles.signupFor,
-                { backgroundColor: openParent ? "#F25F3B" : "#f8a792" },
+                { backgroundColor: openParent ? "#0F6424" : "#8dff98ff" },
               ]}
               onPress={switchToParent}
             >
@@ -319,7 +326,7 @@ export default function LoginScreen() {
                 <TextInput
                   style={styles.inputText}
                   placeholder="Username"
-                  placeholderTextColor="#F25F3B"
+                  placeholderTextColor="#0F6424"
                   underlineColorAndroid="transparent"
                   value={loginData.username}
                   onChangeText={(text) => handleInputChange("username", text)}
@@ -339,7 +346,7 @@ export default function LoginScreen() {
                   style={[styles.inputText, { flex: 1 }]}
                   secureTextEntry={secure}
                   placeholder="Password"
-                  placeholderTextColor="#F25F3B"
+                  placeholderTextColor="#0F6424"
                   value={loginData.password}
                   onChangeText={(text) => handleInputChange("password", text)}
                 />
@@ -348,7 +355,7 @@ export default function LoginScreen() {
                     name={secure ? "eye-off" : "eye"}
                     size={16}
                     marginTop={12}
-                    color="#F25F3B"
+                    color="#0F6424"
                   />
                 </TouchableOpacity>
               </View>
@@ -358,7 +365,7 @@ export default function LoginScreen() {
                     marginTop: 10,
                     marginLeft: 20,
                     fontFamily: "ComicRelief-Regular",
-                    color: "#F25F3B",
+                    color: "#0F6424",
                   }}
                   onPress={() => router.push("/(tabs)/forgotPassword")}
                 >
@@ -374,7 +381,7 @@ export default function LoginScreen() {
                 <TextInput
                   style={styles.inputText}
                   placeholder="Email"
-                  placeholderTextColor="#F25F3B"
+                  placeholderTextColor="#0F6424"
                   underlineColorAndroid="transparent"
                   value={loginData.email}
                   onChangeText={(text) => handleInputChange("email", text)}
@@ -396,7 +403,7 @@ export default function LoginScreen() {
                   style={[styles.inputText, { flex: 1 }]}
                   secureTextEntry={secureConfirm}
                   placeholder="Password"
-                  placeholderTextColor="#F25F3B"
+                  placeholderTextColor="#0F6424"
                   value={loginData.parent_password}
                   onChangeText={(text) =>
                     handleInputChange("parent_password", text)
@@ -409,14 +416,14 @@ export default function LoginScreen() {
                     name={secureConfirm ? "eye-off" : "eye"}
                     size={16}
                     marginTop={12}
-                    color="#F25F3B"
+                    color="#0F6424"
                   />
                 </TouchableOpacity>
               </View>
               <TouchableOpacity>
                 <Text
                   style={{
-                    color: "#F25F3B",
+                    color: "#0F6424",
                     marginTop: 10,
                     marginLeft: 20,
                     fontFamily: "ComicRelief-Regular",
@@ -444,18 +451,22 @@ export default function LoginScreen() {
           style={{
             fontFamily: "ComicRelief-Regular",
             marginTop: 6,
-            color: "#F25F3B",
+            color: "#0F6424",
           }}
         >
           Don't have an account?{" "}
           <Text
-            style={{ color: "#F25F3B" }}
-            onPress={() => router.push("/(tabs)/signup")}
+            style={{ color: "#0F6424" }}
+            onPress={() => router.push("/(tabs)/auth/signup")}
           >
             SignUp
           </Text>
         </Text>
       </View>
+      {/* <Image
+      source={require("@/assets/images/login/hello.png")}
+      style={{height:150, width:140, right:-10, position:"relative", bottom:10}}
+      /> */}
     </ImageBackground>
   );
 }
@@ -472,14 +483,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   logo: {
-    width: 100,
-    height: 100,
+    width: 90,
+    height: 90,
     borderRadius: 30,
   },
   input: {
     width: 300,
     marginTop: 22,
-    borderColor: "#F25F3B",
+    borderColor: "#0F6424",
     borderWidth: 1,
     padding: 12,
     paddingVertical: 2,
@@ -490,12 +501,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "ComicRelief-Regular",
     fontWeight: 500,
-    color: "#F25F3B",
+    color: "#1c7833ff",
   },
   button: {
     width: 300,
     marginTop: 6,
-    backgroundColor: "#F25F3B",
+    backgroundColor: "#0F6424",
     padding: 12,
     paddingVertical: 12,
     paddingHorizontal: 35,
@@ -504,7 +515,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   buttonDisabled: {
-    backgroundColor: "#f8a792",
+    backgroundColor: "#b2f892ff",
   },
   buttonText: {
     fontSize: 16,

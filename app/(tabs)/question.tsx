@@ -242,13 +242,7 @@ export default function Question() {
           ) : (
             <View style={styles.errorContainer}>
               <Feather name="alert-circle" size={40} color="#f76868ff" />
-              <Text style={styles.errorText}>Unable to load question.</Text>
-              <TouchableOpacity
-                style={styles.retryButton}
-                onPress={() => childId && fetchQuestion(childId)}
-              >
-                <Text style={styles.retryText}>Try Again</Text>
-              </TouchableOpacity>
+              <Text style={styles.errorText}>{questionData?.message || "Unable to load question."}</Text>  
             </View>
           )}
         </View>
@@ -401,10 +395,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 15,
     padding: 40,
+    backgroundColor:"#fff",
   },
   loadingText: {
     fontSize: 16,
-    color: "#3e3e3eff",
+    color: "#fd7b7bff",
     fontWeight: "500",
     marginTop: 15,
     textAlign: "center",

@@ -6,32 +6,74 @@ import {
   ImageBackground,
   Image,
 } from "react-native";
+import { useEffect, useState } from "react";
 import { router } from "expo-router";
-import { Background } from "@react-navigation/elements";
+import * as Font from "expo-font";
 
 export default function HomeScreen() {
+  const [fontsLoaded, setFontsLoaded] = useState(false);
+  useEffect(() => {
+    Font.loadAsync({
+      "ComicRelief-Bold": require("../../assets/fonts/ComicRelief-Regular.ttf"),
+      "ComicRelief-Regular": require("../../assets/fonts/ComicRelief-Regular.ttf"),
+    }).then(() => setFontsLoaded(true));
+  }, []);
   return (
     <ImageBackground
-      source={require("@/assets/images/background.png")}
+      source={require("@/assets/images/login/bg1.png")}
       style={styles.background}
     >
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <View style={styles.container}>
         <Image
-          source={require("@/assets/images/logo1.png")}
+          source={require("@/assets/images/login/logo.png")}
           style={styles.logo}
         />
-        <Text style={{color:"#F25F3B", fontSize:24, fontFamily: "ComicRelief-Regular", fontWeight:800, marginTop:20}}>Kids Bot</Text>
-        <Text style={{color:"#F25F3B", fontSize:24, fontFamily: "ComicRelief-Regular", fontWeight:800, marginBottom:30}}>Welcome!</Text>
+        <Text
+          style={{
+            color: "#0F6424",
+            fontSize: 26,
+            fontFamily: "ComicRelief-Regular",
+            fontWeight: 800,
+            marginTop: 20,
+          }}
+        >
+          Kids Bot
+        </Text>
+        <Text
+          style={{
+            color: "#0F6424",
+            fontSize: 28,
+            fontFamily: "ComicRelief-Regular",
+            fontWeight: 800,
+            marginBottom: 30,
+          }}
+        >
+          Welcome!
+        </Text>
         <TouchableOpacity
           style={styles.button}
-          onPress={() => router.push("/(tabs)/signup")}
+          onPress={() => router.push("/(tabs)/auth/signup")}
         >
           <Text style={styles.buttonText}>CREATE AN ACCOUNT</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={()=> router.push("/(tabs)/login")}>
-          <Text style={{ fontSize: 20, marginBottom:20, color:'#F25F3B', fontWeight:500}}>lOGIN</Text>
+        <TouchableOpacity onPress={() => router.push("/(tabs)/auth/login")}>
+          <Text
+            style={{
+              fontSize: 20,
+              marginBottom: 20,
+              color: "#0F6424",
+              fontWeight: 600,
+              fontFamily: "ComicRelief-Bold",
+            }}
+          >
+            lOGIN
+          </Text>
         </TouchableOpacity>
       </View>
+      <Image
+      source={require("@/assets/images/login/lets-go.png")}
+      style={{height:240, width:140, left:220, position:"relative", bottom:10}}
+      />
     </ImageBackground>
   );
 }
@@ -42,29 +84,39 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f7f4aeff",
+    marginTop: 100,
+    marginHorizontal: 20,
+    borderRadius: 15,
+  },
   overlay: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
   logo: {
-    width: 110,
-    height: 110,
-    borderRadius:30,
+    width: 90,
+    height: 90,
+    borderRadius: 30,
   },
   button: {
-    alignItems:"center",
+    alignItems: "center",
     marginBottom: 20,
-    marginTop:20,
-    backgroundColor:'#F25F3B',
-    padding:12,
-    paddingVertical:10,
-    paddingHorizontal:35,
-    borderRadius:20,
+    marginTop: 20,
+    backgroundColor: "#0F6424",
+    padding: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 32,
+    borderRadius: 20,
   },
-  buttonText:{
-    fontSize:16,
-    fontWeight:500,
-    color:'#fff'
-  }
+  buttonText: {
+    fontSize: 16,
+    fontWeight: 500,
+    color: "#fff",
+    fontFamily: "ComicRelief-Regular",
+  },
 });
