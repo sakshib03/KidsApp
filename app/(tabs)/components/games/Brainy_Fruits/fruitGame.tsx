@@ -215,7 +215,6 @@ export default function FruitGame() {
 
       // CAPTURE DATA BEFORE SUBMISSION
       const currentLevel = gameData?.level;
-      const currentPoints = gameData?.points;
       const currentQuestion = gameData?.question_number;
       const totalQuestions = gameData?.total_questions_in_level;
 
@@ -267,7 +266,7 @@ export default function FruitGame() {
           console.log("❌ GAME OVER - Showing failed modal");
           setFailedData({
             level: currentLevel,
-            points: currentPoints,
+            points: result.points,
             rewardMessage: result.reward_message,
             lives: result.lives,
           });
@@ -277,7 +276,7 @@ export default function FruitGame() {
           console.log("🎉 LEVEL COMPLETED! Showing completion modal");
           setCompletionData({
             level: currentLevel,
-            points: currentPoints,
+            points: result.points,
             rewardMessage: result.reward_message,
             totalQuestions: totalQuestions,
           });

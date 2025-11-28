@@ -1,23 +1,20 @@
-import { useState, useEffect } from "react";
-import {
-  Text,
-  View,
-  TouchableOpacity,
-  StyleSheet,
-  ImageBackground,
-  TextInput,
-  Alert,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  TouchableWithoutFeedback,
-  Keyboard,
-} from "react-native";
-import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_BASE } from "./config";
-import { Background } from "@react-navigation/elements";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+    ActivityIndicator,
+    Alert,
+    ImageBackground,
+    KeyboardAvoidingView,
+    Platform,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from "react-native";
+import { API_BASE } from "../utils/config";
 
 export default function ChangeParentPass() {
   const [formData, setFormData] = useState({
@@ -133,7 +130,7 @@ export default function ChangeParentPass() {
       if (response.ok) {
         Alert.alert("Success", "Parent password changed successfully`");
         setTimeout(() => {
-          router.push("/(tabs)/dashboard");
+          router.push("/(tabs)/components/dashboard");
         }, 1000);
       } else {
         const errorMessage =

@@ -12,16 +12,29 @@ import {
 import * as Font from "expo-font";
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Feather, Ionicons } from "@expo/vector-icons";
+import { Audio } from "expo-av";
+import { soundManager } from "@/app/(tabs)/utils/soundManager";
 
 export default function WelcomePage() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [childId, setChildId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isSoundPlaying, setIsSoundPlaying] = useState(true);
 
   useEffect(() => {
     loadFonts();
     fetchChildId();
   }, []);
+
+  const toggleSound = async () => {
+      try {
+        await soundManager.toggle();
+        setIsSoundPlaying(soundManager.getIsPlaying());
+      } catch (error) {
+        console.error("Error toggling sound:", error);
+      }
+    };
 
   const loadFonts = async () => {
     try {
@@ -122,10 +135,25 @@ export default function WelcomePage() {
               marginRight: 20,
             }}
           >
-            <TouchableOpacity>
-              <Image
-                source={require("@/assets/images/games/spellGame/volume.png")}
-                style={{ width: 40, height: 40 }}
+            <TouchableOpacity
+              style={{
+                backgroundColor: "#8f3db6ff",
+                width: 45,
+                height: 45,
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: 50,
+              }}
+              onPress={toggleSound}
+            >
+              <Ionicons
+                name={
+                  isSoundPlaying
+                    ? "volume-medium-outline"
+                    : "volume-mute-outline"
+                }
+                size={30}
+                color="#fff"
               />
             </TouchableOpacity>
 
@@ -136,14 +164,14 @@ export default function WelcomePage() {
             >
               <Image
                 source={require("@/assets/images/games/spellGame/level-spell.png")}
-                style={{ width: 40, height: 40, borderRadius: 50 }}
+                style={{ width: 45, height: 45, borderRadius: 50 }}
               />
             </TouchableOpacity>
 
             <TouchableOpacity>
               <Image
                 source={require("@/assets/images/games/spellGame/questions.png")}
-                style={{ width: 40, height: 40, borderRadius: 50 }}
+                style={{ width: 45, height: 45, borderRadius: 50 }}
               />
             </TouchableOpacity>
           </View>
@@ -176,7 +204,7 @@ export default function WelcomePage() {
       </View>
 
       <TouchableOpacity
-      onPress={()=>router.push("/components/games/Spell_Breaker/settings")}
+        onPress={() => router.push("/components/games/Spell_Breaker/settings")}
       >
         <Image
           source={require("@/assets/images/games/spellGame/settings.png")}

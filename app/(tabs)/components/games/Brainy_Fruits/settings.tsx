@@ -10,13 +10,25 @@ import {
 } from "react-native";
 import * as Font from "expo-font";
 import { router } from "expo-router";
+import { Feather, Ionicons } from "@expo/vector-icons";
+import { soundManager } from "@/app/(tabs)/utils/soundManager";
 
 export default function Settings() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [isSoundPlaying, setIsSoundPlaying] = useState(true);
 
   useEffect(() => {
     loadFonts();
   }, []);
+
+  const toggleSound = async () => {
+    try {
+      await soundManager.toggle();
+      setIsSoundPlaying(soundManager.getIsPlaying());
+    } catch (error) {
+      console.error("Error toggling sound:", error);
+    }
+  };
 
   const loadFonts = async () => {
     try {
@@ -55,15 +67,28 @@ export default function Settings() {
           />
           <Image
             source={require("@/assets/images/games/settings1.png")}
-            style={[styles.completedBanner,{width:150, top:-50}]}
+            style={[styles.completedBanner, { width: 150, top: -50 }]}
           />
 
           <View style={styles.container}>
             <View style={{ flexDirection: "row", gap: 25, marginTop: 30 }}>
-              <TouchableOpacity>
-                <Image
-                  source={require("@/assets/images/games/audio.png")}
-                  style={{ width: 50, height: 50 }}
+              <TouchableOpacity
+                style={{
+                  width: 45,
+                  height: 45,
+                  padding: 4,
+                  backgroundColor: "#fff",
+                }}
+                onPress={toggleSound}
+              >
+                <Ionicons
+                  name={
+                    isSoundPlaying
+                      ? "volume-medium-outline"
+                      : "volume-mute-outline"
+                  }
+                  size={40}
+                  color="#1b4621ff"
                 />
               </TouchableOpacity>
 
@@ -76,14 +101,14 @@ export default function Settings() {
               >
                 <Image
                   source={require("@/assets/images/games/home.png")}
-                  style={{ width: 50, height: 50 }}
+                  style={{ width: 50, height: 45 }}
                 />
               </TouchableOpacity>
 
               <TouchableOpacity>
                 <Image
                   source={require("@/assets/images/games/question.png")}
-                  style={{ width: 50, height: 50 }}
+                  style={{ width: 45, height: 45 }}
                 />
               </TouchableOpacity>
             </View>
@@ -100,37 +125,34 @@ export default function Settings() {
                 paddingVertical: 8,
                 paddingHorizontal: 20,
                 borderRadius: 6,
-                marginTop:10
+                marginTop: 10,
               }}
-              onPress={()=>router.push("/(tabs)/components/games/Brainy_Fruits/progress")}
+              onPress={() =>
+                router.push("/(tabs)/components/games/Brainy_Fruits/progress")
+              }
             >
-
               <Text style={styles.levelTitle}>Your Progress</Text>
             </TouchableOpacity>
 
             {/* Stars Section */}
             <View style={styles.infoContainer}>
               <TouchableOpacity>
-                <Text style={styles.progress}>{'\u25CF'} How to play</Text>
+                <Text style={styles.progress}>{"\u25CF"} How to play</Text>
               </TouchableOpacity>
 
               <TouchableOpacity>
-                <Text style={styles.progress}>{'\u25CF'} Features</Text>
+                <Text style={styles.progress}>{"\u25CF"} Features</Text>
               </TouchableOpacity>
 
               <TouchableOpacity>
-                <Text style={styles.progress}>{'\u25CF'} Accessibility</Text>
+                <Text style={styles.progress}>{"\u25CF"} Accessibility</Text>
               </TouchableOpacity>
-
-              
             </View>
 
             <TouchableOpacity
               style={styles.backButton}
               onPress={() =>
-                router.push(
-                  "/(tabs)/components/games/gamesDashboard"
-                )
+                router.push("/(tabs)/components/games/gamesDashboard")
               }
             >
               <Image
@@ -213,10 +235,10 @@ const styles = StyleSheet.create({
     textShadowRadius: 3,
   },
   infoContainer: {
-    marginTop:15,
+    marginTop: 15,
     marginLeft: 60,
     width: "100%",
-    alignContent:"center"
+    alignContent: "center",
   },
   progress: {
     fontSize: 18,
@@ -231,7 +253,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 15,
     marginBottom: 10,
-    marginTop:20,
+    marginTop: 20,
   },
   buttonText: {
     marginTop: 2,

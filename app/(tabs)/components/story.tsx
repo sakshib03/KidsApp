@@ -1,19 +1,19 @@
-import { useState, useEffect } from "react";
-import {
-  Text,
-  View,
-  TouchableOpacity,
-  StyleSheet,
-  ImageBackground,
-  TextInput,
-  Image,
-  ScrollView,
-} from "react-native";
-import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_BASE } from "./config";
 import * as Font from "expo-font";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+  Image,
+  ImageBackground,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from "react-native";
+import { useTheme } from "../utils/ThemeContext";
+import { API_BASE } from "../utils/config";
 
 export default function Story() {
   const [story, setStory] = useState("");
@@ -23,6 +23,7 @@ export default function Story() {
   const [childId, setChildId] = useState(null);
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [currentCartoon, setCurrentCartoon]=useState(null);
+  const {theme}=useTheme();
 
   const cartoons=[
     require("@/assets/images/dragon.png"),
@@ -32,8 +33,8 @@ export default function Story() {
 
   useEffect(() => {
     Font.loadAsync({
-      "ComicRelief-Bold": require("../../assets/fonts/ComicRelief-Bold.ttf"),
-      "ComicRelief-Regular": require("../../assets/fonts/ComicRelief-Regular.ttf"),
+      "ComicRelief-Bold": require("../../../assets/fonts/ComicRelief-Bold.ttf"),
+      "ComicRelief-Regular": require("../../../assets/fonts/ComicRelief-Regular.ttf"),
     }).then(() => setFontsLoaded(true));
 
     const randomIndex=Math.floor(Math.random()*cartoons.length);
@@ -128,7 +129,8 @@ export default function Story() {
 
   return (
     <ImageBackground
-      source={require("@/assets/images/login_image.png")}
+      // source={require("@/assets/images/login_image.png")}
+      source={theme.background}
       style={styles.background}
     >
       <View style={styles.container}>
@@ -136,7 +138,7 @@ export default function Story() {
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => router.push("/(tabs)/chatbot")}
+            onPress={() => router.push("/(tabs)/components/chatbot")}
           >
             <Feather name="arrow-left" size={24} color="#fff" />
             <Text style={styles.backButtonText}>Back to Home</Text>

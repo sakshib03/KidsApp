@@ -1,18 +1,19 @@
-import { useState, useEffect } from "react";
-import {
-  Text,
-  View,
-  TouchableOpacity,
-  StyleSheet,
-  ImageBackground,
-  Image,
-  ScrollView,
-} from "react-native";
-import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_BASE } from "./config";
 import * as Font from "expo-font";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+  Image,
+  ImageBackground,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useTheme } from "../utils/ThemeContext";
+import { API_BASE } from "../utils/config";
 
 export default function Joke() {
   const [joke, setJoke] = useState("");
@@ -20,6 +21,7 @@ export default function Joke() {
   const [loading, setLoading] = useState(false);
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [currentGif, setCurrentGif] = useState(null);
+  const {theme}=useTheme();
 
   const gifs = [
     require("@/assets/gifs/hahaha.gif"),
@@ -30,8 +32,8 @@ export default function Joke() {
 
   useEffect(() => {
     Font.loadAsync({
-      "ComicRelief-Bold": require("../../assets/fonts/ComicRelief-Bold.ttf"),
-      "ComicRelief-Regular": require("../../assets/fonts/ComicRelief-Regular.ttf"),
+      "ComicRelief-Bold": require("../../../assets/fonts/ComicRelief-Bold.ttf"),
+      "ComicRelief-Regular": require("../../../assets/fonts/ComicRelief-Regular.ttf"),
     }).then(() => setFontsLoaded(true));
 
     const randomIndex = Math.floor(Math.random() * gifs.length);
@@ -94,14 +96,15 @@ export default function Joke() {
 
   return (
     <ImageBackground
-      source={require("@/assets/images/bg5.jpg")}
+      // source={require("@/assets/images/login_image.png")}
       style={styles.background}
+      source={theme.background}
     >
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => router.push("/(tabs)/chatbot")}
+            onPress={() => router.push("/(tabs)/components/chatbot")}
           >
             <Feather name="arrow-left" size={24} color={"#fff"} />
             <Text style={styles.backButtonText}>Back to Home</Text>

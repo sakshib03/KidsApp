@@ -1,19 +1,18 @@
-import React, { useEffect, useState } from "react";
-import {
-  Text,
-  View,
-  ImageBackground,
-  Image,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  ScrollView,
-} from "react-native";
+import { API_BASE } from "@/app/(tabs)/utils/config";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Font from "expo-font";
 import { router } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_BASE } from "@/app/(tabs)/config";
+import React, { useEffect, useState } from "react";
+import {
+    Alert,
+    Image,
+    ImageBackground,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from "react-native";
 
 export default function Progress() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
@@ -141,7 +140,7 @@ export default function Progress() {
               <View style={styles.progressItem}>
                 <Text style={styles.progressLabel}>Next Unlock Level:</Text>
                 <Text style={styles.progressValue}>
-                  {progressData?.Next_Unlocked_Level}
+                  {progressData?.next_level}
                 </Text>
               </View>
 

@@ -11,13 +11,24 @@ import {
 import * as Font from "expo-font";
 import { router } from "expo-router";
 import { Feather , Ionicons} from "@expo/vector-icons";
+import { soundManager } from "@/app/(tabs)/utils/soundManager";
 
 export default function Settings() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [isSoundPlaying, setIsSoundPlaying] = useState(true);
 
   useEffect(() => {
     loadFonts();
   }, []);
+
+  const toggleSound = async () => {
+    try {
+      await soundManager.toggle();
+      setIsSoundPlaying(soundManager.getIsPlaying());
+    } catch (error) {
+      console.error("Error toggling sound:", error);
+    }
+  };
 
   const loadFonts = async () => {
     try {
@@ -62,8 +73,17 @@ export default function Settings() {
             <View style={{ flexDirection: "row", gap: 20, marginTop: 20 }}>
               <TouchableOpacity
               style={{backgroundColor:"#223E52" , padding:4, borderRadius:5}}
+              onPress={toggleSound}
               >
-                <Ionicons name="volume-medium-outline" size={30} color="#fff" />
+               <Ionicons
+                name={
+                  isSoundPlaying
+                    ? "volume-medium-outline"
+                    : "volume-mute-outline"
+                }
+                size={30}
+                color="#fff"
+              />
               </TouchableOpacity>
 
               <TouchableOpacity

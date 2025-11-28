@@ -1,23 +1,23 @@
-import { useState, useEffect } from "react";
-import {
-  Text,
-  View,
-  TouchableOpacity,
-  StyleSheet,
-  ImageBackground,
-  TextInput,
-  ScrollView,
-  Alert,
-  FlatList,
-  Platform,
-  ActivityIndicator,
-  RefreshControl
-} from "react-native";
-import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_BASE } from "./config";
 import * as Font from "expo-font";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  ImageBackground,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from "react-native";
+import { useTheme } from "../utils/ThemeContext";
+import { API_BASE } from "../utils/config";
 
 export default function Reminders() {
   const [reminders, setReminders] = useState([]);
@@ -31,12 +31,13 @@ export default function Reminders() {
   const [editingReminder, setEditingReminder] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [fontsLoaded, setFontsLoaded]= useState(false);
+  const {theme}=useTheme();
 
   useEffect(() => {
     initializeData();
     Font.loadAsync({
-      "ComicRelief-Bold": require("../../assets/fonts/ComicRelief-Bold.ttf"),
-      "ComicRelief-Regular": require("../../assets/fonts/ComicRelief-Regular.ttf"),
+      "ComicRelief-Bold": require("../../../assets/fonts/ComicRelief-Bold.ttf"),
+      "ComicRelief-Regular": require("../../../assets/fonts/ComicRelief-Regular.ttf"),
     }).then(() => setFontsLoaded(true));
   }, []);
 
@@ -425,15 +426,16 @@ export default function Reminders() {
 
   return (
     <ImageBackground
-      source={require("@/assets/images/theme1.png")}
+      // source={require("@/assets/images/theme1.png")}
       style={styles.background}
+      source={theme.background}
     >
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => router.push("/(tabs)/chatbot")}
+            onPress={() => router.push("/(tabs)/components/chatbot")}
           >
             <Feather name="arrow-left" size={20} color={"#fff"} />
             <Text style={styles.backButtonText}>Back to Home</Text>
@@ -645,7 +647,7 @@ const styles = StyleSheet.create({
     width: "100%",
     padding: 18,
     borderRadius: 10,
-    backgroundColor: "rgba(61, 163, 248, 0.95)",
+    backgroundColor: "rgba(89, 180, 255, 0.95)",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,

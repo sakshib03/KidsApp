@@ -1,31 +1,42 @@
-import { Background, HeaderTitle } from "@react-navigation/elements";
-import { useEffect, useState } from "react";
-import {
-  Text,
-  View,
-  StyleSheet,
-  ImageBackground,
-  Image,
-  TouchableOpacity,
-  Dimensions,
-  Alert,
-} from "react-native";
+import { API_BASE } from "@/app/(tabs)/utils/config";
+import { Feather, Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Audio } from "expo-av";
 import * as Font from "expo-font";
 import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+    Alert,
+    Dimensions,
+    Image,
+    ImageBackground,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import { soundManager } from "@/app/(tabs)/utils/soundManager";
 const { width, height } = Dimensions.get("window");
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_BASE } from "@/app/(tabs)/config";
-import { Feather, Ionicons } from "@expo/vector-icons";
 
 export default function WelcomePage() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [childId, setChildId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isSoundPlaying, setIsSoundPlaying] = useState(true);
 
   useEffect(() => {
     loadFonts();
     fetchChildId();
   }, []);
+
+  const toggleSound = async () => {
+    try {
+      await soundManager.toggle();
+      setIsSoundPlaying(soundManager.getIsPlaying());
+    } catch (error) {
+      console.error("Error toggling sound:", error);
+    }
+  };
 
   const loadFonts = async () => {
     try {
@@ -38,6 +49,7 @@ export default function WelcomePage() {
       console.error("Error loading fonts:", error);
     }
   };
+
 
   const fetchChildId = async () => {
     try {
@@ -99,7 +111,7 @@ export default function WelcomePage() {
         style={styles.background}
         resizeMode="cover"
       >
-        <View style={{flexDirection:"row", justifyContent:"space-between"}}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
           <View>
             <TouchableOpacity
               style={styles.backBtn}
@@ -108,7 +120,7 @@ export default function WelcomePage() {
               }
               disabled={loading}
             >
-               <Feather name="arrow-left" size={26} color={"#fff"} />
+              <Feather name="arrow-left" size={26} color={"#fff"} />
             </TouchableOpacity>
           </View>
 
@@ -127,8 +139,17 @@ export default function WelcomePage() {
                 width: 50,
                 borderRadius: 50,
               }}
+              onPress={toggleSound}
             >
-              <Ionicons name="volume-medium-outline" size={28} color="#fff" />
+              <Ionicons
+                name={
+                  isSoundPlaying
+                    ? "volume-medium-outline"
+                    : "volume-mute-outline"
+                }
+                size={30}
+                color="#fff"
+              />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -226,7 +247,13 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-  backBtn: { marginLeft: 20, marginTop: 30, backgroundColor:"#223E52" , padding:6, borderRadius:5},
+  backBtn: {
+    marginLeft: 20,
+    marginTop: 30,
+    backgroundColor: "#223E52",
+    padding: 6,
+    borderRadius: 5,
+  },
   backIcon: {
     width: 45,
     height: 45,
@@ -252,18 +279,17 @@ const styles = StyleSheet.create({
     marginTop: 60,
   },
 
-  /* SIGNBOARD shifted right */
   signWrapper: {
     position: "absolute",
-    top: height * 0.56,
-    left: 140,
+    bottom: 50,
+    left: 145,
     width: width * 0.6,
     height: height * 0.38,
     alignItems: "center",
   },
 
   playButton: {
-    width: "66%",
+    width: "67%",
     height: "23%",
   },
 

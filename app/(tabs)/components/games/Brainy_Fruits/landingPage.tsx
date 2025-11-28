@@ -1,16 +1,13 @@
-import {
-  Text,
-  View,
-  ImageBackground,
-  Image,
-  StyleSheet,
-  Alert,
-} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Font from "expo-font";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import * as Font from "expo-font";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_BASE } from "@/app/(tabs)/config";
+import {
+    ImageBackground,
+    StyleSheet,
+    Text,
+    View
+} from "react-native";
 
 export default function LandingPage() {
   const [fontsLoaded, setFontsLoaded] = useState(false);

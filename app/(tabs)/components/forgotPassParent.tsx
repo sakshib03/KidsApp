@@ -1,18 +1,18 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  Text,
-  View,
-  TouchableOpacity,
-  StyleSheet,
-  ImageBackground,
-  TextInput,
-  ScrollView,
-  ActivityIndicator,
-  Alert,
+    ActivityIndicator,
+    Alert,
+    ImageBackground,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_BASE } from "./config";
+import { API_BASE } from "../utils/config";
 
 export default function ForgotPassParent() {
   const [email, setEmail] = useState("");
@@ -63,7 +63,7 @@ export default function ForgotPassParent() {
         await AsyncStorage.setItem("resetEmail", email);
         Alert.alert("Success", "OTP sent to your email address");
         setTimeout(()=>{
-          router.push("/(tabs)/verifyForgotPassword");
+          router.push("/(tabs)/components/verifyForgotPassword");
         },1000)
       } else {
         setLoginError(data.message || "Failed to send OTP. Please try again.");

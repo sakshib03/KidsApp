@@ -4,18 +4,18 @@ import { router } from "expo-router";
 import moment from "moment";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Alert,
-  FlatList,
-  ImageBackground,
-  Modal,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    FlatList,
+    ImageBackground,
+    Modal,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { API_BASE } from "../config";
+import { API_BASE } from "../utils/config";
 
 export default function SignUpScreen() {
   const [secureChild, setSecureChild] = useState(true);

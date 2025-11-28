@@ -23,9 +23,9 @@ export default function AuthCheck(){
       if (accessToken && isTokenValid && userType) {
         // Auto-redirect based on user type
         if (userType === "child") {
-          router.replace("/(tabs)/chatbot");
+          router.replace("/(tabs)/components/chatbot");
         } else if (userType === "parent") {
-          router.replace("/(tabs)/dashboard");
+          router.replace("/(tabs)/components/dashboard");
         }
       } else {
         // Token expired or invalid, clear storage and stay on login

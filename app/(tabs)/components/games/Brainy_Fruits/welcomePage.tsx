@@ -13,16 +13,28 @@ import * as Font from "expo-font";
 import { router } from "expo-router";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Audio } from "expo-av";
+import { soundManager } from "../../../utils/soundManager";
 
 export default function WelcomePage() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [childId, setChildId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isSoundPlaying, setIsSoundPlaying] = useState(true);
 
   useEffect(() => {
     loadFonts();
     fetchChildId();
   }, []);
+
+  const toggleSound = async () => {
+    try {
+      await soundManager.toggle();
+      setIsSoundPlaying(soundManager.getIsPlaying());
+    } catch (error) {
+      console.error("Error toggling sound:", error);
+    }
+  };
 
   const loadFonts = async () => {
     try {
@@ -35,6 +47,42 @@ export default function WelcomePage() {
       console.error("Error loading fonts:", error);
     }
   };
+
+  // const loadBackgroundSound = async () => {
+  //   try {
+  //     console.log("Loading Background sound..");
+  //     const { sound } = await Audio.Sound.createAsync(
+  //       require("@/assets/audio/game-music-loop2.mp3")
+  //     );
+  //     setBackgroundSound(sound);
+
+  //     await sound.playAsync();
+  //     setIsSoundPlaying(true);
+  //     console.log("Background sound started playing");
+
+  //     sound.setIsLoopingAsync(true);
+  //   } catch (error) {
+  //     console.error("error loading background sound:", error);
+  //   }
+  // };
+
+  // const toggleSound = async () => {
+  //   try {
+  //     if (backgroundSound) {
+  //       if (isSoundPlaying) {
+  //         await backgroundSound.pauseAsync();
+  //         setIsSoundPlaying(false);
+  //         console.log("Sound paused");
+  //       } else {
+  //         await backgroundSound.playAsync();
+  //         setIsSoundPlaying(true);
+  //         console.log("Sound resumed");
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error("Error toggling sound:", error);
+  //   }
+  // };
 
   const fetchChildId = async () => {
     try {
@@ -72,12 +120,9 @@ export default function WelcomePage() {
         const data = await response.json();
         await AsyncStorage.setItem("gameSessionId", data.session_id);
         await AsyncStorage.setItem("currentGameData", JSON.stringify(data));
-        console.log(
-          "🎮 Start API called successfully, storing game data:",
-          data
-        );
+        console.log(" Start API called successfully, storing game data:", data);
 
-        console.log("🎮 Start API called successfully, navigating to game");
+        console.log("Start API called successfully, navigating to game");
         router.push("/(tabs)/components/games/Brainy_Fruits/fruitGame");
       } else {
         Alert.alert("Error", "Failed to start game");
@@ -95,64 +140,75 @@ export default function WelcomePage() {
       source={require("@/assets/images/games/bg1.png")}
       style={styles.background}
     >
-      <TouchableOpacity
-        style={styles.backBtn}
-        onPress={() => router.push("/(tabs)/components/games/gamesDashboard")}
-        disabled={loading}
-      >
-        <Image
-          source={require("@/assets/images/games/back-arrow.png")}
-          style={styles.backIcon}
-        />
-      </TouchableOpacity>
-      <View
-        style={{
-          flexDirection: "column",
-          gap: 12,
-          marginTop: 20,
-          position: "relative",
-          marginLeft: 20,
-        }}
-      >
-        <TouchableOpacity
-          // style={{
-          //   backgroundColor: "#fff",
-          //   width: 40,
-          //   height: 40,
-          //   alignItems: "center",
-          //   borderRadius: 10,
-          // }}
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        <View>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() =>
+              router.push("/(tabs)/components/games/gamesDashboard")
+            }
+            disabled={loading}
+          >
+            <Image
+              source={require("@/assets/images/games/back-arrow.png")}
+              style={styles.backIcon}
+            />
+          </TouchableOpacity>
+        </View>
+
+        <View
+          style={{
+            flexDirection: "column",
+            gap: 12,
+            position: "relative",
+            marginRight: 20,
+          }}
         >
-          {/* <Ionicons
-            name="volume-medium-outline"
-            size={28}
-            marginTop={14}
-            color="#1b4621ff"
-          /> */}
-          <Image
+          <TouchableOpacity
+            style={{
+              backgroundColor: "#fff",
+              width: 40,
+              height: 40,
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: 10,
+            }}
+            onPress={toggleSound}
+          >
+            <Ionicons
+              name={
+                isSoundPlaying ? "volume-medium-outline" : "volume-mute-outline"
+              }
+              size={30}
+              marginTop={14}
+              color="#1b4621ff"
+            />
+            {/* <Image
             source={require("@/assets/images/games/audio.png")}
-            style={{ width: 40, height: 40 }}
-          />
-        </TouchableOpacity>
+            style={{ width: 40, height: 40, borderRadius:5 }}
+          /> */}
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={() =>
-            router.push("/(tabs)/components/games/Brainy_Fruits/gameLevel")
-          }
-        >
-          <Image
-            source={require("@/assets/images/games/level2.png")}
-            style={{ width: 40, height: 40 }}
-          />
-        </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() =>
+              router.push("/(tabs)/components/games/Brainy_Fruits/gameLevel")
+            }
+          >
+            <Image
+              source={require("@/assets/images/games/level2.png")}
+              style={{ width: 40, height: 40, borderRadius: 5 }}
+            />
+          </TouchableOpacity>
 
-        <TouchableOpacity>
-          <Image
-            source={require("@/assets/images/games/question.png")}
-            style={{ width: 40, height: 40 }}
-          />
-        </TouchableOpacity>
+          <TouchableOpacity>
+            <Image
+              source={require("@/assets/images/games/question.png")}
+              style={{ width: 40, height: 40, borderRadius: 5 }}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
+
       <View style={styles.welcomeContainer}>
         <View style={styles.imageWrapper}>
           <Image

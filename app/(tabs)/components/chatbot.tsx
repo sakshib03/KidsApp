@@ -1,28 +1,28 @@
-import { useEffect, useState, useRef } from "react";
-import {
-  Text,
-  View,
-  TouchableOpacity,
-  StyleSheet,
-  ImageBackground,
-  TextInput,
-  Alert,
-  Platform,
-  PermissionsAndroid,
-  ScrollView,
-  FlatList,
-  KeyboardAvoidingView,
-  ActivityIndicator,
-  SafeAreaView,
-  StatusBar,
-} from "react-native";
-import { router } from "expo-router";
 import { Feather, Ionicons } from "@expo/vector-icons";
-import * as Speech from "expo-speech";
-import * as Font from "expo-font";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Audio } from "expo-av";
-import { API_BASE } from "./config";
+import * as Font from "expo-font";
+import { router } from "expo-router";
+import * as Speech from "expo-speech";
+import { useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  ImageBackground,
+  KeyboardAvoidingView,
+  PermissionsAndroid,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from "react-native";
+import { useTheme } from "../utils/ThemeContext";
+import { API_BASE } from "../utils/config";
 
 export default function ChatBot() {
   const [micOn, setMicOn] = useState(false);
@@ -41,6 +41,8 @@ export default function ChatBot() {
   const [recording, setRecording] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeechToSpeechLoading, setIsSpeechToSpeechLoading] = useState(false);
+  const [audioLoadingId, setAudioLoadingId] = useState(null);
+  const { theme } = useTheme();
 
   // Sample initial messages for demo
   const initialMessages = [
@@ -295,6 +297,7 @@ export default function ChatBot() {
     if (!messageItem.text.trim()) return;
 
     try {
+      setAudioLoadingId(messageItem.id);
       if (messageItem.message_id && userData?.child_id) {
         const audioUrl = `${API_BASE}/generate-chat-audio?child_id=${userData.child_id}&message_id=${messageItem.message_id}`;
 
@@ -363,11 +366,13 @@ export default function ChatBot() {
       });
 
       Alert.alert("Info", "Playing text-to-speech version");
+    } finally {
+      setAudioLoadingId(null);
     }
   };
 
   const speakText = async (messageItem) => {
-    if (!messageItem.text.trim()) return;
+    if (!messageItem.text.trim() || audioLoadingId) return;
 
     // Use the new audio generation function
     await generateAndPlayAudio(messageItem);
@@ -596,8 +601,13 @@ export default function ChatBot() {
           <TouchableOpacity
             style={styles.speakButton}
             onPress={() => speakText(item)}
+            disabled={audioLoadingId === item.id}
           >
-            <Ionicons name="volume-medium-outline" size={16} color="#666" />
+            {audioLoadingId === item.id ? (
+              <ActivityIndicator size="small" color="#56bbf1" />
+            ) : (
+              <Ionicons name="volume-medium-outline" size={16} color="#666" />
+            )}
           </TouchableOpacity>
         )}
       </View>
@@ -618,146 +628,142 @@ export default function ChatBot() {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar backgroundColor="#56bbf1" barStyle="dark-content" />
-      <ImageBackground
-        source={require("@/assets/images/login_image.png")}
-        style={styles.background}
+    <ImageBackground
+      // source={require("@/assets/images/login_image.png")}
+      style={styles.background}
+      source={theme.background}
+    >
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
-        <KeyboardAvoidingView
-          style={styles.container}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <TouchableOpacity
-                style={styles.iconButton}
-                onPress={() => {
-                  setShowHistory(!showHistory);
-                  if (!showHistory) fetchChatHistory();
-                }}
-              >
-                <Feather name="menu" size={22} color="#239a5e" />
-              </TouchableOpacity>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => {
+                setShowHistory(!showHistory);
+                if (!showHistory) fetchChatHistory();
+              }}
+            >
+              <Feather name="menu" size={22} color="#239a5e" />
+            </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.iconButton}
-                onPress={() => router.push("/(tabs)/profile")}
-              >
-                <Feather name="user" size={20} color="#239a5e" />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.headerTitle}>Learning Buddy</Text>
-
-            <View style={styles.headerRight}>
-              <TouchableOpacity
-                style={styles.iconButton}
-                onPress={() => router.push("/(tabs)/reminders")}
-              >
-                <Feather name="bell" size={20} color="#239a5e" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.iconButton}
-                onPress={handleLogout}
-              >
-                <Feather name="log-out" size={20} color="#239a5e" />
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => router.push("/(tabs)/components/profile")}
+            >
+              <Feather name="user" size={20} color="#239a5e" />
+            </TouchableOpacity>
           </View>
 
-          {/* Chat Area */}
-          <View style={styles.chatContainer}>
-            <FlatList
-              ref={flatListRef}
-              data={messages}
-              renderItem={renderMessage}
-              keyExtractor={(item) => item.id}
-              style={styles.messagesList}
-              contentContainerStyle={styles.messagesContainer}
-              showsVerticalScrollIndicator={false}
-              onContentSizeChange={() =>
-                flatListRef.current?.scrollToEnd({ animated: true })
-              }
+          <Text style={styles.headerTitle}>Learning Buddy</Text>
+
+          <View style={styles.headerRight}>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => router.push("/(tabs)/components/reminders")}
+            >
+              <Feather name="bell" size={20} color="#239a5e" />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.iconButton} onPress={handleLogout}>
+              <Feather name="log-out" size={20} color="#239a5e" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Chat Area */}
+        <View style={styles.chatContainer}>
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={(item) => item.id}
+            style={styles.messagesList}
+            contentContainerStyle={styles.messagesContainer}
+            showsVerticalScrollIndicator={false}
+            onContentSizeChange={() =>
+              flatListRef.current?.scrollToEnd({ animated: true })
+            }
+          />
+
+          {isLoading && renderTypingIndicator()}
+        </View>
+
+        {/* Input Section */}
+        <View style={styles.inputSection}>
+          <View style={styles.inputContainer}>
+            <TextInput
+              ref={textInputRef}
+              style={styles.textInput}
+              placeholder="Ask me about animals, science, or anything!..."
+              placeholderTextColor="#999"
+              value={text}
+              onChangeText={setText}
+              multiline
+              maxLength={500}
+              textAlignVertical="center"
             />
 
-            {isLoading && renderTypingIndicator()}
-          </View>
-
-          {/* Input Section */}
-          <View style={styles.inputSection}>
-            <View style={styles.inputContainer}>
-              <TextInput
-                ref={textInputRef}
-                style={styles.textInput}
-                placeholder="Ask me about animals, science, or anything!..."
-                placeholderTextColor="#999"
-                value={text}
-                onChangeText={setText}
-                multiline
-                maxLength={500}
-                textAlignVertical="center"
-              />
-
-              <View style={styles.inputButtons}>
-                {text.trim() ? (
+            <View style={styles.inputButtons}>
+              {text.trim() ? (
+                <TouchableOpacity
+                  style={[
+                    styles.sendButton,
+                    (!text.trim() || isLoading || !userData?.child_id) &&
+                      styles.sendButtonDisabled,
+                  ]}
+                  onPress={handleSend}
+                  disabled={!text.trim() || isLoading || !userData?.child_id}
+                >
+                  <Feather name="send" size={18} color="#fff" />
+                </TouchableOpacity>
+              ) : (
+                <>
                   <TouchableOpacity
                     style={[
-                      styles.sendButton,
-                      (!text.trim() || isLoading || !userData?.child_id) &&
-                        styles.sendButtonDisabled,
+                      styles.voiceButton,
+                      micOn && styles.listeningButton,
                     ]}
-                    onPress={handleSend}
-                    disabled={!text.trim() || isLoading || !userData?.child_id}
+                    onPress={toggleMic}
                   >
-                    <Feather name="send" size={18} color="#fff" />
+                    <Feather
+                      name={micOn ? "mic" : "mic-off"}
+                      size={18}
+                      color="#fff"
+                    />
                   </TouchableOpacity>
-                ) : (
-                  <>
-                    <TouchableOpacity
-                      style={[
-                        styles.voiceButton,
-                        micOn && styles.listeningButton,
-                      ]}
-                      onPress={toggleMic}
-                    >
+
+                  <TouchableOpacity
+                    style={[
+                      styles.voiceButton,
+                      (isRecording || isSpeechToSpeechLoading) &&
+                        styles.listeningButton,
+                    ]}
+                    onPress={handleSpeechToSpeech}
+                    disabled={isRecording || isSpeechToSpeechLoading}
+                  >
+                    {isSpeechToSpeechLoading ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
                       <Feather
-                        name={micOn ? "mic" : "mic-off"}
-                        size={18}
+                        name={isRecording ? "mic" : "activity"}
+                        size={20}
                         color="#fff"
                       />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[
-                        styles.voiceButton,
-                        (isRecording || isSpeechToSpeechLoading) &&
-                          styles.listeningButton,
-                      ]}
-                      onPress={handleSpeechToSpeech}
-                      disabled={isRecording || isSpeechToSpeechLoading}
-                    >
-                      {isSpeechToSpeechLoading ? (
-                        <ActivityIndicator size="small" color="#fff" />
-                      ) : (
-                        <Feather
-                          name={isRecording ? "mic" : "activity"}
-                          size={20}
-                          color="#fff"
-                        />
-                      )}
-                    </TouchableOpacity>
-                  </>
-                )}
-              </View>
+                    )}
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           </View>
+        </View>
 
-          {/* Quick Action Buttons */}
-          {/* <ScrollView
+        {/* Quick Action Buttons */}
+        {/* <ScrollView
             style={styles.quickActions}
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -772,7 +778,7 @@ export default function ChatBot() {
 
             <TouchableOpacity
               style={styles.quickActionButton}
-              onPress={() => router.push("/(tabs)/story")}
+              onPress={() => router.push("/(tabs)/components/story")}
             >
               <Text style={styles.quickActionText}>Story of the Day</Text>
             </TouchableOpacity>
@@ -796,206 +802,191 @@ export default function ChatBot() {
             </TouchableOpacity>
           </ScrollView> */}
 
-          {showHistory && (
-            <View style={styles.chatHistory}>
-              <TouchableOpacity
-                style={{
-                  position: "absolute",
-                  top: 20,
-                  right: 10,
-                  padding: 4,
-                  zIndex: 1,
-                }}
-                onPress={() => setShowHistory(false)}
-              >
-                <Feather name="x" size={24} color="#f93232ff" />
-              </TouchableOpacity>
+        {showHistory && (
+          <View style={styles.chatHistory}>
+            <TouchableOpacity
+              style={{
+                position: "absolute",
+                top: 20,
+                right: 10,
+                padding: 4,
+                zIndex: 1,
+              }}
+              onPress={() => setShowHistory(false)}
+            >
+              <Feather name="x" size={24} color="#f93232ff" />
+            </TouchableOpacity>
+            <View
+              style={{
+                top: 40,
+                flexDirection: "column",
+                justifyContent: "space-between",
+                padding: 10,
+              }}
+            >
               <View
                 style={{
-                  top: 40,
+                  marginBottom: 20,
                   flexDirection: "column",
                   justifyContent: "space-between",
-                  padding: 10,
                 }}
               >
                 <View
                   style={{
                     marginBottom: 20,
-                    flexDirection: "column",
-                    justifyContent: "space-between",
+                    flexDirection: "row",
+                    gap: 40,
                   }}
                 >
-                  <View
-                    style={{
-                      marginBottom: 20,
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                    }}
+                  <TouchableOpacity
+                    style={[
+                      styles.quickActionButton,
+                      { backgroundColor: "#c53737ff" },
+                    ]}
+                    onPress={() => router.push("/(tabs)/components/quiz")}
                   >
-                    <TouchableOpacity
-                      style={[
-                        styles.quickActionButton,
-                        { backgroundColor: "#c53737ff" },
-                      ]}
-                      onPress={() => router.push("/(tabs)/quiz")}
-                    >
-                      <Text style={styles.quickActionText}>Go to Quiz</Text>
-                    </TouchableOpacity>
+                    <Text style={styles.quickActionText}>Go to Quiz</Text>
+                  </TouchableOpacity>
 
-                    <TouchableOpacity
-                      style={[
-                        styles.quickActionButton,
-                        { backgroundColor: "#37c537ff" },
-                      ]}
-                      onPress={() => router.push("/(tabs)/story")}
-                    >
-                      <Text style={styles.quickActionText}>
-                        Story of the Day
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <View
-                    style={{
-                      marginBottom: 20,
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                    }}
+                  <TouchableOpacity
+                    style={[
+                      styles.quickActionButton,
+                      { backgroundColor: "#37c537ff" },
+                    ]}
+                    onPress={() => router.push("/(tabs)/components/story")}
                   >
-                    <TouchableOpacity
-                      style={[
-                        styles.quickActionButton,
-                        { backgroundColor: "#4cabe6ff" },
-                      ]}
-                      onPress={() => router.push("/(tabs)/question")}
-                    >
-                      <Text style={styles.quickActionText}>
-                        Question of the Day
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[
-                        styles.quickActionButton,
-                        { backgroundColor: "#ded755ff" },
-                      ]}
-                      onPress={() =>
-                        router.push(
-                          "/(tabs)/components/games/gamesDashboard"
-                        )
-                      }
-                    >
-                      <Text style={styles.quickActionText}>Games</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <View
-                    style={{
-                      marginBottom: 20,
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <TouchableOpacity
-                      style={[
-                        styles.quickActionButton,
-                        { backgroundColor: "#db58afff" },
-                      ]}
-                      onPress={() => router.push("/(tabs)/joke")}
-                    >
-                      <Text style={styles.quickActionText}>
-                        Joke of the Day
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
+                    <Text style={styles.quickActionText}>Story of the Day</Text>
+                  </TouchableOpacity>
                 </View>
 
-                <Text
+                <View
                   style={{
-                    fontSize: 18,
-                    color: "#ea524aff",
-                    fontWeight: "bold",
+                    marginBottom: 20,
+                    flexDirection: "row",
+                    gap: 40,
                   }}
                 >
-                  Chat History
-                </Text>
-              </View>
-              <ScrollView style={{ marginTop: 60 }}>
-                {Object.keys(chatHistory).length === 0 ? (
-                  <Text
-                    style={{
-                      textAlign: "center",
-                      color: "#999",
-                      marginTop: 20,
-                    }}
+                  <TouchableOpacity
+                    style={[
+                      styles.quickActionButton,
+                      { backgroundColor: "#4cabe6ff" },
+                    ]}
+                    onPress={() => router.push("/(tabs)/components/question")}
                   >
-                    No chat history available
-                  </Text>
-                ) : (
-                  Object.entries(chatHistory)
-                    .sort(
-                      ([dateA], [dateB]) => new Date(dateB) - new Date(dateA)
-                    ) // Sort dates descending (newest first)
-                    .map(([date, messages]) => (
-                      <View key={date} style={styles.dateSection}>
-                        <TouchableOpacity
-                          style={styles.dateHeader}
-                          onPress={() => toggleDateExpansion(date)}
-                        >
-                          <Text style={styles.dateHeaderText}>
-                            {formatDateDisplay(date)}
-                          </Text>
-                          <Feather
-                            name={
-                              expandedDates[date]
-                                ? "chevron-up"
-                                : "chevron-down"
-                            }
-                            size={20}
-                            color="#56bbf1"
-                          />
-                        </TouchableOpacity>
+                    <Text style={styles.quickActionText}>
+                      Question of the Day
+                    </Text>
+                  </TouchableOpacity>
 
-                        {expandedDates[date] && (
-                          <View style={styles.messagesContainer}>
-                            {messages.map((chat) => (
-                              <View key={chat.id} style={styles.chatItem}>
-                                <Text style={styles.userMessageText}>
-                                  You: {chat.message}
-                                </Text>
-                                <Text style={styles.botMessageText}>
-                                  Buddy: {chat.response}
-                                </Text>
-                                <Text style={styles.timestampText}>
-                                  {new Date(chat.timestamp).toLocaleTimeString(
-                                    [],
-                                    {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    }
-                                  )}
-                                </Text>
-                              </View>
-                            ))}
-                          </View>
-                        )}
-                      </View>
-                    ))
-                )}
-              </ScrollView>
+                  <TouchableOpacity
+                    style={[
+                      styles.quickActionButton,
+                      { backgroundColor: "#ded755ff" },
+                    ]}
+                    onPress={() =>
+                      router.push("/(tabs)/components/games/gamesDashboard")
+                    }
+                  >
+                    <Text style={styles.quickActionText}>Games</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View
+                  style={{
+                    marginBottom: 20,
+                    flexDirection: "row",
+                    gap: 40,
+                  }}
+                >
+                  <TouchableOpacity
+                    style={[
+                      styles.quickActionButton,
+                      { backgroundColor: "#db58afff" },
+                    ]}
+                    onPress={() => router.push("/(tabs)/components/joke")}
+                  >
+                    <Text style={styles.quickActionText}>Joke of the Day</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <Text
+                style={{
+                  fontSize: 18,
+                  color: "#ea524aff",
+                  fontWeight: "bold",
+                }}
+              >
+                Chat History
+              </Text>
             </View>
-          )}
-        </KeyboardAvoidingView>
-      </ImageBackground>
-    </SafeAreaView>
+            <ScrollView style={{ marginTop: 60 }}>
+              {Object.keys(chatHistory).length === 0 ? (
+                <Text
+                  style={{
+                    textAlign: "center",
+                    color: "#999",
+                    marginTop: 20,
+                  }}
+                >
+                  No chat history available
+                </Text>
+              ) : (
+                Object.entries(chatHistory)
+                  .sort(([dateA], [dateB]) => new Date(dateB) - new Date(dateA)) // Sort dates descending (newest first)
+                  .map(([date, messages]) => (
+                    <View key={date} style={styles.dateSection}>
+                      <TouchableOpacity
+                        style={styles.dateHeader}
+                        onPress={() => toggleDateExpansion(date)}
+                      >
+                        <Text style={styles.dateHeaderText}>
+                          {formatDateDisplay(date)}
+                        </Text>
+                        <Feather
+                          name={
+                            expandedDates[date] ? "chevron-up" : "chevron-down"
+                          }
+                          size={20}
+                          color="#56bbf1"
+                        />
+                      </TouchableOpacity>
+
+                      {expandedDates[date] && (
+                        <View style={styles.messagesContainer}>
+                          {messages.map((chat) => (
+                            <View key={chat.id} style={styles.chatItem}>
+                              <Text style={styles.userMessageText}>
+                                You: {chat.message}
+                              </Text>
+                              <Text style={styles.botMessageText}>
+                                Buddy: {chat.response}
+                              </Text>
+                              <Text style={styles.timestampText}>
+                                {new Date(chat.timestamp).toLocaleTimeString(
+                                  [],
+                                  {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  }
+                                )}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                    </View>
+                  ))
+              )}
+            </ScrollView>
+          </View>
+        )}
+      </KeyboardAvoidingView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#56bbf1",
-  },
   background: {
     flex: 1,
     width: "100%",

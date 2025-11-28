@@ -15,7 +15,7 @@ import * as Font from "expo-font";
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Audio } from "expo-av";
-import { API_BASE } from "@/app/(tabs)/config";
+import { API_BASE } from "../../../utils/config";
 
 export default function mindMysteryGame() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
@@ -588,29 +588,47 @@ export default function mindMysteryGame() {
         </View>
 
         {/* Puzzle area */}
-       
-          <View style={styles.puzzleBox}>
-             <ScrollView
-             style={styles.scrollContent}
-             contentContainerStyle={styles.scrollContainer}
-             showsVerticalScrollIndicator={false}
-             >
+
+        <View style={styles.puzzleBox}>
+          <ScrollView
+            style={styles.scrollContent}
+            contentContainerStyle={styles.scrollContainer}
+          >
             <Text style={styles.puzzleText}>
-              Solve {gameData?.question || "Loading question..."}
+              Solve: {gameData?.question || "Loading question..."}
             </Text>
 
-            <View style={{ flexDirection: "row", marginTop: 20, gap: 10 }}>
-              <View style={styles.imageContainer}>
-                <Image
-                  source={{ uri: gameData?.image }}
-                  style={styles.animalImage}
-                  resizeMode="contain"
-                  onError={(error) =>
-                    console.log("Image loading error:", error.nativeEvent.error)
-                  }
-                />
+            {gameData?.image &&
+            gameData.image.startsWith("http") &&
+            !gameData.image.includes("📷") &&
+            !gameData.image.includes("💡") ? (
+              <View style={{ flexDirection: "row", marginTop: 20, gap: 5 }}>
+                <View style={styles.imageContainer}>
+                  <Image
+                    source={{ uri: gameData?.image }}
+                    style={styles.animalImage}
+                    resizeMode="contain"
+                    onError={(error) =>
+                      console.log(
+                        "Image loading error:",
+                        error.nativeEvent.error
+                      )
+                    }
+                  />
+                </View>
+
+                <View style={styles.optionsContainer}>
+                  <Text style={styles.puzzleSubText}>
+                    {gameData?.options
+                      ? Object.entries(gameData.options)
+                          .map(([alphabet, value]) => `${alphabet} = ${value}`)
+                          .join("\n")
+                      : "Loading values..."}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.optionsContainer}>
+            ) : (
+              <View style={styles.centeredOptionsContainer}>
                 <Text style={styles.puzzleSubText}>
                   {gameData?.options
                     ? Object.entries(gameData.options)
@@ -619,10 +637,9 @@ export default function mindMysteryGame() {
                     : "Loading values..."}
                 </Text>
               </View>
-            </View>
-            </ScrollView>
-          </View>
-        
+            )}
+          </ScrollView>
+        </View>
 
         {/* Input field */}
         <TextInput
@@ -652,8 +669,10 @@ export default function mindMysteryGame() {
         {showRewardMessage && (
           <View style={{ marginTop: 18 }}>
             <Text style={styles.rewardMessage}>{gameData?.reward_message}</Text>
+            <Text>{gameData?.fact}</Text>
           </View>
         )}
+        
 
         <Image
           source={require("@/assets/images/games/mindMystery/snowman.png")}
@@ -911,14 +930,14 @@ const styles = StyleSheet.create({
     color: "#103655",
     marginTop: 30,
   },
-  scrollContent:{
-    flex:1,
-    width:"100%",
+  scrollContent: {
+    flex: 1,
+    width: "100%",
   },
   scrollContainer: {
-  flexGrow: 1,
-  paddingVertical: 5,
-},
+    flexGrow: 1,
+    paddingVertical: 5,
+  },
   puzzleBox: {
     backgroundColor: "#9ccfffff",
     borderRadius: 12,
@@ -986,11 +1005,16 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 10,
   },
+  centeredOptionsContainer: {
+    flex: 1,
+    padding: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   animalImage: {
     width: 100,
     height: 100,
     borderRadius: 10,
-    backgroundColor: "#f0f0f0",
   },
   submitBtn: {
     backgroundColor: "#103655",

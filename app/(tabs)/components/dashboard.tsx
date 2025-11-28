@@ -1,30 +1,29 @@
-import { useState, useEffect } from "react";
 import {
-  Text,
-  View,
-  TouchableOpacity,
-  StyleSheet,
-  ImageBackground,
-  Image,
-  TextInput,
-  ScrollView,
-  Alert,
-  Animated,
-  Easing,
-  Modal,
-  FlatList,
-  TouchableWithoutFeedback,
-  ActivityIndicator,
-} from "react-native";
-import { router } from "expo-router";
-import {
-  Feather,
-  FontAwesome5,
-  MaterialIcons,
-  Ionicons,
+    Feather,
+    FontAwesome5,
+    Ionicons,
+    MaterialIcons,
 } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_BASE } from "./config";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+    ActivityIndicator,
+    Alert,
+    Animated,
+    Easing,
+    FlatList,
+    Image,
+    ImageBackground,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View
+} from "react-native";
+import { API_BASE } from "../utils/config";
 
 export default function Dashboard() {
   const [parentData, setParentData] = useState(null);
@@ -705,7 +704,7 @@ export default function Dashboard() {
             <View style={styles.buttonRow}>
               <TouchableOpacity
                 style={[styles.actionButton, styles.primaryButton]}
-                onPress={() => router.push("/(tabs)/changePassword")}
+                onPress={() => router.push("/(tabs)/components/changePassword")}
               >
                 <MaterialIcons name="lock" size={20} color="#fff" />
                 <Text style={styles.actionButtonText}>
@@ -735,7 +734,7 @@ export default function Dashboard() {
             <View style={styles.buttonRow}>
               <TouchableOpacity
                 style={[styles.actionButton, styles.infoButton]}
-                onPress={() => router.push("/(tabs)/changeParentPass")}
+                onPress={() => router.push("/(tabs)/components/changeParentPass")}
               >
                 <Feather name="shield" size={20} color="#fff" />
                 <Text style={styles.actionButtonText}>

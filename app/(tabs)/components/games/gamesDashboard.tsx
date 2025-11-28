@@ -9,14 +9,40 @@ import {
 } from "react-native";
 import * as Font from "expo-font";
 import { router } from "expo-router";
-import { Feather } from "@expo/vector-icons";
+import { Feather, Ionicons } from "@expo/vector-icons";
+import { Audio } from "expo-av";
+import { soundManager } from "../../utils/soundManager";
 
 export default function GamesDashboard() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [backgroundSound, setBackgroundSound] = useState(null);
+  const [isSoundPlaying, setIsSoundPlaying] = useState(true);
 
   useEffect(() => {
     loadFonts();
+    initializeSound();
+    return()=>{
+
+    }
   }, []);
+
+  const initializeSound=async()=>{
+    try{
+      await soundManager.loadAndPlay();
+      setIsSoundPlaying(soundManager.getIsPlaying());
+    }catch(error){
+      console.error("Error initializing sound:", error);
+    }
+  };
+
+  const toggleSound = async () => {
+    try {
+      await soundManager.toggle();
+      setIsSoundPlaying(soundManager.getIsPlaying());
+    } catch (error) {
+      console.error("Error toggling sound:", error);
+    }
+  };
 
   const loadFonts = async () => {
     try {
@@ -30,6 +56,8 @@ export default function GamesDashboard() {
     }
   };
 
+
+
   return (
     <ImageBackground
       source={require("@/assets/images/bg6.jpg")}
@@ -38,7 +66,7 @@ export default function GamesDashboard() {
     >
       <TouchableOpacity
         style={styles.backButton}
-        onPress={() => router.push("/(tabs)/chatbot")}
+        onPress={() => router.push("/(tabs)/components/chatbot")}
       >
         <Feather name="arrow-left" size={24} color={"#fff"} />
         <Text style={styles.backButtonText}>Back to Home</Text>
@@ -106,9 +134,9 @@ export default function GamesDashboard() {
           {/* Row 2 */}
           <View style={styles.row}>
             <View style={styles.cardContainer}>
-              <View style={[styles.card, { borderColor: "#27c3ceff" }]}>
+              <View style={[styles.card, { borderColor: "#223E52" }]}>
                 <Image
-                  source={require("@/assets/images/games/game4.png")}
+                  source={require("@/assets/images/games/game3.png")}
                   style={styles.cardImage}
                 />
               </View>
@@ -125,6 +153,28 @@ export default function GamesDashboard() {
             </View>
           </View>
         </View>
+
+         <TouchableOpacity
+              style={{
+                backgroundColor: "#ef523eff",
+                padding: 10,
+                width: 50,
+                borderRadius: 50,
+                marginLeft:240
+              }}
+              onPress={toggleSound}
+            >
+              <Ionicons
+                name={
+                  isSoundPlaying
+                    ? "volume-medium-outline"
+                    : "volume-mute-outline"
+                }
+                size={30}
+                color="#fff"
+              />
+            </TouchableOpacity>
+
 
         {/* <Image
           source={require("@/assets/images/games/settings.png")}
@@ -164,8 +214,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 15,
     borderRadius: 20,
-    left:-90,
-    marginBottom:20
+    left: -90,
+    marginBottom: 20,
   },
   backButtonText: {
     color: "#fff",
@@ -201,7 +251,7 @@ const styles = StyleSheet.create({
   grid: {
     width: "100%",
     flex: 1,
-    marginTop: 40,
+    marginTop: 30,
   },
   row: {
     flexDirection: "row",
@@ -243,7 +293,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   buttonBlue: {
-    backgroundColor: "#1cc3ffff",
+    backgroundColor: "#223E52",
     borderRadius: 8,
     paddingVertical: 6,
     paddingHorizontal: 10,

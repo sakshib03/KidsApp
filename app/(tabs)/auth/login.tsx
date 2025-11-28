@@ -4,16 +4,16 @@ import * as Font from "expo-font";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
-  Image,
-  ImageBackground,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Image,
+    ImageBackground,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import { API_BASE } from "../config";
+import { API_BASE } from "../utils/config";
 
 export default function LoginScreen() {
   const [secure, setSecure] = useState(true);
@@ -54,9 +54,9 @@ export default function LoginScreen() {
 
         if (isTokenValid) {
           if (userType === "child") {
-            router.replace("/(tabs)/chatbot");
+            router.replace("/(tabs)/components/chatbot");
           } else if (userType === "parent") {
-            router.replace("/(tabs)/dashboard");
+            router.replace("/(tabs)/components/dashboard");
           }
         } else {
           await clearAuthStorage();
@@ -180,7 +180,7 @@ export default function LoginScreen() {
         await storeAuthData("child", data);
 
         Alert.alert("Success", "Login successful!");
-        router.replace("/(tabs)/chatbot");
+        router.replace("/(tabs)/components/chatbot");
       } else {
         Alert.alert("Error", data.detail || "Login failed. Please try again.");
       }
@@ -217,7 +217,7 @@ export default function LoginScreen() {
       if (response.ok) {
         await storeAuthData("parent", data);
         Alert.alert("Success", "Login successful!");
-        router.push("/(tabs)/dashboard");
+        router.push("/(tabs)/components/dashboard");
       } else {
         Alert.alert("Error", data.detail || "Login failed. Please try again.");
       }
@@ -428,7 +428,7 @@ export default function LoginScreen() {
                     marginLeft: 20,
                     fontFamily: "ComicRelief-Regular",
                   }}
-                  onPress={() => router.push("/(tabs)/forgotPassParent")}
+                  onPress={() => router.push("/(tabs)/components/forgotPassParent")}
                 >
                   Forgot Password?
                 </Text>

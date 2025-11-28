@@ -1,21 +1,22 @@
-import { useState, useEffect } from "react";
-import {
-  Text,
-  View,
-  TouchableOpacity,
-  StyleSheet,
-  ImageBackground,
-  ScrollView,
-  Alert,
-  Image,
-  ActivityIndicator,
-  TextInput,
-} from "react-native";
-import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_BASE } from "./config";
 import * as Font from "expo-font";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  ImageBackground,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useTheme } from "../utils/ThemeContext";
+import { API_BASE } from "../utils/config";
 
 export default function Quiz() {
   const [quizData, setQuizData] = useState(null);
@@ -29,12 +30,13 @@ export default function Quiz() {
   const [topic, setTopic] = useState("");
   const [dailyLimitReached, setDailyLimitReached] = useState(false);
   const [questionCount, setQuestionCount] = useState(0);
-  const [currentTopic, setCurrentTopic] = useState(""); // Store the active topic
+  const [currentTopic, setCurrentTopic] = useState(""); 
+  const {theme}=useTheme();
 
   useEffect(() => {
     Font.loadAsync({
-      "ComicRelief-Bold": require("../../assets/fonts/ComicRelief-Bold.ttf"),
-      "ComicRelief-Regular": require("../../assets/fonts/ComicRelief-Regular.ttf"),
+      "ComicRelief-Bold": require("../../../assets/fonts/ComicRelief-Bold.ttf"),
+      "ComicRelief-Regular": require("../../../assets/fonts/ComicRelief-Regular.ttf"),
     }).then(() => setFontsLoaded(true));
   }, []);
 
@@ -82,7 +84,6 @@ export default function Quiz() {
         body: JSON.stringify({
           child_id: id,
           topic: userTopic,
-          timestamp: Date.now(),
         }),
       });
 
@@ -99,6 +100,12 @@ export default function Quiz() {
 
       const data = await response.json();
       console.log("Full API response:", data);
+
+      if (data.quiz && data.quiz.question === "Unable to generate quiz question at this time.") {
+      throw new Error("Unable to generate quiz question for this topic. Please try a different topic.");
+    }
+
+
       setQuizData(data.quiz);
 
       // Increment question count
@@ -207,8 +214,9 @@ export default function Quiz() {
 
   return (
     <ImageBackground
-      source={require("@/assets/images/bg6.jpg")}
+      // source={require("@/assets/images/login_image.png")}
       style={styles.background}
+      source={theme.background}
     >
       <View style={styles.container}>
         <View style={styles.header}>
@@ -216,7 +224,7 @@ export default function Quiz() {
             <View>
               <TouchableOpacity
                 style={styles.backButton}
-                onPress={() => router.push("/(tabs)/chatbot")}
+                onPress={() => router.push("/(tabs)/components/chatbot")}
               >
                 <Feather name="arrow-left" size={24} color={"#fff"} />
                 <Text style={styles.backButtonText}>Back to Home</Text>
@@ -228,6 +236,7 @@ export default function Quiz() {
                 <View
                   style={{
                     marginTop: 10,
+                    maxWidth:132
                   }}
                 >
                   <Text style={styles.topicText}>Topic: {currentTopic}</Text>
@@ -358,7 +367,7 @@ export default function Quiz() {
                       {result.is_correct && (
                         <>
                           <Image
-                            source={require("../../assets/gifs/congratulations.gif")}
+                            source={require("../../../assets/gifs/congratulations.gif")}
                             style={styles.celebrationGif}
                             resizeMode="contain"
                           />

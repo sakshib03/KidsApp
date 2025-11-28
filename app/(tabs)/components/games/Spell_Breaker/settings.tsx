@@ -10,13 +10,25 @@ import {
 } from "react-native";
 import * as Font from "expo-font";
 import { router } from "expo-router";
+import { Feather, Ionicons } from "@expo/vector-icons";
+import { soundManager } from "@/app/(tabs)/utils/soundManager";
 
 export default function Settings() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [isSoundPlaying, setIsSoundPlaying] = useState(true);
 
   useEffect(() => {
     loadFonts();
   }, []);
+
+    const toggleSound = async () => {
+        try {
+          await soundManager.toggle();
+          setIsSoundPlaying(soundManager.getIsPlaying());
+        } catch (error) {
+          console.error("Error toggling sound:", error);
+        }
+      };
 
   const loadFonts = async () => {
     try {
@@ -69,11 +81,17 @@ export default function Settings() {
                   padding: 12,
                   borderRadius: 50,
                 }}
+                onPress={toggleSound}
               >
-                <Image
-                  source={require("@/assets/images/games/spellGame/volume.png")}
-                  style={{ width: 40, height: 40 }}
-                />
+                <Ionicons
+                name={
+                  isSoundPlaying
+                    ? "volume-medium-outline"
+                    : "volume-mute-outline"
+                }
+                size={35}
+                color="#8f3db6ff"
+              />
               </TouchableOpacity>
 
               <TouchableOpacity

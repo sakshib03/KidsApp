@@ -1,22 +1,22 @@
-import { useState, useEffect } from "react";
-import {
-  Text,
-  View,
-  TouchableOpacity,
-  StyleSheet,
-  ImageBackground,
-  TextInput,
-  Alert,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  TouchableWithoutFeedback,
-  Keyboard,
-} from "react-native";
-import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_BASE } from "./config";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+    ActivityIndicator,
+    Alert,
+    ImageBackground,
+    Keyboard,
+    KeyboardAvoidingView,
+    Platform,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
+} from "react-native";
+import { API_BASE } from "../utils/config";
 
 export default function ChangePassword() {
   const [formData, setFormData] = useState({
@@ -138,7 +138,7 @@ export default function ChangePassword() {
       if (response.ok) {
         Alert.alert("Success", "Child password changed successfully`");
         setTimeout(() => {
-          router.push("/(tabs)/dashboard");
+          router.push("/(tabs)/components/dashboard");
         }, 1000);
       } else {
         const errorMessage =
@@ -301,7 +301,7 @@ export default function ChangePassword() {
                     fontFamily: "ComicRelief-Regular",
                     color: "#ffffffff",
                   }}
-                  onPress={() => router.push("/(tabs)/forgotPassword")}
+                  onPress={() => router.push("/(tabs)/components/forgotPassword")}
                 >
                   Forgot Password?
                 </Text>

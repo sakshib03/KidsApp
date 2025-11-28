@@ -1,26 +1,27 @@
-import { useState, useEffect } from "react";
-import {
-  Text,
-  View,
-  TouchableOpacity,
-  StyleSheet,
-  ImageBackground,
-  Image,
-  TextInput,
-  ScrollView,
-  Alert,
-  Modal,
-  TouchableWithoutFeedback,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  FlatList,
-  Animated,
-} from "react-native";
-import { router } from "expo-router";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_BASE } from "./config";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Animated,
+  FlatList,
+  Image,
+  ImageBackground,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
+import { useTheme } from "../utils/ThemeContext";
+import { API_BASE } from "../utils/config";
 
 export default function Profile() {
   const [userData, setUserData] = useState(null);
@@ -35,6 +36,7 @@ export default function Profile() {
   const [selectedCareer, setSelectedCareer] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
+ const { theme } = useTheme();
 
   // Credit History States
   const [isCreditHistoryModalVisible, setIsCreditHistoryModalVisible] = useState(false);
@@ -473,8 +475,9 @@ export default function Profile() {
   if (loading) {
     return (
       <ImageBackground
-        source={require("@/assets/images/theme1.png")}
+        // source={require("@/assets/images/theme1.png")}
         style={styles.background}
+        source={theme.background}
       >
         <View style={styles.loadingCon}>
           <ActivityIndicator
@@ -493,8 +496,9 @@ export default function Profile() {
   if (!userData) {
     return (
       <ImageBackground
-        source={require("@/assets/images/theme1.png")}
+        // source={require("@/assets/images/theme1.png")}
         style={styles.background}
+        source={theme.background}
       >
         <View style={styles.container}>
           <Text style={styles.errorText}>Couldn't load your profile 😢</Text>
@@ -508,8 +512,9 @@ export default function Profile() {
 
   return (
     <ImageBackground
-      source={require("@/assets/images/theme1.png")}
+      // source={require("@/assets/images/theme1.png")}
       style={styles.background}
+      source={theme.background}
     >
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -523,7 +528,7 @@ export default function Profile() {
             <View style={styles.header}>
               <TouchableOpacity
                 style={styles.backButton}
-                onPress={() => router.push("/(tabs)/chatbot")}
+                onPress={() => router.push("/(tabs)/components/chatbot")}
               >
                 <Feather name="arrow-left" size={24} color={"#fff"} />
                 <Text style={styles.backButtonText}>Back to Fun! 🏠</Text>
@@ -541,6 +546,10 @@ export default function Profile() {
               </TouchableOpacity>
               <View style={styles.avatarSection}>
                 <Animated.View style={{ transform: [{ scale: bounceAnim }] }}>
+                  {/* <ImageBackground
+                  source={require("../../../assets/images/rewards/profile_frame1.png")}
+                  style={styles.avatarBackground}
+                  > */}
                   <Image
                     source={
                       avatarUrl
@@ -554,6 +563,7 @@ export default function Profile() {
                     onError={handleAvatarError}
                     key={avatarUrl}
                   />
+                  {/* </ImageBackground> */}
                 </Animated.View>
 
                 {avatarLoading && (
@@ -615,12 +625,12 @@ export default function Profile() {
                   </Text>
                   <Text style={styles.statLabel}>Quiz 🧩</Text>
                 </View>
-                <View style={styles.statItem}>
+                {/* <View style={styles.statItem}>
                   <Text style={styles.statValue}>
                     {userData.credits?.game?.toString() || "0"}
                   </Text>
                   <Text style={styles.statLabel}>Game 🧩</Text>
-                </View>
+                </View> */}
               </View>
 
               {/* Profile Details */}
@@ -831,7 +841,7 @@ export default function Profile() {
 
                     <TouchableOpacity
                       style={[styles.button, styles.rewardsButton]}
-                      onPress={() => router.push("/(tabs)/redeemRewards")}
+                      onPress={() => router.push("/(tabs)/components/redeemRewards")}
                     >
                       <Text style={styles.buttonText}>Redeem Rewards</Text>
                     </TouchableOpacity>
@@ -1110,7 +1120,6 @@ const styles = StyleSheet.create({
     zIndex: 10,
     backgroundColor: "rgba(255, 255, 255, 0.9)",
     padding: 8,
-    borderRadius: 15,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -1127,9 +1136,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
+  avatarBackground:{
+    width:170,
+    height:170
+  },
   avatar: {
-    width: 120,
-    height: 120,
+    width: 110,
+    height: 110,
     borderRadius: 60,
     borderWidth: 4,
     borderColor: "#4ECDC4",
@@ -1160,7 +1173,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   userNameInput: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "bold",
     textAlign: "center",
     fontFamily: "ComicRelief-Regular",
@@ -1482,7 +1495,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    padding: 20,
+    padding: 4,
   },
   spinner: {
     marginRight: 4,

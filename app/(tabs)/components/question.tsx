@@ -1,21 +1,22 @@
-import { useState, useEffect } from "react";
-import {
-  Text,
-  View,
-  TouchableOpacity,
-  StyleSheet,
-  ImageBackground,
-  ScrollView,
-  Alert,
-  Image,
-  ActivityIndicator,
-} from "react-native";
-import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_BASE } from "./config";
+import { Audio } from "expo-av";
 import * as Font from "expo-font";
-import {Audio} from "expo-av";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  ImageBackground,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useTheme } from "../utils/ThemeContext";
+import { API_BASE } from "../utils/config";
 
 export default function Question() {
   const [questionData, setQuestionData] = useState(null);
@@ -27,6 +28,7 @@ export default function Question() {
   const [result, setResult] = useState(null);
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [sound, setSound]=useState(null);
+  const {theme}=useTheme();
 
   async function playSound(isCorrect){
     try{
@@ -50,8 +52,8 @@ export default function Question() {
 
   useEffect(() => {
     Font.loadAsync({
-      "ComicRelief-Bold": require("../../assets/fonts/ComicRelief-Bold.ttf"),
-      "ComicRelief-Regular": require("../../assets/fonts/ComicRelief-Regular.ttf"),
+      "ComicRelief-Bold": require("../../../assets/fonts/ComicRelief-Bold.ttf"),
+      "ComicRelief-Regular": require("../../../assets/fonts/ComicRelief-Regular.ttf"),
     }).then(() => setFontsLoaded(true));
   }, []);
 
@@ -159,14 +161,15 @@ export default function Question() {
 
   return (
     <ImageBackground
-      source={require("@/assets/images/background.png")}
+      // source={require("@/assets/images/login_image.png")}
       style={styles.background}
+      source={theme.background}
     >
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => router.push("/(tabs)/chatbot")}
+            onPress={() => router.push("/(tabs)/components/chatbot")}
           >
             <Feather name="arrow-left" size={24} color={"#fff"} />
             <Text style={styles.backButtonText}>Back to Home</Text>
@@ -223,7 +226,7 @@ export default function Question() {
                     {result.is_correct && (
                       <>
                         <Image
-                          source={require("../../assets/gifs/congratulations.gif")}
+                          source={require("../../../assets/gifs/congratulations.gif")}
                           style={styles.celebrationGif}
                           resizeMode="contain"
                         />

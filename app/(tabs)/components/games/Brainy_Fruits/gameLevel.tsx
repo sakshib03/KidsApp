@@ -1,18 +1,17 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Font from "expo-font";
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  Text,
-  View,
-  TouchableOpacity,
-  StyleSheet,
-  ImageBackground,
-  Alert,
-  ScrollView,
-  Image,
+    Alert,
+    Image,
+    ImageBackground,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import { router } from "expo-router";
-import * as Font from "expo-font";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_BASE } from "@/app/(tabs)/config";
 
 export default function LevelSelect() {
   const [fontsLoaded, setFontsLoaded] = useState(false);

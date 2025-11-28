@@ -1,21 +1,18 @@
-import { useState, useEffect } from "react";
-import {
-  Text,
-  View,
-  TouchableOpacity,
-  StyleSheet,
-  ImageBackground,
-  Image,
-  TextInput,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
-} from "react-native";
-import { router } from "expo-router";
-import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_BASE } from "./config";
-import * as Font from "expo-font";
+import { router } from "expo-router";
+import { useState } from "react";
+import {
+    ActivityIndicator,
+    Alert,
+    ImageBackground,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from "react-native";
+import { API_BASE } from "../utils/config";
 
 export default function ForgotPassword() {
   const [username, setUsername] = useState("");
@@ -49,7 +46,7 @@ export default function ForgotPassword() {
         
          Alert.alert("Success", "OTP sent to your email address");
         setTimeout(()=>{
-          router.push("/(tabs)/verifyForgotPassword");
+          router.push("/(tabs)/components/verifyForgotPassword");
         },1000)
 
       } else {
