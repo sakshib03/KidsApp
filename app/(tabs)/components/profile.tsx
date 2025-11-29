@@ -36,10 +36,11 @@ export default function Profile() {
   const [selectedCareer, setSelectedCareer] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
- const { theme } = useTheme();
+  const { theme } = useTheme();
 
   // Credit History States
-  const [isCreditHistoryModalVisible, setIsCreditHistoryModalVisible] = useState(false);
+  const [isCreditHistoryModalVisible, setIsCreditHistoryModalVisible] =
+    useState(false);
   const [creditHistory, setCreditHistory] = useState([]);
   const [creditHistoryLoading, setCreditHistoryLoading] = useState(false);
 
@@ -166,6 +167,7 @@ export default function Profile() {
 
       const data = await response.json();
       setUserData(data);
+      console.log("User Data:", data);
       setEditedData(data);
     } catch (error) {
       console.error("Error fetching user data:", error);
@@ -179,11 +181,14 @@ export default function Profile() {
   const fetchCreditHistory = async () => {
     try {
       setCreditHistoryLoading(true);
-      
+
       const parentId = await AsyncStorage.getItem("parentId");
-      
+
       if (!parentId) {
-        Alert.alert("Oops!", "Parent information not found. Please login again.");
+        Alert.alert(
+          "Oops!",
+          "Parent information not found. Please login again."
+        );
         return;
       }
 
@@ -209,7 +214,6 @@ export default function Profile() {
       const data = await response.json();
       setCreditHistory(data.credit_history || []);
       setIsCreditHistoryModalVisible(true);
-      
     } catch (error) {
       console.error("Error fetching credit history:", error);
       Alert.alert("Oops!", "Couldn't load credit history");
@@ -440,10 +444,14 @@ export default function Profile() {
 
   // Credit History Item Component
   const CreditHistoryItem = ({ item, index }) => (
-    <View style={[
-      styles.creditHistoryItem,
-      index % 2 === 0 ? styles.creditHistoryItemEven : styles.creditHistoryItemOdd
-    ]}>
+    <View
+      style={[
+        styles.creditHistoryItem,
+        index % 2 === 0
+          ? styles.creditHistoryItemEven
+          : styles.creditHistoryItemOdd,
+      ]}
+    >
       <View style={styles.creditHistoryLeft}>
         <Text style={styles.creditActivity}>
           {item.activity.charAt(0).toUpperCase() + item.activity.slice(1)}
@@ -454,14 +462,10 @@ export default function Profile() {
       </View>
       <View style={styles.creditHistoryRight}>
         {item.credits_earned > 0 && (
-          <Text style={styles.creditEarned}>
-            +{item.credits_earned} ⭐
-          </Text>
+          <Text style={styles.creditEarned}>+{item.credits_earned} ⭐</Text>
         )}
         {item.credits_lost > 0 && (
-          <Text style={styles.creditLost}>
-            -{item.credits_lost} ⭐
-          </Text>
+          <Text style={styles.creditLost}>-{item.credits_lost} ⭐</Text>
         )}
       </View>
     </View>
@@ -485,7 +489,14 @@ export default function Profile() {
             color="#FFD700"
             style={styles.spinner}
           />
-          <Text style={{color:"#fa6f6fff", marginTop:20, fontFamily: "ComicRelief-Regular", fontSize:18}}>
+          <Text
+            style={{
+              color: "#fa6f6fff",
+              marginTop: 20,
+              fontFamily: "ComicRelief-Regular",
+              fontSize: 18,
+            }}
+          >
             Loading your awesome profile... 🌟
           </Text>
         </View>
@@ -537,7 +548,7 @@ export default function Profile() {
 
             {/* Profile Card */}
             <View style={styles.profileCard}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.creditHistoryIcon}
                 onPress={fetchCreditHistory}
               >
@@ -606,32 +617,53 @@ export default function Profile() {
               </View>
 
               {/* Stats Grid */}
-              <View style={styles.statsGrid}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>
-                    {userData.credits?.total?.toString() || "0"}
-                  </Text>
-                  <Text style={styles.statLabel}>Total Score⭐</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>
-                    {userData.credits?.chat?.toString() || "0"}
-                  </Text>
-                  <Text style={styles.statLabel}>Chat 📚</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>
-                    {userData.credits?.quiz?.toString() || "0"}
-                  </Text>
-                  <Text style={styles.statLabel}>Quiz 🧩</Text>
-                </View>
-                {/* <View style={styles.statItem}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View style={styles.statsGrid}>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>
+                      {userData.credits?.total_credits?.toString() || "0"}
+                    </Text>
+                    <Text style={styles.statLabel}>Total Score⭐</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>
+                      {userData.credits?.quiz?.toString() || "0"}
+                    </Text>
+                    <Text style={styles.statLabel}>Quiz 🧩</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>
+                      {userData.credits?.chat_credits_earned?.toString() || "0"}
+                    </Text>
+                    <Text style={styles.statLabel}>Chat Credit Earned📚</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>
+                      {userData.credits?.chat_credits_lost?.toString() || "0"}
+                    </Text>
+                    <Text style={styles.statLabel}>Chat Credit Lost📚</Text>
+                  </View>
+                  
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>
+                      {userData.credits?.joke?.toString() || "0"}
+                    </Text>
+                    <Text style={styles.statLabel}>Jock 🧩</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>
+                      {userData.credits?.story?.toString() || "0"}
+                    </Text>
+                    <Text style={styles.statLabel}>Story 🏠</Text>
+                  </View>
+                  {/* <View style={styles.statItem}>
                   <Text style={styles.statValue}>
                     {userData.credits?.game?.toString() || "0"}
                   </Text>
                   <Text style={styles.statLabel}>Game 🧩</Text>
                 </View> */}
-              </View>
+                </View>
+              </ScrollView>
 
               {/* Profile Details */}
               <View style={styles.detailsSection}>
@@ -841,7 +873,9 @@ export default function Profile() {
 
                     <TouchableOpacity
                       style={[styles.button, styles.rewardsButton]}
-                      onPress={() => router.push("/(tabs)/components/redeemRewards")}
+                      onPress={() =>
+                        router.push("/(tabs)/components/redeemRewards")
+                      }
                     >
                       <Text style={styles.buttonText}>Redeem Rewards</Text>
                     </TouchableOpacity>
@@ -1036,7 +1070,8 @@ export default function Profile() {
                     <View style={styles.noCreditHistory}>
                       <Text style={styles.noCreditHistoryText}>
                         No credit history yet! {"\n"}
-                        Start chatting, playing games, and taking quizzes to earn stars! 🌟
+                        Start chatting, playing games, and taking quizzes to
+                        earn stars! 🌟
                       </Text>
                     </View>
                   )}
@@ -1136,9 +1171,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
-  avatarBackground:{
-    width:170,
-    height:170
+  avatarBackground: {
+    width: 170,
+    height: 170,
   },
   avatar: {
     width: 110,
@@ -1205,6 +1240,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderWidth: 2,
     borderColor: "#4ECDC4",
+    gap:12
   },
   statItem: {
     alignItems: "center",
@@ -1564,13 +1600,13 @@ const styles = StyleSheet.create({
     fontFamily: "ComicRelief-Regular",
     lineHeight: 24,
   },
-  loadingCon:{
+  loadingCon: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 10,
     marginHorizontal: 20,
-    marginVertical:50,
-    backgroundColor:"#fff",
-  }
+    marginVertical: 50,
+    backgroundColor: "#fff",
+  },
 });

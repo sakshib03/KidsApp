@@ -280,6 +280,7 @@ export default function Quiz() {
               </View>
             ) : quizData && quizData.question ? (
               <View style={styles.questionWrapper}>
+                
                 <View style={styles.questionContainer}>
                   <View style={{ flexDirection: "row", gap: 70 }}>
                     <View>
@@ -349,7 +350,7 @@ export default function Quiz() {
                         <ActivityIndicator size="small" color="#fff" />
                       ) : dailyLimitReached || questionCount >= 5 ? (
                         <Text style={styles.nextButtonText}>
-                          Daily Limit Reached
+                          Limit Reached
                         </Text>
                       ) : (
                         <Text style={styles.nextButtonText}>Next Question</Text>
@@ -379,6 +380,8 @@ export default function Quiz() {
                       <Text style={styles.creditsText}>
                         Credits awarded: {result.credits_awarded}
                       </Text>
+
+                      <Text style={{marginTop:10, color:"#ff0303ff", fontSize:16,  fontFamily: "ComicRelief-Regular", }}>{result.explanation}</Text>
                     </View>
                   </View>
                 )}
@@ -408,9 +411,9 @@ export default function Quiz() {
                     <Text style={styles.initialStateSubtext}>
                       Examples: Animals, Space, Math, History
                     </Text>
-                    <Text style={styles.limitInfoText}>
+                    {/* <Text style={styles.limitInfoText}>
                       Daily limit: 5 questions
-                    </Text>
+                    </Text> */}
                   </>
                 )}
               </View>

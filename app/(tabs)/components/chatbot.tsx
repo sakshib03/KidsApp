@@ -1049,12 +1049,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
+
   },
   userMessage: {
     alignSelf: "flex-end",
     backgroundColor: "#56bbf1",
     borderBottomRightRadius: 4,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   botMessage: {
     alignSelf: "flex-start",
@@ -1062,7 +1063,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 4,
     borderWidth: 1,
     borderColor: "#e0e0e0",
-    marginBottom: 6,
+    marginBottom: 8,
   },
   typingBubble: {
     flexDirection: "row",

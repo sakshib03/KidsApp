@@ -97,7 +97,7 @@ export default function Question() {
       }
 
       const data = await response.json();
-      console.log("Full API response:", data); // Debug log
+      console.log("Full API response:", data); 
       setQuestionData(data);
     } catch (error) {
       console.error("Error fetching question:", error);
