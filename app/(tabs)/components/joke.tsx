@@ -39,7 +39,6 @@ export default function Joke() {
     const randomIndex = Math.floor(Math.random() * gifs.length);
     setCurrentGif(gifs[randomIndex]);
 
-    fetchChildId();
   }, []);
 
   useEffect(() => {
@@ -47,20 +46,27 @@ export default function Joke() {
   }, []);
 
   const fetchChildId = async () => {
-    try {
-      const childData = await AsyncStorage.getItem("childDate");
-      if (childData) {
-        const parsedData = JSON.parse(childData);
-        setChildId(parsedData.child_id);
-        fetchJoke(parsedData.child_id);
-      }
-    } catch (error) {
-      console.error("Error fetching child ID:", error);
+  try {
+    const userDataString = await AsyncStorage.getItem("userData");
+    
+    console.log("userData from AsyncStorage:", userDataString);
+    
+    if (userDataString) {
+      const userData = JSON.parse(userDataString);
+      console.log("Parsed userData:", userData);
+      setChildId(userData.child_id);
+      fetchJoke(userData.child_id);
+    }else {
+      console.log("No user data found in AsyncStorage");
     }
-  };
+  } catch (error) {
+    console.error("Error fetching child ID:", error);
+  }
+};
 
   const fetchJoke = async (id) => {
     try {
+      console.log("child_id:", id);
       setLoading(true);
       const response = await fetch(`${API_BASE}/generate-joke`, {
         method: "POST",

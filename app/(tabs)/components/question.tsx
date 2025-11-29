@@ -64,7 +64,7 @@ export default function Question() {
 
   const fetchChildId = async () => {
     try {
-      const childData = await AsyncStorage.getItem("childDate");
+      const childData = await AsyncStorage.getItem("userData");
       if (childData) {
         const parsedData = JSON.parse(childData);
         setChildId(parsedData.child_id);

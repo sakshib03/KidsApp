@@ -46,7 +46,8 @@ export default function Quiz() {
 
   const fetchChildId = async () => {
     try {
-      const childData = await AsyncStorage.getItem("childDate");
+      const childData = await AsyncStorage.getItem("userData");
+      console.log(childData);
       if (childData) {
         const parsedData = JSON.parse(childData);
         setChildId(parsedData.child_id);
