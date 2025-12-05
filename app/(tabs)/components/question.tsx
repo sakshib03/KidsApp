@@ -65,6 +65,7 @@ export default function Question() {
   const fetchChildId = async () => {
     try {
       const childData = await AsyncStorage.getItem("userData");
+      console.log("Parsed userData:", childData);
       if (childData) {
         const parsedData = JSON.parse(childData);
         setChildId(parsedData.child_id);
@@ -206,7 +207,7 @@ export default function Question() {
                         onPress={() =>
                           !submitting && !selectedAnswer && submitAnswer(key)
                         }
-                        disabled={submitting || selectedAnswer}
+                        disabled={submitting || !!selectedAnswer}
                       >
                         <Text
                           style={styles.optionText}
@@ -266,7 +267,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 25,
     marginBottom: 60,
   },
   backButton: {
@@ -277,7 +278,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f35a5aff",
     paddingVertical: 8,
     paddingHorizontal: 15,
-    borderRadius: 10,
+    borderRadius: 20,
   },
   backButtonText: {
     color: "#fff",
@@ -295,7 +296,7 @@ const styles = StyleSheet.create({
   questionContainer: {
     flex: 1,
     backgroundColor: "#f8f9fa",
-    maxHeight: 430,
+    maxHeight: 550,
     borderRadius: 20,
     padding: 25,
   },

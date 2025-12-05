@@ -1,16 +1,17 @@
+import { API_BASE } from "@/app/(tabs)/utils/config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Font from "expo-font";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    Alert,
-    Image,
-    ImageBackground,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  ImageBackground,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function LevelSelect() {
@@ -60,7 +61,7 @@ export default function LevelSelect() {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/game/select_level/${childId}?desired_level=${levelNumber}`,
+        `${API_BASE}/game/select_level/${childId}?desired_level=${levelNumber}`,
         {
           method: "GET",
           headers: {
@@ -184,7 +185,7 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: "center",
   },
-  backBtn: { marginRight: 250, marginTop:30 },
+  backBtn: { marginRight: 250, marginTop:55 },
   backIcon: {
     width: 38,
     height: 38,

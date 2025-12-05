@@ -21,16 +21,14 @@ export default function GamesDashboard() {
   useEffect(() => {
     loadFonts();
     initializeSound();
-    return()=>{
-
-    }
+    return () => {};
   }, []);
 
-  const initializeSound=async()=>{
-    try{
+  const initializeSound = async () => {
+    try {
       await soundManager.loadAndPlay();
       setIsSoundPlaying(soundManager.getIsPlaying());
-    }catch(error){
+    } catch (error) {
       console.error("Error initializing sound:", error);
     }
   };
@@ -56,8 +54,6 @@ export default function GamesDashboard() {
     }
   };
 
-
-
   return (
     <ImageBackground
       source={require("@/assets/images/bg6.jpg")}
@@ -81,10 +77,10 @@ export default function GamesDashboard() {
               style={styles.appleIcon}
             />
 
-            <Text style={styles.labelText}>
-              All <br />
-              Games
-            </Text>
+            <View style={styles.labelTextContainer}>
+              <Text style={styles.labelText}>All</Text>
+              <Text style={styles.labelText}>Games</Text>
+            </View>
           </View>
         </View>
 
@@ -154,27 +150,24 @@ export default function GamesDashboard() {
           </View>
         </View>
 
-         <TouchableOpacity
-              style={{
-                backgroundColor: "#ef523eff",
-                padding: 10,
-                width: 50,
-                borderRadius: 50,
-                marginLeft:240
-              }}
-              onPress={toggleSound}
-            >
-              <Ionicons
-                name={
-                  isSoundPlaying
-                    ? "volume-medium-outline"
-                    : "volume-mute-outline"
-                }
-                size={30}
-                color="#fff"
-              />
-            </TouchableOpacity>
-
+        <TouchableOpacity
+          style={{
+            backgroundColor: "#ef523eff",
+            padding: 10,
+            width: 50,
+            borderRadius: 50,
+            marginLeft: 240,
+          }}
+          onPress={toggleSound}
+        >
+          <Ionicons
+            name={
+              isSoundPlaying ? "volume-medium-outline" : "volume-mute-outline"
+            }
+            size={30}
+            color="#fff"
+          />
+        </TouchableOpacity>
 
         {/* <Image
           source={require("@/assets/images/games/settings.png")}
@@ -216,13 +209,14 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     left: -90,
     marginBottom: 20,
+    marginTop: 25,
   },
   backButtonText: {
     color: "#fff",
     fontSize: 14,
     fontWeight: "600",
     marginLeft: 5,
-    fontFamily: "ComicRelief-Regular",
+    fontFamily: "ComicRelief-Bold",
   },
   header: {
     flexDirection: "row",
@@ -233,16 +227,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  labelText: {
-    position: "absolute",
-    color: "#582525ff",
-    fontSize: 18,
-    fontFamily: "ComicRelief-Bold",
-    textAlign: "center",
-    top: "45%",
-    left: "50%",
-    transform: [{ translateY: -12 }],
-  },
+ labelTextContainer: {
+  position: "absolute",
+  top: "40%",
+  left: "50%",
+  transform: [{ translateY: -12 }],
+  alignItems: "center",
+},
+labelText: {
+  color: "#582525ff",
+  fontSize: 18,
+  fontFamily: "ComicRelief-Bold",
+  textAlign: "center",
+},
   appleIcon: {
     width: 160,
     height: 90,

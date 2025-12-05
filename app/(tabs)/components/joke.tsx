@@ -155,6 +155,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 25,
+    marginBottom:30,
   },
   header: {
     alignItems: "center",
@@ -166,7 +167,7 @@ const styles = StyleSheet.create({
     left: 0,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f4ca40ff",
+    backgroundColor: "#f5c525ff",
     paddingVertical: 8,
     paddingHorizontal: 15,
     borderRadius: 20,
@@ -176,13 +177,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     marginLeft: 5,
-    fontFamily: "ComicRelief-Regular",
+    fontFamily: "ComicRelief-Bold",
   },
   title: {
     fontSize: 26,
     fontWeight: "bold",
-    marginTop: 60,
-    color: "#f4ca40ff",
+    marginTop: 90,
+    color: "#ffd70fff",
     textAlign: "center",
     textShadowColor: "rgba(0,0,0,0.1)",
     textShadowOffset: { width: 1, height: 1 },
@@ -192,13 +193,13 @@ const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
     backgroundColor: "#fff",
-    borderRadius: 20,
+    borderRadius: 25,
     padding: 20,
     marginBottom: 20,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 3,
     },
     shadowOpacity: 0.15,
     shadowRadius: 8,
@@ -206,15 +207,11 @@ const styles = StyleSheet.create({
   },
   jokeWrapper: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
-    borderRadius: 15,
     padding: 5,
     marginBottom: 25,
   },
   jokeContainer: {
     flex: 1,
-    backgroundColor: "#fff",
-    borderRadius: 12,
     padding: 10,
   },
   scrollContent: {

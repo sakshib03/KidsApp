@@ -96,7 +96,7 @@ export default function LevelSelect() {
   if (!fontsLoaded || !childId) {
     return (
       <ImageBackground
-        source={require("@/assets/images/games/bg1.png")}
+        source={require("@/assets/images/games/mindMystery/bg1.png")}
         style={styles.background}
       >
         <Text style={styles.loadingText}>Loading...</Text>
@@ -116,6 +116,7 @@ export default function LevelSelect() {
     >
       <TouchableOpacity
         onPress={()=>router.push("/(tabs)/components/games/Mind_Mystery/welcomePage")}
+        style={{ marginTop:20}}
       >
         <Image
           source={require("@/assets/images/games/mindMystery/back-arrow.png")}
@@ -127,7 +128,6 @@ export default function LevelSelect() {
 
         <Text
           style={{
-            marginTop: 15,
             marginBottom: 30,
             fontSize: 20,
             color: "#262e66ff",
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     width: "100%",
-    padding: 20,
+    padding: 30,
     alignItems: "center",
   },
   title: {

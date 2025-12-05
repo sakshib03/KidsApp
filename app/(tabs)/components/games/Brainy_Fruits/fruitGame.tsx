@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { API_BASE } from "@/app/(tabs)/utils/config";
 
 export default function FruitGame() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
@@ -219,7 +220,7 @@ export default function FruitGame() {
       const totalQuestions = gameData?.total_questions_in_level;
 
       const response = await fetch(
-        `http://127.0.0.1:8000/game/submit_answer/${childId}`,
+        `${API_BASE}/game/submit_answer/${childId}`,
         {
           method: "POST",
           headers: {
@@ -395,7 +396,7 @@ export default function FruitGame() {
       console.log("🚀 Starting next level for child:", childId);
 
       const response = await fetch(
-        `http://127.0.0.1:8000/game/next_level/${childId}`,
+        `${API_BASE}/game/next_level/${childId}`,
         {
           method: "GET",
           headers: {
@@ -457,7 +458,7 @@ export default function FruitGame() {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/game/replay_level/${childId}`,
+        `${API_BASE}/game/replay_level/${childId}`,
         {
           method: "GET",
           headers: {
@@ -651,7 +652,7 @@ export default function FruitGame() {
 
               {/* Score Display */}
               <View style={styles.scoreContainer}>
-                <Text style={styles.scoreLabel}>Total Score</Text>
+                <Text style={styles.scoreLabel}>Total Score </Text>
                 <Text style={styles.scoreValue}>
                   {completionData?.points ?? gameData?.points ?? 0} points
                 </Text>
@@ -715,7 +716,7 @@ export default function FruitGame() {
 
               {/* Score Display */}
               <View style={styles.scoreContainer}>
-                <Text style={styles.scoreLabel}>Your Score</Text>
+                <Text style={styles.scoreLabel}>Your Score </Text>
                 <Text style={styles.scoreValue}>
                   {failedData?.points ?? gameData?.points ?? 0} points
                 </Text>
@@ -1006,7 +1007,7 @@ const styles = StyleSheet.create({
   scoreContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    width: "80%",
+    width: "90%",
     marginVertical: 15,
     padding: 15,
     backgroundColor: "rgba(255,255,255,0.9)",

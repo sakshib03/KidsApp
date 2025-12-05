@@ -8,6 +8,7 @@ import {
     Text,
     View
 } from "react-native";
+import { API_BASE } from "@/app/(tabs)/utils/config";
 
 export default function LandingPage() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
@@ -54,12 +55,12 @@ export default function LandingPage() {
 
       if (!childId) {
         console.log("No child ID found in storage");
-        setMessage({ message: "Welcome to Brainy Fruits! 🎉" });
+        setMessage({ message: "Welcome to Spell Breaker! 🎉" });
         return;
       }
 
       const response = await fetch(
-        `http://127.0.0.1:8000/welcome/spell/${childId}`,
+        `${API_BASE}/welcome/spell/${childId}`,
         {
           method: "GET",
           headers: {
@@ -75,7 +76,7 @@ export default function LandingPage() {
           // Child not found in database, but endpoint exists
           const errorData = await response.json();
           console.log("Child not found error:", errorData);
-          setMessage({ message: "Welcome to Brainy Fruits! 🎉" });
+          setMessage({ message: "Welcome to Spell Breaker! 🎉" });
         } else {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -98,7 +99,7 @@ export default function LandingPage() {
 
   return (
     <View style={styles.background}>
-      <View>
+      <View style={{marginTop:40}}>
         <Image
           source={require("@/assets/images/games/spellGame/butterfly.png")}
           style={{ height: 40, width: 40, position:"absolute", top:20, right:20 }}

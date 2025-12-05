@@ -14,6 +14,7 @@ import * as Font from "expo-font";
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Audio } from "expo-av";
+import { API_BASE } from "@/app/(tabs)/utils/config";
 
 export default function SpellGame() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
@@ -221,7 +222,7 @@ export default function SpellGame() {
       const totalQuestions = gameData?.total_questions_in_level;
 
       const response = await fetch(
-        `http://127.0.0.1:8000/game/submit_answer/spell/${childId}`,
+        `${API_BASE}/game/submit_answer/spell/${childId}`,
         {
           method: "POST",
           headers: {
@@ -427,7 +428,7 @@ export default function SpellGame() {
       console.log("🚀 Starting next level for child:", childId);
 
       const response = await fetch(
-        `http://127.0.0.1:8000/game/next_level/spell/${childId}`,
+        `${API_BASE}/game/next_level/spell/${childId}`,
         {
           method: "GET",
           headers: {
@@ -484,7 +485,7 @@ export default function SpellGame() {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/game/replay_level/spell/${childId}`,
+        `${API_BASE}/game/replay_level/spell/${childId}`,
         {
           method: "GET",
           headers: {
@@ -682,7 +683,7 @@ export default function SpellGame() {
 
               {/* Score Display */}
               <View style={styles.scoreContainer}>
-                <Text style={styles.scoreLabel}>Total Score</Text>
+                <Text style={styles.scoreLabel}>Total Score </Text>
                 <Text style={styles.scoreValue}>
                   {completionData?.points ?? gameData?.points ?? 0} points
                 </Text>
@@ -695,7 +696,7 @@ export default function SpellGame() {
                   onPress={handleReplayLevel}
                   disabled={loading}
                 >
-                  <Text style={styles.modalButtonText}>PLAY AGAIN</Text>
+                  <Text style={styles.modalButtonText}>Play Again</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -704,7 +705,7 @@ export default function SpellGame() {
                   disabled={loading}
                 >
                   <Text style={styles.modalButtonText}>
-                    {loading ? "LOADING..." : "NEXT LEVEL"}
+                    {loading ? "Loading..." : "Next Level"}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -746,7 +747,7 @@ export default function SpellGame() {
 
               {/* Score Display */}
               <View style={styles.scoreContainer}>
-                <Text style={styles.scoreLabel}>Your Score</Text>
+                <Text style={styles.scoreLabel}>Your Score </Text>
                 <Text style={styles.scoreValue}>
                   {failedData?.points ?? gameData?.points ?? 0} points
                 </Text>
@@ -964,7 +965,7 @@ const styles = StyleSheet.create({
   completionCard: {
     borderWidth: 16,
     borderColor: "#9F34A1",
-    backgroundColor: "#FFBDBD",
+    backgroundColor: "#fdd6d6ff",
     width: 320,
     borderRadius: 15,
     padding: 20,
@@ -1007,7 +1008,7 @@ const styles = StyleSheet.create({
   scoreContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    width: "80%",
+    width: "90%",
     marginVertical: 15,
     padding: 15,
     backgroundColor: "#fececeff",
@@ -1057,6 +1058,7 @@ const styles = StyleSheet.create({
     fontFamily: "ComicRelief-Bold",
     color: "#fff",
     textAlign: "center",
+  fontWeight:700,
   },
   backToLevelsButton: {
     paddingVertical: 8,
@@ -1064,7 +1066,7 @@ const styles = StyleSheet.create({
   },
   backToLevelsText: {
     fontSize: 14,
-    fontFamily: "ComicRelief-Regular",
+    fontFamily: "ComicRelief-Bold",
     color: "#036c69ff",
     textDecorationLine: "underline",
   },

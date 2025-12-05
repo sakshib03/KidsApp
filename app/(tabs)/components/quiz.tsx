@@ -283,7 +283,7 @@ export default function Quiz() {
               <View style={styles.questionWrapper}>
                 
                 <View style={styles.questionContainer}>
-                  <View style={{ flexDirection: "row", gap: 70 }}>
+                  <View style={{ flexDirection: "row", gap: 120 }}>
                     <View>
                       <Text style={styles.questionTitle}>Question:</Text>
                     </View>
@@ -325,7 +325,7 @@ export default function Quiz() {
                           onPress={() =>
                             !submitting && !selectedAnswer && submitAnswer(key)
                           }
-                          disabled={submitting || selectedAnswer}
+                          disabled={submitting || !!selectedAnswer}
                         >
                           <Text
                             style={styles.optionText}
@@ -435,14 +435,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+    marginTop:30,
   },
   header: {
     alignItems: "flex-start",
-    marginTop: 20,
     marginBottom: 10,
     flexDirection: "column",
     gap: 10,
-    paddingHorizontal: 10,
   },
   backButton: {
     flexDirection: "row",
@@ -457,7 +456,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     marginLeft: 5,
-    fontFamily: "ComicRelief-Regular",
+    fontFamily: "ComicRelief-Bold",
   },
   inputSection: {
     width: "100%",
@@ -473,6 +472,7 @@ const styles = StyleSheet.create({
   textInputWrapper: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent:"center",
     backgroundColor: "#ffffff",
     padding: 2,
     paddingHorizontal: 16,
@@ -616,7 +616,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     alignSelf: "center",
-    width: "90%",
+    width: "100%",
   },
   resultTextContainer: {
     alignItems: "center",
@@ -640,7 +640,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#383838ff",
     textAlign: "center",
-    fontFamily: "ComicRelief-Regular",
+    fontFamily: "ComicRelief-Bold",
   },
   loadingContainer: {
     flex: 1,

@@ -46,6 +46,7 @@ export default function Story() {
   const fetchChildId = async () => {
     try {
       const childData = await AsyncStorage.getItem("userData");
+      console.log("Parsed userData:", childData);
       if (childData) {
         const parsedData = JSON.parse(childData);
         setChildId(parsedData.child_id);
@@ -241,7 +242,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    marginTop: 25,
+    marginTop: 30,
     marginBottom: 20,
   },
   backButton: {
@@ -259,18 +260,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     marginLeft: 5,
-    fontFamily: "ComicRelief-Regular",
+    fontFamily: "ComicRelief-Bold",
   },
   title: {
     fontSize: 26,
     fontWeight: "bold",
-    marginTop: 60,
+    marginTop: 100,
     color: "#51bdf8ff",
     textAlign: "center",
     textShadowColor: "rgba(0,0,0,0.1)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
-    fontFamily: "ComicRelief-Regular",
+    fontFamily: "ComicRelief-Bold",
   },
   mainContainer: {
     flex: 1,
@@ -289,14 +290,10 @@ const styles = StyleSheet.create({
   },
   storyWrapper: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
-    borderRadius: 15,
     padding: 5,
   },
   storyContainer: {
     flex: 1,
-    backgroundColor: "#fff",
-    borderRadius: 12,
     padding: 15,
   },
   scrollView: {
@@ -365,7 +362,7 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: "center",
-    marginBottom: 4,
+    marginBottom: 30,
   },
   logo: {
     width: 180,

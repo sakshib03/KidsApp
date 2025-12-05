@@ -13,6 +13,7 @@ import {
 import * as Font from "expo-font";
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_BASE } from "@/app/(tabs)/utils/config";
 
 export default function Progress() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
@@ -66,7 +67,7 @@ export default function Progress() {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/game/progress/${childId}`,
+        `${API_BASE}/game/progress/${childId}`,
         {
           method: "GET",
           headers: {

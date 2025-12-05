@@ -111,7 +111,7 @@ export default function WelcomePage() {
         style={styles.background}
         resizeMode="cover"
       >
-        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between",  marginTop:20, }}>
           <View>
             <TouchableOpacity
               style={styles.backBtn}
@@ -176,6 +176,7 @@ export default function WelcomePage() {
                 width: 50,
                 borderRadius: 50,
               }}
+              onPress={()=>router.push("/(tabs)/components/games/Mind_Mystery/mindMysteryFAQ")}
             >
               <Image
                 source={require("@/assets/images/games/mindMystery/questions.png")}
@@ -281,20 +282,20 @@ const styles = StyleSheet.create({
 
   signWrapper: {
     position: "absolute",
-    bottom: 50,
-    left: 145,
-    width: width * 0.6,
+    bottom: 40,
+    right: 0,
+    width: width * 0.64,
     height: height * 0.38,
     alignItems: "center",
   },
 
   playButton: {
-    width: "67%",
+    width: "69%",
     height: "23%",
   },
 
   playImage: {
-    width: "100%",
+    width: "106%",
     height: "100%",
   },
 

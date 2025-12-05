@@ -16,10 +16,40 @@ import { soundManager } from "@/app/(tabs)/utils/soundManager";
 export default function Settings() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [isSoundPlaying, setIsSoundPlaying] = useState(true);
+  const [openPlayInfo, setOpenPlayInfo] = useState(false);
+  const [openFeature, setOpenFeature] = useState(false);
+  const [openAccessibility, setOpenAccessibility] = useState(false);
 
   useEffect(() => {
     loadFonts();
   }, []);
+
+  const HOW_TO_PLAY_TEXT = `
+Brainy Fruits is a fun learning game for kids!
+
+• Select a level and press Start
+• Answer the questions before the time ends
+• Count fruits or solve puzzles to score points
+• Submit your answer to finish the level
+• Complete levels to unlock new ones 🎉
+`;
+
+  const FEATURES_TEXT = `
+• 100 exciting learning levels
+• Timer-based fun challenges
+• Reward animations after each level
+• Track child's progress easily
+• Replay previous levels anytime
+• Colorful kid-friendly graphics 🎨
+`;
+
+  const ACCESSIBILITY_TEXT = `
+• Big buttons and clean UI
+• High contrast colors
+• Simple and clear instructions
+• Slow-learning friendly design
+• Kid-safe and easy navigation ♿
+`;
 
   const toggleSound = async () => {
     try {
@@ -105,7 +135,9 @@ export default function Settings() {
                 />
               </TouchableOpacity>
 
-              <TouchableOpacity>
+              <TouchableOpacity
+              onPress={()=>router.push("/(tabs)/components/games/Brainy_Fruits/brainyFruitsFAQ")}
+              >
                 <Image
                   source={require("@/assets/images/games/question.png")}
                   style={{ width: 45, height: 45 }}
@@ -136,15 +168,15 @@ export default function Settings() {
 
             {/* Stars Section */}
             <View style={styles.infoContainer}>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => setOpenPlayInfo(true)}>
                 <Text style={styles.progress}>{"\u25CF"} How to play</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => setOpenFeature(true)}>
                 <Text style={styles.progress}>{"\u25CF"} Features</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => setOpenAccessibility(true)}>
                 <Text style={styles.progress}>{"\u25CF"} Accessibility</Text>
               </TouchableOpacity>
             </View>
@@ -170,6 +202,38 @@ export default function Settings() {
           style={styles.character}
         />
       </View>
+      {(openPlayInfo || openFeature || openAccessibility) && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>
+              {openPlayInfo
+                ? "How to Play"
+                : openFeature
+                ? "Features"
+                : "Accessibility"}
+            </Text>
+
+            <Text style={styles.modalContent}>
+              {openPlayInfo
+                ? HOW_TO_PLAY_TEXT
+                : openFeature
+                ? FEATURES_TEXT
+                : ACCESSIBILITY_TEXT}
+            </Text>
+
+            <TouchableOpacity
+              style={styles.closeBtn}
+              onPress={() => {
+                setOpenPlayInfo(false);
+                setOpenFeature(false);
+                setOpenAccessibility(false);
+              }}
+            >
+              <Text style={styles.closeText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </ImageBackground>
   );
 }
@@ -238,6 +302,7 @@ const styles = StyleSheet.create({
     marginTop: 15,
     marginLeft: 60,
     width: "100%",
+    gap: 8,
     alignContent: "center",
   },
   progress: {
@@ -278,5 +343,56 @@ const styles = StyleSheet.create({
   backIcon: {
     width: 30,
     height: 30,
+  },
+
+  modalOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(1, 1, 1, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  modalBox: {
+    width: "85%",
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+
+  modalTitle: {
+    fontSize: 22,
+    fontFamily: "ComicRelief-Bold",
+    color: "#1b4621",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+
+  modalContent: {
+    fontSize: 16,
+    fontFamily: "ComicRelief-Regular",
+    color: "#3a3a3a",
+    lineHeight: 24,
+    marginBottom: 20,
+  },
+
+  closeBtn: {
+    backgroundColor: "#46BEF5",
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+
+  closeText: {
+    color: "#fff",
+    fontSize: 18,
+    fontFamily: "ComicRelief-Bold",
   },
 });

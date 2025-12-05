@@ -90,7 +90,7 @@ export default function Progress() {
   if (!fontsLoaded) {
     return (
       <ImageBackground
-        source={require("@/assets/images/games/bg1.png")}
+        source={require("@/assets/images/games/mindMystery/bg3.png")}
         style={styles.background}
       >
         <Text style={styles.loadingText}>Loading...</Text>
@@ -197,6 +197,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   mainContainer: {
+    marginTop:20,
     alignItems: "center",
     width: "90%",
     height: "85%",
@@ -268,6 +269,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   bottomIcon: {
+    marginTop:30,
     width: 60,
     height: 60,
     resizeMode: "contain",
@@ -275,9 +277,9 @@ const styles = StyleSheet.create({
   },
   character: {
     width: 260,
-    height: 330,
+    height: 300,
     position: "absolute",
-    bottom: -70,
+    bottom: 0,
     right: 120,
     resizeMode: "contain",
   },

@@ -253,7 +253,7 @@ export default function Profile() {
       if (response.ok) {
         const data = await response.json();
         if (data.avatar_url) {
-          const fullUrl = `http://127.0.0.1:8000${
+          const fullUrl = `https://semantic.onesmarter.com${
             data.avatar_url
           }?t=${Date.now()}`;
           setAvatarUrl(fullUrl);
@@ -648,7 +648,7 @@ export default function Profile() {
                     <Text style={styles.statValue}>
                       {userData.credits?.joke?.toString() || "0"}
                     </Text>
-                    <Text style={styles.statLabel}>Jock 🧩</Text>
+                    <Text style={styles.statLabel}>Joke 🧩</Text>
                   </View>
                   <View style={styles.statItem}>
                     <Text style={styles.statValue}>
@@ -1107,6 +1107,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     justifyContent: "center",
+    marginTop:25,
   },
   header: {
     flexDirection: "row",

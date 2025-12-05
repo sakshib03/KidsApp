@@ -190,7 +190,7 @@ export default function RedeemRewards() {
                         style={[
                           styles.themeCard,
                           {
-                            backgroundColor: theme.cardBg,
+                            backgroundColor: "#fff",
                             borderColor: theme.borderColor,
                             borderWidth: 2,
                           },

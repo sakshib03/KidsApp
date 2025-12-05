@@ -15,6 +15,7 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Audio } from "expo-av";
 import { soundManager } from "../../../utils/soundManager";
+import { API_BASE } from "@/app/(tabs)/utils/config";
 
 export default function WelcomePage() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
@@ -107,7 +108,7 @@ export default function WelcomePage() {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/game/start?child_id=${childId}`,
+        `${API_BASE}/game/start?child_id=${childId}`,
         {
           method: "GET",
           headers: {
@@ -140,7 +141,7 @@ export default function WelcomePage() {
       source={require("@/assets/images/games/bg1.png")}
       style={styles.background}
     >
-      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between" , marginTop:60}}>
         <View>
           <TouchableOpacity
             style={styles.backBtn}
@@ -168,9 +169,9 @@ export default function WelcomePage() {
             style={{
               backgroundColor: "#fff",
               width: 40,
-              height: 40,
-              alignItems: "center",
-              justifyContent: "center",
+              height:40,
+              justifyContent:"center",
+              alignItems:"center",
               borderRadius: 10,
             }}
             onPress={toggleSound}
@@ -180,7 +181,6 @@ export default function WelcomePage() {
                 isSoundPlaying ? "volume-medium-outline" : "volume-mute-outline"
               }
               size={30}
-              marginTop={14}
               color="#1b4621ff"
             />
             {/* <Image
@@ -196,11 +196,13 @@ export default function WelcomePage() {
           >
             <Image
               source={require("@/assets/images/games/level2.png")}
-              style={{ width: 40, height: 40, borderRadius: 5 }}
+              style={{ width: 40, height: 40, borderRadius: 5 ,}}
             />
           </TouchableOpacity>
 
-          <TouchableOpacity>
+          <TouchableOpacity
+          onPress={()=>router.push("/(tabs)/components/games/Brainy_Fruits/brainyFruitsFAQ")}
+          >
             <Image
               source={require("@/assets/images/games/question.png")}
               style={{ width: 40, height: 40, borderRadius: 5 }}
@@ -266,7 +268,6 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     justifyContent: "space-between",
-    paddingVertical: 30,
   },
   welcomeContainer: {
     alignItems: "center",
@@ -279,7 +280,7 @@ const styles = StyleSheet.create({
   },
   welcomeImage: {
     width: 350,
-    height: 500,
+    height: 600,
     resizeMode: "contain",
   },
   backBtn: { marginLeft: 20 },
@@ -293,7 +294,7 @@ const styles = StyleSheet.create({
   },
   overlayButtons: {
     position: "absolute",
-    bottom: 160,
+    bottom: 220,
     alignItems: "center",
   },
   button: {

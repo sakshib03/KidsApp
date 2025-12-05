@@ -12,6 +12,8 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { API_BASE } from "@/app/(tabs)/utils/config";
+
 
 export default function LevelSelect() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
@@ -60,7 +62,7 @@ export default function LevelSelect() {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/game/select_level/spell/${childId}?desired_level=${levelNumber}`,
+        `${API_BASE}/game/select_level/spell/${childId}?desired_level=${levelNumber}`,
         {
           method: "GET",
           headers: {
@@ -95,7 +97,6 @@ export default function LevelSelect() {
   if (!fontsLoaded || !childId) {
     return (
       <ImageBackground
-        source={require("@/assets/images/games/bg1.png")}
         style={styles.background}
       >
         <Text style={styles.loadingText}>Loading...</Text>
@@ -115,6 +116,7 @@ export default function LevelSelect() {
      
       <TouchableOpacity
         onPress={()=>router.push("/(tabs)/components/games/Spell_Breaker/welcomePage")}
+        style={{marginTop:20}}
       >
         <Image
           source={require("@/assets/images/games/spellGame/left-arrow.png")}

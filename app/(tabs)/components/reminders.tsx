@@ -2,7 +2,8 @@ import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Font from "expo-font";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import moment from "moment";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -14,8 +15,9 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { useTheme } from "../utils/ThemeContext";
 import { API_BASE } from "../utils/config";
 
@@ -30,21 +32,17 @@ export default function Reminders() {
   const [refreshing, setRefreshing] = useState(false);
   const [editingReminder, setEditingReminder] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const [fontsLoaded, setFontsLoaded]= useState(false);
-  const {theme}=useTheme();
-
-  useEffect(() => {
-    initializeData();
-    Font.loadAsync({
-      "ComicRelief-Bold": require("../../../assets/fonts/ComicRelief-Bold.ttf"),
-      "ComicRelief-Regular": require("../../../assets/fonts/ComicRelief-Regular.ttf"),
-    }).then(() => setFontsLoaded(true));
-  }, []);
+  const [fontsLoaded, setFontsLoaded] = useState(false);
+  const { theme } = useTheme();
+  
+  // Date and Time picker states
+  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+  const [isTimePickerVisible, setTimePickerVisibility] = useState(false);
+  const [pickerMode, setPickerMode] = useState("date"); // "date" or "time"
 
   // Consistent with Profile page approach
   const getChildIdFromStorage = async () => {
     try {
-      // Use the same key as Profile page
       const childId = await AsyncStorage.getItem("childId");
       console.log("Stored Child ID:", childId);
 
@@ -52,7 +50,6 @@ export default function Reminders() {
         return childId;
       }
 
-      // Fallback to selected_child if childId doesn't exist
       const childData = await AsyncStorage.getItem("selected_child");
       if (childData) {
         const parsedChildData = JSON.parse(childData);
@@ -63,26 +60,6 @@ export default function Reminders() {
     } catch (error) {
       console.error("Error getting child ID:", error);
       return null;
-    }
-  };
-
-  const initializeData = async () => {
-    try {
-      setLoading(true);
-      const storedChildId = await getChildIdFromStorage();
-
-      if (storedChildId) {
-        setChildId(storedChildId);
-        await loadReminders(storedChildId);
-      } else {
-        Alert.alert("Error", "Child ID not found. Please login again.");
-        router.push("/(tabs)/auth/login");
-      }
-    } catch (error) {
-      console.error("Error initializing data:", error);
-      Alert.alert("Error", "Failed to load reminders");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -113,7 +90,6 @@ export default function Reminders() {
           setReminders(result.reminders);
           await AsyncStorage.setItem("kid_reminders", JSON.stringify(result.reminders));
         } else {
-          // Fallback to local storage
           console.log("No reminders from API, checking local storage");
           const storedReminders = await AsyncStorage.getItem("kid_reminders");
           if (storedReminders) {
@@ -126,7 +102,6 @@ export default function Reminders() {
     } catch (error) {
       console.error("Error loading reminders from API:", error);
 
-      // Fallback to local storage
       try {
         const storedReminders = await AsyncStorage.getItem("kid_reminders");
         if (storedReminders) {
@@ -142,7 +117,51 @@ export default function Reminders() {
     }
   };
 
-  // Function to refresh reminders
+  // Function to initialize data
+  const initializeData = async () => {
+    try {
+      setLoading(true);
+      const storedChildId = await getChildIdFromStorage();
+
+      if (storedChildId) {
+        setChildId(storedChildId);
+        await loadReminders(storedChildId);
+      } else {
+        Alert.alert("Error", "Child ID not found. Please login again.");
+        router.push("/(tabs)/auth/login");
+      }
+    } catch (error) {
+      console.error("Error initializing data:", error);
+      Alert.alert("Error", "Failed to load reminders");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const init = async () => {
+      await Font.loadAsync({
+        "ComicRelief-Bold": require("../../../assets/fonts/ComicRelief-Bold.ttf"),
+        "ComicRelief-Regular": require("../../../assets/fonts/ComicRelief-Regular.ttf"),
+      });
+      setFontsLoaded(true);
+      
+      // Initialize data after fonts are loaded
+      await initializeData();
+    };
+    
+    init();
+  }, []);
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#fff" }}>
+        <ActivityIndicator size="large" color="#196c57" />
+        <Text style={{ marginTop: 10, color: "#196c57" }}>Loading fonts...</Text>
+      </View>
+    );
+  }
+
   const handleRefresh = () => {
     setRefreshing(true);
     if (childId) {
@@ -152,13 +171,38 @@ export default function Reminders() {
     }
   };
 
-  // Save reminders to local storage
   const saveReminders = async (newReminders) => {
     try {
       await AsyncStorage.setItem("kid_reminders", JSON.stringify(newReminders));
     } catch (error) {
       console.error("Error saving reminders:", error);
     }
+  };
+
+  // Date and Time picker functions
+  const showDatePicker = () => {
+    setPickerMode("date");
+    setDatePickerVisibility(true);
+  };
+
+  const showTimePicker = () => {
+    setPickerMode("time");
+    setDatePickerVisibility(true);
+  };
+
+  const hideDatePicker = () => {
+    setDatePickerVisibility(false);
+  };
+
+  const handleDateConfirm = (date) => {
+    if (pickerMode === "date") {
+      const formattedDate = moment(date).format("YYYY-MM-DD");
+      setReminderDate(formattedDate);
+    } else {
+      const formattedTime = moment(date).format("HH:mm");
+      setReminderTime(formattedTime);
+    }
+    hideDatePicker();
   };
 
   // Create new reminder
@@ -205,14 +249,11 @@ export default function Reminders() {
           created_at: new Date().toISOString()
         };
 
-        // Update state and storage
         const updatedReminders = [...reminders, newReminder];
         setReminders(updatedReminders);
         await saveReminders(updatedReminders);
 
-        // Clear form
         resetForm();
-
         Alert.alert("Yay!", "Reminder created successfully!");
       } else {
         const errorText = await response.text();
@@ -263,7 +304,6 @@ export default function Reminders() {
         const result = await response.json();
         console.log("Update reminder result:", result);
 
-        // Update local state
         const updatedReminders = reminders.map(reminder =>
           reminder.id === editingReminder.id
             ? { ...reminder, ...reminderData }
@@ -273,9 +313,7 @@ export default function Reminders() {
         setReminders(updatedReminders);
         await saveReminders(updatedReminders);
 
-        // Reset form and exit edit mode
         resetForm();
-
         Alert.alert("Success!", "Reminder updated successfully!");
       } else {
         const errorText = await response.text();
@@ -323,11 +361,8 @@ export default function Reminders() {
                 const result = await response.json();
                 console.log("Delete reminder result:", result);
 
-                // Remove from local state
                 const updatedReminders = reminders.filter(reminder => reminder.id !== id);
                 setReminders(updatedReminders);
-
-                // Update local storage
                 await saveReminders(updatedReminders);
 
                 Alert.alert("Success!", "Reminder deleted successfully!");
@@ -339,7 +374,6 @@ export default function Reminders() {
             } catch (error) {
               console.error("Error deleting reminder:", error);
 
-              // Fallback: remove from local state even if API fails
               const updatedReminders = reminders.filter(reminder => reminder.id !== id);
               setReminders(updatedReminders);
               await saveReminders(updatedReminders);
@@ -377,28 +411,12 @@ export default function Reminders() {
     resetForm();
   };
 
-  // Web-compatible date handler
-  const handleDateChange = (event) => {
-    setReminderDate(event.target.value);
-  };
-
-  // Web-compatible time handler
-  const handleTimeChange = (event) => {
-    setReminderTime(event.target.value);
-  };
-
-  // Get today's date in YYYY-MM-DD format for the min attribute
-  const getTodayDate = () => {
-    return new Date().toISOString().split('T')[0];
-  };
-
   // Render individual reminder item
   const renderReminderItem = ({ item }) => (
     <View style={styles.reminderCard}>
       <View style={styles.reminderHeader}>
         <Text style={styles.reminderOccasion}>{item.occasion}</Text>
         <View style={styles.reminderActions}>
-          {/* Edit Button */}
           <TouchableOpacity
             onPress={() => handleEditReminder(item)}
             style={styles.editButton}
@@ -406,7 +424,6 @@ export default function Reminders() {
             <Feather name="edit" size={16} color="#4CAF50" />
           </TouchableOpacity>
 
-          {/* Delete Button */}
           <TouchableOpacity
             onPress={() => deleteReminder(item.id)}
             style={styles.deleteButton}
@@ -426,7 +443,6 @@ export default function Reminders() {
 
   return (
     <ImageBackground
-      // source={require("@/assets/images/theme1.png")}
       style={styles.background}
       source={theme.background}
     >
@@ -479,39 +495,44 @@ export default function Reminders() {
                 </View>
 
                 <View style={styles.row}>
+                  {/* Date Input with TouchableOpacity */}
                   <View style={[styles.inputField, styles.halfInput]}>
                     <View style={styles.inputLabel}>
                       <Feather name="calendar" size={16} color="#196c57" />
                       <Text style={styles.inputLabelText}>Date</Text>
                     </View>
-
-                    <View style={styles.inputWrapper}>
-                      <input
-                        type="date"
-                        value={reminderDate}
-                        onChange={handleDateChange}
-                        style={styles.webInput}
-                        min={getTodayDate()}
-                        className="date-input"
-                      />
-                    </View>
+                    <TouchableOpacity 
+                      style={styles.dateTimeInput} 
+                      onPress={showDatePicker}
+                    >
+                      <Text style={[
+                        styles.dateTimeInputText,
+                        !reminderDate && { color: "#999" }
+                      ]}>
+                        {reminderDate ? reminderDate : "Select Date"}
+                      </Text>
+                      <Feather name="calendar" size={16} color="#196c57" />
+                    </TouchableOpacity>
                   </View>
 
+                  {/* Time Input with TouchableOpacity */}
                   <View style={[styles.inputField, styles.halfInput]}>
                     <View style={styles.inputLabel}>
                       <Feather name="clock" size={16} color="#196c57" />
                       <Text style={styles.inputLabelText}>Time</Text>
                     </View>
-
-                    <View style={styles.inputWrapper}>
-                      <input
-                        type="time"
-                        value={reminderTime}
-                        onChange={handleTimeChange}
-                        style={styles.webInput}
-                        className="time-input"
-                      />
-                    </View>
+                    <TouchableOpacity 
+                      style={styles.dateTimeInput} 
+                      onPress={showTimePicker}
+                    >
+                      <Text style={[
+                        styles.dateTimeInputText,
+                        !reminderTime && { color: "#999" }
+                      ]}>
+                        {reminderTime ? reminderTime : "Select Time"}
+                      </Text>
+                      <Feather name="clock" size={16} color="#196c57" />
+                    </TouchableOpacity>
                   </View>
                 </View>
 
@@ -532,6 +553,15 @@ export default function Reminders() {
                 </View>
               </View>
 
+              {/* DateTime Picker Modal */}
+              <DateTimePickerModal
+                isVisible={isDatePickerVisible}
+                mode={pickerMode}
+                onConfirm={handleDateConfirm}
+                onCancel={hideDatePicker}
+                minimumDate={new Date()}
+              />
+
               {/* Dynamic Action Buttons */}
               <View style={styles.actionButtons}>
                 {editMode ? (
@@ -549,7 +579,7 @@ export default function Reminders() {
                       onPress={handleUpdateReminder}
                     >
                       <Feather name="save" size={20} color="#fff" />
-                      <Text style={styles.actionButtonText}>Update Reminder</Text>
+                      <Text style={styles.actionButtonText}>Update</Text>
                     </TouchableOpacity>
                   </>
                 ) : (
@@ -617,7 +647,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 14,
-    marginTop: 30,
+    marginTop: 35,
   },
   header: {
     flexDirection: "row",
@@ -671,19 +701,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 20,
   },
-  childIdText: {
-    textAlign: "center",
-    fontSize: 12,
-    color: "#196c57",
-    marginBottom: 10,
-    fontFamily: "ComicRelief-Regular",
-    backgroundColor: "rgba(255,255,255,0.5)",
-    padding: 5,
-    borderRadius: 5,
-  },
   inputsContainer: {
     gap: 16,
-    marginTop:10,
+    marginTop: 10,
   },
   inputField: {
     marginBottom: 8,
@@ -725,12 +745,15 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  inputWrapper: {
+  dateTimeInput: {
     backgroundColor: "#fff",
     borderColor: "#e0e0e0",
     borderWidth: 2,
     borderRadius: 12,
-    padding: 0,
+    padding: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -739,18 +762,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
-    overflow: 'hidden',
   },
-  webInput: {
-    width: '100%',
-    height: 44,
-    border: 'none',
-    outline: 'none',
+  dateTimeInputText: {
     fontSize: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    backgroundColor: 'transparent',
-    fontFamily: 'system-ui, -apple-system, sans-serif',
+    color: "#333",
+    fontFamily: "ComicRelief-Regular",
+    flex: 1,
   },
   multilineInput: {
     height: 80,
@@ -758,16 +775,17 @@ const styles = StyleSheet.create({
   },
   actionButtons: {
     flexDirection: "row",
-    gap: 12,
-    justifyContent:"center"
+    gap: 10,
+    justifyContent: "center",
+    alignItems:"center",
+    marginTop: 20,
   },
   actionButton: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 12,
-    paddingHorizontal: 18,
+    paddingHorizontal: 28,
     borderRadius: 25,
     gap: 10,
     shadowColor: "#000",
@@ -787,7 +805,7 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     fontSize: 16,
-    fontWeight: 600,
+    fontWeight: "600",
     color: "#fff",
     fontFamily: "ComicRelief-Regular",
   },
@@ -812,7 +830,7 @@ const styles = StyleSheet.create({
   },
   createButtonText: {
     fontSize: 16,
-    fontWeight: 600,
+    fontWeight: "600",
     color: "#fff",
     fontFamily: "ComicRelief-Regular",
   },
@@ -830,16 +848,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#9cd2ffff",
     padding: 20,
     borderRadius: 16,
+    marginTop: 20,
   },
   remindersHeader: {
     alignItems: "center",
     marginBottom: 10,
-  },
-  remindersCount: {
-    fontSize: 14,
-    color: "#666",
-    fontFamily: "ComicRelief-Regular",
-    marginTop: 5,
   },
   remindersList: {
     gap: 12,
@@ -910,6 +923,7 @@ const styles = StyleSheet.create({
     padding: 40,
     backgroundColor: "#9cd2ffff",
     borderRadius: 16,
+    marginTop: 20,
   },
   noRemindersText: {
     fontSize: 18,

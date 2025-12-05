@@ -8,6 +8,7 @@ import {
     Text,
     View
 } from "react-native";
+import { API_BASE } from "@/app/(tabs)/utils/config";
 
 export default function LandingPage() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
@@ -58,7 +59,7 @@ export default function LandingPage() {
       return;
     }
 
-    const response = await fetch(`http://127.0.0.1:8000/welcome/${childId}`, {
+    const response = await fetch(`${API_BASE}/welcome/${childId}`, {
       method: "GET",
       headers: {
         accept: "application/json",

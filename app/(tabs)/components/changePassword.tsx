@@ -138,7 +138,7 @@ export default function ChangePassword() {
       if (response.ok) {
         Alert.alert("Success", "Child password changed successfully`");
         setTimeout(() => {
-          router.push("/(tabs)/components/dashboard");
+          router.push("/(tabs)/auth/login");
         }, 1000);
       } else {
         const errorMessage =
@@ -387,6 +387,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 8,
     fontSize: 16,
+    color:"#131212ff"
   },
   passwordContainer: {
     flexDirection: "row",

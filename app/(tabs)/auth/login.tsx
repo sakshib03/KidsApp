@@ -178,8 +178,6 @@ export default function LoginScreen() {
           return;
         }
         await storeAuthData("child", data);
-
-        Alert.alert("Success", "Login successful!");
         router.replace("/(tabs)/components/chatbot");
       } else {
         Alert.alert("Error", data.detail || "Login failed. Please try again.");
@@ -489,11 +487,10 @@ const styles = StyleSheet.create({
   },
   input: {
     width: 300,
+    height:45,
     marginTop: 22,
     borderColor: "#0F6424",
     borderWidth: 1,
-    padding: 12,
-    paddingVertical: 2,
     paddingHorizontal: 25,
     borderRadius: 30,
   },

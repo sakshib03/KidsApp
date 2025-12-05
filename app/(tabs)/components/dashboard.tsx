@@ -1,28 +1,30 @@
 import {
-    Feather,
-    FontAwesome5,
-    Ionicons,
-    MaterialIcons,
+  Feather,
+  FontAwesome5,
+  Ionicons,
+  MaterialIcons,
 } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
+import moment from "moment";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Animated,
-    Easing,
-    FlatList,
-    Image,
-    ImageBackground,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Easing,
+  FlatList,
+  Image,
+  ImageBackground,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { API_BASE } from "../utils/config";
 
 export default function Dashboard() {
@@ -34,13 +36,15 @@ export default function Dashboard() {
   const [slideAnim] = useState(new Animated.Value(50));
   const [expandedDates, setExpandedDates] = useState(new Set());
   const [blockedStatus, setBlockedStatus] = useState({});
+  
+  // Date Picker State
+  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
 
   // Credit History States
   const [isCreditHistoryModalVisible, setIsCreditHistoryModalVisible] =
     useState(false);
   const [creditHistory, setCreditHistory] = useState([]);
   const [creditHistoryLoading, setCreditHistoryLoading] = useState(false);
-
   const [selectedDate, setSelectedDate] = useState("");
   const [filteredCreditHistory, setFilteredCreditHistory] = useState([]);
 
@@ -99,6 +103,21 @@ export default function Dashboard() {
     }
   }, [loading]);
 
+  // Date Picker Functions (same as signup page)
+  const showDatePicker = () => {
+    setDatePickerVisibility(true);
+  };
+
+  const hideDatePicker = () => {
+    setDatePickerVisibility(false);
+  };
+
+  const handleDateConfirm = (date) => {
+    const formattedDate = moment(date).format("YYYY-MM-DD");
+    setSelectedDate(formattedDate);
+    hideDatePicker();
+  };
+
   const fetchParentDashboard = async () => {
     try {
       const parentId = await AsyncStorage.getItem("parentId");
@@ -125,15 +144,15 @@ export default function Dashboard() {
       setParentData(data.parent);
       setChildrenData(data.children);
 
-      setBlockedStatus(prev=>{
-        const newStatus={...prev};
-        data.children.forEach(child => {
-        if (newStatus[child.profile.id] === undefined) {
-          newStatus[child.profile.id] = false; // Default to unblocked
-        }
+      setBlockedStatus((prev) => {
+        const newStatus = { ...prev };
+        data.children.forEach((child) => {
+          if (newStatus[child.profile.id] === undefined) {
+            newStatus[child.profile.id] = false; // Default to unblocked
+          }
+        });
+        return newStatus;
       });
-      return newStatus;
-    });
 
       await AsyncStorage.setItem("parentData", JSON.stringify(data.parent));
       await AsyncStorage.setItem("childrenData", JSON.stringify(data.children));
@@ -477,7 +496,7 @@ export default function Dashboard() {
 
   return (
     <ImageBackground
-      source={require("@/assets/images/background.png")}
+      source={require("@/assets/images/login_image.png")}
       style={styles.background}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -498,17 +517,10 @@ export default function Dashboard() {
             </TouchableOpacity>
             <View style={{ flexDirection: "row", gap: 8 }}>
               <View style={styles.creditHistoryIcon}>
-                <View style={styles.statIcon}>
-                  <MaterialIcons
-                    name="monetization-on"
-                    size={24}
-                    color="gold"
-                  />
-                </View>
+                <MaterialIcons name="monetization-on" size={24} color="gold" />
                 <Text style={styles.statValue}>
                   {credits.total?.toString() || "0"}
                 </Text>
-                {/* <Text style={styles.creditHistoryText}>Score</Text> */}
               </View>
               <View>
                 <TouchableOpacity
@@ -588,27 +600,6 @@ export default function Dashboard() {
                 </View>
               </View>
             </View>
-
-            {/* Stats Grid */}
-            {/* <View style={styles.statsGrid}>
-              <View style={styles.statCard}>
-                <View style={[styles.statIcon, { backgroundColor: '#FFD166' }]}>
-                  <FontAwesome5 name="star" size={16} color="#fff" />
-                </View>
-                <Text style={styles.statValue}>{credits.total?.toString() || "0"}</Text>
-                <Text style={styles.statLabel}>Total Score</Text>
-              </View>
-
-              <View style={styles.statCard}>
-                <View style={[styles.statIcon, { backgroundColor: '#56BBF1' }]}>
-                  <FontAwesome5 name="graduation-cap" size={14} color="#fff" />
-                </View>
-                <Text style={styles.statValue}>
-                  {currentChild?.profile?.default_dream_career || "N/A"}
-                </Text>
-                <Text style={styles.statLabel}>Dream Career</Text>
-              </View>
-            </View> */}
 
             {/* Info Sections */}
             <View style={styles.infoSections}>
@@ -734,7 +725,9 @@ export default function Dashboard() {
             <View style={styles.buttonRow}>
               <TouchableOpacity
                 style={[styles.actionButton, styles.infoButton]}
-                onPress={() => router.push("/(tabs)/components/changeParentPass")}
+                onPress={() =>
+                  router.push("/(tabs)/components/changeParentPass")
+                }
               >
                 <Feather name="shield" size={20} color="#fff" />
                 <Text style={styles.actionButtonText}>
@@ -764,18 +757,27 @@ export default function Dashboard() {
                   Track your child's coins journey! ✨
                 </Text>
 
-                {/* Date Filter Section - ADD THIS */}
+                {/* Date Filter Section with DateTimePicker */}
                 <View style={styles.filterContainer}>
                   <Text style={styles.filterLabel}>Filter by Date:</Text>
+
                   <View style={styles.dateInputContainer}>
-                    <input
-                      type="date"
-                      value={selectedDate}
-                      onChange={(e) => setSelectedDate(e.target.value)}
-                      style={styles.dateInput}
-                      max={new Date().toISOString().split("T")[0]}
-                    />
+                    <TouchableOpacity
+                      style={styles.datePickerButton}
+                      onPress={showDatePicker}
+                    >
+                      <Text
+                        style={[
+                          styles.datePickerButtonText,
+                          !selectedDate && { color: "#999" },
+                        ]}
+                      >
+                        {selectedDate ? selectedDate : "Select Date"}
+                      </Text>
+                      <Feather name="calendar" size={20} color="#56BBF1" />
+                    </TouchableOpacity>
                   </View>
+                  
                   <View style={styles.filterButtons}>
                     <TouchableOpacity
                       style={[styles.filterButton, styles.applyButton]}
@@ -792,6 +794,15 @@ export default function Dashboard() {
                     </TouchableOpacity>
                   </View>
                 </View>
+
+                {/* DateTimePicker Modal */}
+                <DateTimePickerModal
+                  isVisible={isDatePickerVisible}
+                  mode="date"
+                  maximumDate={new Date()}
+                  onConfirm={handleDateConfirm}
+                  onCancel={hideDatePicker}
+                />
 
                 {creditHistoryLoading ? (
                   <View style={styles.loadingContainer}>
@@ -874,13 +885,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 20,
+    marginTop: 40,
   },
   backButton: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FF6B8B",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 28,
     borderRadius: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -893,15 +905,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     marginLeft: 6,
-    fontFamily: "ComicRelief-Regular",
+    fontFamily: "ComicRelief-Bold",
   },
   creditHistoryIcon: {
     alignItems: "center",
     flexDirection: "row",
     backgroundColor: "rgba(255, 255, 255, 0.9)",
-    paddingVertical: 2,
-    paddingHorizontal: 8,
-    borderRadius: 15,
+    paddingVertical: 6,
+    paddingHorizontal: 18,
+    borderRadius: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -910,7 +922,7 @@ const styles = StyleSheet.create({
   },
   creditHistoryText: {
     color: "#fabf36ff",
-    fontSize: 12,
+    fontSize: 14,
     fontFamily: "ComicRelief-Bold",
     marginTop: 2,
   },
@@ -1075,7 +1087,8 @@ const styles = StyleSheet.create({
   infoContent: {
     backgroundColor: "#f8f9fa",
     borderRadius: 12,
-    padding: 12,
+    paddingHorizontal: 4,
+    paddingVertical: 10,
   },
   infoText: {
     fontSize: 14,
@@ -1181,16 +1194,15 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12,
+    justifyContent: "center",
+    gap: 14,
   },
   actionButton: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
     borderRadius: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -1343,7 +1355,7 @@ const styles = StyleSheet.create({
     fontFamily: "ComicRelief-Regular",
     lineHeight: 24,
   },
-  // Add these to your existing styles
+  // Filter styles
   filterContainer: {
     padding: 2,
     backgroundColor: "#f8f9fa",
@@ -1351,6 +1363,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e9ecef",
     paddingHorizontal: 10,
+    marginBottom: 16,
   },
   filterLabel: {
     fontSize: 16,
@@ -1363,18 +1376,21 @@ const styles = StyleSheet.create({
   dateInputContainer: {
     marginBottom: 15,
   },
-  dateInput: {
-    width: "90%",
+  datePickerButton: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
     padding: 12,
     borderWidth: 2,
-    borderTopColor: "#e0e0e0",
-    borderLeftColor: "#e0e0e0",
     borderColor: "#e0e0e0",
     borderRadius: 12,
+    backgroundColor: "#fff",
+  },
+  datePickerButtonText: {
     fontSize: 14,
     fontFamily: "ComicRelief-Regular",
-    backgroundColor: "#fff",
-    outline: "none",
+    color: "#333",
   },
   filterButtons: {
     flexDirection: "row",
@@ -1403,14 +1419,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 14,
     fontFamily: "ComicRelief-Bold",
-  },
-  resultsCount: {
-    fontSize: 14,
-    color: "#666",
-    textAlign: "center",
-    marginBottom: 10,
-    fontFamily: "ComicRelief-Regular",
-    fontStyle: "italic",
   },
   warningButton: {
     backgroundColor: "#FF9500",
@@ -1441,5 +1449,13 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginLeft: 4,
     fontFamily: "ComicRelief-Bold",
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#f4bb35ff",
+    fontFamily: "ComicRelief-Bold",
+    textAlign: "center",
+    marginLeft: 8,
   },
 });

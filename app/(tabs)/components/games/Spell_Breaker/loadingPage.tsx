@@ -48,7 +48,7 @@ export default function LoadingPage() {
 
   return (
     <View style={styles.background}>
-      <View>
+      <View style={{marginTop:40}}>
         <Image
           source={require("@/assets/images/games/spellGame/butterfly.png")}
           style={{ height: 40, width: 40, position:"absolute", top:20, right:20 }}

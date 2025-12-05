@@ -605,7 +605,7 @@ export default function mindMysteryGame() {
               <View style={{ flexDirection: "row", marginTop: 20, gap: 5 }}>
                 <View style={styles.imageContainer}>
                   <Image
-                    source={{ uri: gameData?.image }}
+                    source={{ uri: gameData?.image}}
                     style={styles.animalImage}
                     resizeMode="contain"
                     onError={(error) =>
@@ -888,6 +888,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#98EEFF",
     width: "90%",
     height: "90%",
+    marginTop:10,
     borderRadius: 20,
     paddingVertical: 20,
     paddingHorizontal: 15,
@@ -1179,11 +1180,11 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline",
   },
   character: {
-    width: 130,
+    width: 90,
     height: 110,
     position: "absolute",
-    bottom: -30,
-    right: -40,
+    bottom: 0,
+    right:0,
     resizeMode: "contain",
   },
   disabledButton: {

@@ -130,7 +130,7 @@ export default function ChangeParentPass() {
       if (response.ok) {
         Alert.alert("Success", "Parent password changed successfully`");
         setTimeout(() => {
-          router.push("/(tabs)/components/dashboard");
+          router.push("/(tabs)/auth/login");
         }, 1000);
       } else {
         const errorMessage =
@@ -360,6 +360,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 8,
     fontSize: 16,
+    color:"#0c0c0cff"
   },
   passwordContainer: {
     flexDirection: "row",

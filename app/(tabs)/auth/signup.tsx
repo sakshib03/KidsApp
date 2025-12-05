@@ -234,7 +234,9 @@ export default function SignUpScreen() {
         username: childUsername,
         dob: dob,
         gender: gender.toLowerCase(),
-        dream_career: dreamCareer,
+        default_dream_career: dreamCareer,
+        optional_dream_career_1: dreamCareer1,
+        optional_dream_career_2: dreamCareer2,
         password: childPassword,
         parent_name: parentFullName,
         parent_gender: parentGender.toLowerCase(),
@@ -242,6 +244,8 @@ export default function SignUpScreen() {
         parent_password: parentPassword,
         relation: relation
       };
+
+      console.log("Sending signup data:", signupData);
 
       const response = await fetch(`${API_BASE}/initiate-signup`, {
         method: "POST",
@@ -255,14 +259,12 @@ export default function SignUpScreen() {
 
       if (response.ok) {
         setStep("otp");
-        setCountdown(300); // 5 minutes
+        setCountdown(300); 
         Alert.alert("Success", "OTP sent to your parent's email address");
       } else {
-        // Check if user is already registered
         if (response.status === 409 || data.message?.toLowerCase().includes("already exists") || data.message?.toLowerCase().includes("already registered")) {
           setIsAlreadyRegistered(true);
           Alert.alert("Registration Error", data.message || "This username or email is already registered. Please try logging in.");
-
         } else {
           Alert.alert("Error", data.message || "Failed to send OTP");
         }
@@ -418,7 +420,7 @@ export default function SignUpScreen() {
                 Child Information
               </Text>
               
-              <View style={[styles.input, { marginBottom: 0 }]}>
+              <View style={styles.input}>
                 <TextInput
                   style={styles.inputText}
                   placeholder="Full Name"
@@ -502,7 +504,7 @@ export default function SignUpScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
-              style={[styles.input, { display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems:"center" }]}
+              style={[styles.input, { display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems:"center", }]}
               onPress={() => setShowCareerDropdown1(true)}
               >
                 <Text style={[styles.inputText, !dreamCareer1 && { color: "#0F6424" }, ]}>
@@ -747,24 +749,27 @@ const styles = StyleSheet.create({
   },
   input: {
     width: 280,
+    height:40,
     marginTop: 18,
     borderColor:'#0F6424',
     borderWidth:1,
-    paddingVertical: 6,
     paddingHorizontal: 25,
     borderRadius: 30,
+    justifyContent: 'center',
+
   },
   inputText: {
     fontSize: 16,
     fontFamily: "ComicRelief-Regular",
     fontWeight: 500,
     color: "#0F6424",
+    paddingVertical: 0,
+    width:"100%",
   },
   button: {
     width: 280,
     marginTop: 30,
     backgroundColor: "#0F6424",
-    padding: 12,
     paddingVertical: 10,
     paddingHorizontal: 30,
     borderRadius: 20,

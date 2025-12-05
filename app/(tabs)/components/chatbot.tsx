@@ -19,7 +19,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { useTheme } from "../utils/ThemeContext";
 import { API_BASE } from "../utils/config";
@@ -160,26 +160,29 @@ export default function ChatBot() {
   }, [messages]);
 
   const requestMicrophonePermission = async () => {
+  try {
     if (Platform.OS === "android") {
-      try {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
-          {
-            title: "Microphone Permission",
-            message: "This app needs microphone access for voice input.",
-            buttonNeutral: "Ask Me Later",
-            buttonNegative: "Cancel",
-            buttonPositive: "OK",
-          }
-        );
-        return granted === PermissionsAndroid.RESULTS.GRANTED;
-      } catch (err) {
-        console.warn(err);
-        return false;
-      }
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+        {
+          title: "Microphone Permission",
+          message: "This app needs microphone access for voice input.",
+          buttonNeutral: "Ask Me Later",
+          buttonNegative: "Cancel",
+          buttonPositive: "OK",
+        }
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    } else if (Platform.OS === "ios") {
+      const { status } = await Audio.requestPermissionsAsync();
+      return status === "granted";
     }
     return true;
-  };
+  } catch (err) {
+    console.warn("Permission error:", err);
+    return false;
+  }
+};
 
   const startSpeechToText = async () => {
     try {
@@ -192,36 +195,70 @@ export default function ChatBot() {
         return;
       }
 
-      Alert.alert("Voice Input", "Speak now...", [
-        {
-          text: "Cancel",
-          style: "cancel",
-          onPress: () => {
-            setIsListening(false);
-            setMicOn(false);
-          },
+      const isAvailable = await Speech.isAvailableAsync();
+      if (!isAvailable) {
+        Alert.alert(
+          "Error",
+          "Speech recognition is not available on this device"
+        );
+        return;
+      }
+
+      Speech.startListening({
+        language: "en-US",
+        onResult: (result) => {
+          if (result.value && result.value.length > 0) {
+            setText(result.value[0]);
+          }
         },
-        {
-          text: "Use Demo Text",
-          onPress: () => {
-            const demoQuestions = [
-              "What do animals eat?",
-              "How do birds fly?",
-              "Tell me about ocean animals",
-              "What colors can animals see?",
-              "Why do cats purr?",
-            ];
-            const randomQuestion =
-              demoQuestions[Math.floor(Math.random() * demoQuestions.length)];
-            setText(randomQuestion);
-            setIsListening(false);
-            setMicOn(false);
-          },
+        onError: (error) => {
+          console.error("Speech recognition error:", error);
+          Alert.alert("Speech Error", "Could not recognize speech");
         },
-      ]);
+        onStart: () => {
+          console.log("Speech recognition started");
+        },
+        onEnd: () => {
+          console.log("Speech recognition ended");
+        },
+      });
+
+      // Alert.alert("Voice Input", "Speak now...", [
+      //   {
+      //     text: "Cancel",
+      //     style: "cancel",
+      //     onPress: () => {
+      //       setIsListening(false);
+      //       setMicOn(false);
+      //     },
+      //   },
+      //   {
+      //     text: "Use Demo Text",
+      //     onPress: () => {
+      //       const demoQuestions = [
+      //         "What do animals eat?",
+      //         "How do birds fly?",
+      //         "Tell me about ocean animals",
+      //         "What colors can animals see?",
+      //         "Why do cats purr?",
+      //       ];
+      //       const randomQuestion =
+      //         demoQuestions[Math.floor(Math.random() * demoQuestions.length)];
+      //       setText(randomQuestion);
+      //       setIsListening(false);
+      //       setMicOn(false);
+      //     },
+      //   },
+      // ]);
 
       setIsListening(true);
       setMicOn(true);
+
+      setTimeout(() => {
+        if (isListening) {
+          stopSpeechToText();
+        }
+      }, 10000);
     } catch (error) {
       console.error("Speech Error:", error);
       Alert.alert("Error", "Unable to access microphone");
@@ -231,6 +268,7 @@ export default function ChatBot() {
   };
 
   const stopSpeechToText = () => {
+    Speech.stopListening();
     setIsListening(false);
     setMicOn(false);
   };
@@ -364,8 +402,6 @@ export default function ChatBot() {
         pitch: 1.0,
         rate: 0.9,
       });
-
-      Alert.alert("Info", "Playing text-to-speech version");
     } finally {
       setAudioLoadingId(null);
     }
@@ -559,20 +595,32 @@ export default function ChatBot() {
   };
 
   const handleLogout = async () => {
-    try {
-      await AsyncStorage.multiRemove([
-        "accessToken",
-        "loginTime",
-        "userType",
-        "childId",
-        "parentId",
-        "userData",
-        "parentData",
-      ]);
-      router.replace("/(tabs)/auth/login");
-    } catch (error) {
-      console.error("Error during logout:", error);
-    }
+    Alert.alert("Confirm Logout", "Are you sure you want to logout?", [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await AsyncStorage.multiRemove([
+              "accessToken",
+              "loginTime",
+              "userType",
+              "childId",
+              "parentId",
+              "userData",
+              "parentData",
+            ]);
+            router.replace("/(tabs)/auth/login");
+          } catch (error) {
+            console.error("Error during logout:", error);
+          }
+        },
+      },
+    ]);
   };
 
   const renderMessage = ({ item }) => (
@@ -1001,7 +1049,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 20,
+    paddingBottom: 14,
     backgroundColor: "rgba(255, 255, 255, 0.9)",
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
@@ -1021,15 +1070,15 @@ const styles = StyleSheet.create({
   iconButton: {
     padding: 6,
     borderRadius: 20,
-    width: 36,
+    width: 34,
     height: 40,
     justifyContent: "center",
     alignItems: "center",
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontFamily: "ComicRelief-Bold",
-    color: "#239a5e",
+    color: "#F25F3B",
     textAlign: "center",
   },
   chatContainer: {
@@ -1049,7 +1098,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
-
   },
   userMessage: {
     alignSelf: "flex-end",
@@ -1189,14 +1237,14 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   quickActionText: {
-    fontSize: 12,
-    fontFamily: "ComicRelief-Regular",
+    fontSize: 14,
+    fontFamily: "ComicRelief-Bold",
     color: "#ffffff",
     textAlign: "center",
   },
   chatHistory: {
     position: "absolute",
-    top: 0,
+    top: 35,
     left: 0,
     right: 60,
     bottom: 0,
@@ -1245,7 +1293,7 @@ const styles = StyleSheet.create({
     borderLeftColor: "#56bbf1",
   },
   userMessageText: {
-    color: "#333333ff",
+    color: "#333",
     fontSize: 14,
     marginBottom: 4,
     fontFamily: "ComicRelief-Regular",
@@ -1257,7 +1305,7 @@ const styles = StyleSheet.create({
     fontFamily: "ComicRelief-Regular",
   },
   timestampText: {
-    color: "#999",
+    color: "#5e5e5eff",
     fontSize: 11,
     fontFamily: "ComicRelief-Regular",
   },

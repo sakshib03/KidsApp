@@ -15,6 +15,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
 import { soundManager } from "@/app/(tabs)/utils/soundManager";
+import { API_BASE } from "@/app/(tabs)/utils/config";
 
 export default function WelcomePage() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
@@ -71,7 +72,7 @@ export default function WelcomePage() {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/game/start/spell?child_id=${childId}`,
+        `${API_BASE}/game/start/spell?child_id=${childId}`,
         {
           method: "GET",
           headers: {
@@ -109,7 +110,7 @@ export default function WelcomePage() {
           router.push("/(tabs)/components/games/Spell_Breaker/settings")
         }
       >
-        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between" , marginTop:35, gap:20}}>
           <View>
             <TouchableOpacity
               style={styles.backBtn}
@@ -123,6 +124,7 @@ export default function WelcomePage() {
             </TouchableOpacity>
             <Image
               source={require("@/assets/images/games/spellGame/img4.png")}
+              style={{width:160, height:110}}
             />
           </View>
 
@@ -168,7 +170,9 @@ export default function WelcomePage() {
               />
             </TouchableOpacity>
 
-            <TouchableOpacity>
+            <TouchableOpacity
+            onPress={()=>router.push("/(tabs)/components/games/Spell_Breaker/spellBreakerFAQ")}
+            >
               <Image
                 source={require("@/assets/images/games/spellGame/questions.png")}
                 style={{ width: 45, height: 45, borderRadius: 50 }}
@@ -181,6 +185,7 @@ export default function WelcomePage() {
         <View style={styles.imageWrapper}>
           <Image
             source={require("@/assets/images/games/spellGame/welcome.png")}
+            style={{width:250, height:100}}
           />
           <TouchableOpacity
             style={[styles.button, loading && styles.disabledButton]}
@@ -188,12 +193,12 @@ export default function WelcomePage() {
             disabled={loading}
           >
             <Text style={styles.buttonText}>
-              {loading ? "STARTING..." : "Play"}
+              {loading ? "Starting..." : "Play"}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: "#B4227A" }]}
+            style={styles.button}
             onPress={() =>
               router.push("/(tabs)/components/games/Spell_Breaker/progress")
             }
@@ -209,10 +214,9 @@ export default function WelcomePage() {
         <Image
           source={require("@/assets/images/games/spellGame/settings.png")}
           style={{
-            height: 40,
-            width: 40,
+            height: 45,
+            width: 45,
             position: "absolute",
-            bottom: 20,
             left: 10,
           }}
         />
@@ -242,7 +246,7 @@ const styles = StyleSheet.create({
   imageWrapper: {
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 50,
+    marginTop: 80,
   },
   backBtn: {
     marginTop: 20,
