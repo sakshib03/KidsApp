@@ -222,7 +222,7 @@ export default function mindMysteryGame() {
       const currentQuestion = gameData?.question_number;
       const totalQuestions = gameData?.total_questions_in_level;
 
-      const response = await fetch(`${API_BASE}/mind-mystery/Submit`, {
+      const response = await fetch(`${API_BASE}/mind-mystery/Submit?child_id=${childId}`, {
         method: "POST",
         headers: {
           accept: "application/json",
@@ -646,7 +646,6 @@ export default function mindMysteryGame() {
           style={styles.input}
           placeholder="Enter your Answer"
           placeholderTextColor="#666"
-          keyboardType="numeric"
           value={answer}
           onChangeText={setAnswer}
           editable={!loading && !showCompletionModal && !showFailedModal}
@@ -898,7 +897,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     width: "100%",
-    gap: 45,
+    gap: 65,
   },
   backBtn: {
     padding: 6,

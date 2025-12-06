@@ -344,21 +344,33 @@ export default function Dashboard() {
   };
 
   const handleLogout = async () => {
-    try {
-      await AsyncStorage.multiRemove([
-        "accessToken",
-        "loginTime",
-        "userType",
-        "childId",
-        "parentId",
-        "userData",
-        "parentData",
-        "childrenData",
-      ]);
-      router.replace("/(tabs)/auth/login");
-    } catch (error) {
-      console.error("Error during logout:", error);
-    }
+    Alert.alert("Confirm Logout", "Are you sure you want to logout?", [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await AsyncStorage.multiRemove([
+              "accessToken",
+              "loginTime",
+              "userType",
+              "childId",
+              "parentId",
+              "userData",
+              "parentData",
+              "childrenData",
+            ]);
+            router.replace("/(tabs)/auth/login");
+          } catch (error) {
+            console.error("Error during logout:", error);
+          }
+        },
+      },
+    ]);
   };
 
   const formatDate = (dateString) => {
