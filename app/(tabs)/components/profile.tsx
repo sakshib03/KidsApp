@@ -1367,7 +1367,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   errorText: {
-    color: "#fff",
+    color: "#FF6B6B",
     fontSize: 16,
     textAlign: "center",
     fontFamily: "ComicRelief-Regular",
@@ -1375,9 +1375,9 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     backgroundColor: "#FF6B6B",
-    paddingVertical: 14,
-    paddingHorizontal: 28,
-    borderRadius: 25,
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 20,
     alignSelf: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },

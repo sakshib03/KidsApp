@@ -448,6 +448,16 @@ export default function ChatBot() {
 
   const handleSpeechToSpeech = async () => {
     try {
+      console.log("Starting speech-to-speech...");
+
+      if(isRecording && recording){
+        console.log("Stopping recording...");
+        await stopRecordingAndProcess();
+        return;
+      }
+
+      console.log("Starting new recording...");
+
       const permission = await Audio.requestPermissionsAsync();
       if (permission.status !== "granted") {
         Alert.alert(
@@ -462,7 +472,10 @@ export default function ChatBot() {
         playsInSilentModeIOS: true,
         shouldDuckAndroid: true,
         playThroughEarpieceAndroid: false,
+        staysActiveInBackground: false,
       });
+
+      console.log("Creating recording instance...");
 
       const { recording: newRecording } = await Audio.Recording.createAsync(
         Audio.RecordingOptionsPresets.HIGH_QUALITY
@@ -471,43 +484,44 @@ export default function ChatBot() {
       setRecording(newRecording);
       setIsRecording(true);
 
-      Alert.alert("Recording", "Speak now...", [
-        {
-          text: "Stop Recording",
-          onPress: async () => {
-            await stopRecordingAndProcess();
-          },
-        },
-      ]);
+      console.log("Recording started successfully");
     } catch (error) {
       console.error("Failed to start recording:", error);
-      Alert.alert("Error", "Failed to start recording");
+      Alert.alert("Error", "Failed to start recording. Please try again.");
     }
   };
 
   const stopRecordingAndProcess = async () => {
     try {
-      if (!recording) return;
+      console.log("Stopping recording and processing...");
+       if (!recording) {
+        console.log("No recording instance found");
+        return;
+      }
       setIsRecording(false);
+      setIsSpeechToSpeechLoading(true);
 
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
 
       if (!uri) {
-        Alert.alert("Error", "No audio recorded");
+        console.error("No audio file created");
+        Alert.alert("Error", "No audio recorded. Please try again.");
+        setIsSpeechToSpeechLoading(false);
         return;
       }
 
-      // Show loading state
-      setIsSpeechToSpeechLoading(true);
+      console.log("Audio recorded at:", uri);
 
       const base64Audio = await audioToBase64(uri);
 
       if (!base64Audio) {
-        Alert.alert("Error", "Failed to process audio");
+        console.error("Failed to convert audio to base64");
+        Alert.alert("Error", "Failed to process audio. Please try again.");
+        setIsSpeechToSpeechLoading(false);
         return;
       }
-
+      console.log("Audio converted to base64, length:", base64Audio.length);
       // Send to speech-to-speech API
       await sendSpeechToSpeech(base64Audio);
     } catch (error) {
@@ -521,16 +535,34 @@ export default function ChatBot() {
 
   const audioToBase64 = async (uri) => {
     try {
+      console.log("Converting audio to base64...");
+      
+      // Fetch the audio file
       const response = await fetch(uri);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch audio: ${response.status}`);
+      }
+      
       const blob = await response.blob();
+      console.log("Audio blob size:", blob.size, "type:", blob.type);
 
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => {
-          const base64 = reader.result.split(",")[1];
-          resolve(base64);
+          try {
+            // Get base64 string (remove data URL prefix)
+            const base64 = reader.result.split(",")[1];
+            console.log("Base64 conversion successful");
+            resolve(base64);
+          } catch (error) {
+            console.error("Error parsing base64:", error);
+            reject(error);
+          }
         };
-        reader.onerror = reject;
+        reader.onerror = (error) => {
+          console.error("FileReader error:", error);
+          reject(error);
+        };
         reader.readAsDataURL(blob);
       });
     } catch (error) {
@@ -544,12 +576,16 @@ export default function ChatBot() {
       Alert.alert("Error", "User data not loaded");
       return;
     }
+    
     try {
-      setIsSpeechToSpeechLoading(true);
+      console.log("Sending audio to speech-to-speech API...");
+      console.log("Child ID:", userData.child_id);
+      console.log("Audio base64 length:", audioBase64.length);
+
       const response = await fetch(`${API_BASE}/speech-to-speech`, {
         method: "POST",
         headers: {
-          accept: "application/json",
+          "Accept": "application/json",
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -558,13 +594,18 @@ export default function ChatBot() {
         }),
       });
 
+      console.log("API Response status:", response.status);
+
       if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+        const errorText = await response.text();
+        console.error("API error response:", errorText);
+        throw new Error(`API error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
       console.log("Speech-to-speech Response:", data);
 
+      // Create user message with transcribed text
       const userMessage = {
         id: Date.now().toString(),
         text: data.transcribed_text || "[Voice message]",
@@ -572,25 +613,69 @@ export default function ChatBot() {
         timestamp: new Date(),
       };
 
+      // Create bot response message
       const botMessage = {
         id: (Date.now() + 1).toString(),
-        text: data.response,
+        text: data.response || "I couldn't process that. Please try again.",
         isUser: false,
         timestamp: new Date(),
-        message_id: data.message_id, // Store message_id for audio generation
+        audio_base64: data.audio_base64, // Store audio base64 for playback
       };
 
+      // Add both messages to chat
       setMessages((prev) => [...prev, userMessage, botMessage]);
 
-      // Auto-play the audio response for speech-to-speech
-      if (data.message_id) {
-        await generateAndPlayAudio(botMessage);
+      // Play the returned audio if available
+      if (data.audio_base64) {
+        await playBase64Audio(data.audio_base64);
       }
+
     } catch (error) {
       console.error("Speech-to-speech API Error:", error);
-      Alert.alert("Error", "Failed to process speech-to-speech request");
-    } finally {
-      setIsSpeechToSpeechLoading(false);
+      Alert.alert("Error", "Failed to process speech-to-speech request. Please try again.");
+    }
+  };
+
+  const playBase64Audio = async (base64Audio) => {
+    try {
+      console.log("Playing base64 audio...");
+      
+      // Stop any currently playing sound
+      if (sound) {
+        await sound.stopAsync();
+        await sound.unloadAsync();
+        setSound(null);
+      }
+
+      // Create data URL from base64
+      const audioDataUrl = `data:audio/mp3;base64,${base64Audio}`;
+      
+      // Load and play the audio
+      const { sound: newSound } = await Audio.Sound.createAsync(
+        { uri: audioDataUrl },
+        { shouldPlay: true }
+      );
+
+      setSound(newSound);
+
+      // Handle playback completion
+      newSound.setOnPlaybackStatusUpdate((status) => {
+        if (status.didJustFinish) {
+          newSound.unloadAsync();
+          setSound(null);
+        }
+      });
+
+      console.log("Audio playback started");
+      
+    } catch (error) {
+      console.error("Error playing base64 audio:", error);
+      // Fallback to text-to-speech
+      Speech.speak("Here's my response", {
+        language: "en",
+        pitch: 1.0,
+        rate: 0.9,
+      });
     }
   };
 
@@ -771,7 +856,7 @@ export default function ChatBot() {
                 </TouchableOpacity>
               ) : (
                 <>
-                  <TouchableOpacity
+                  {/* <TouchableOpacity
                     style={[
                       styles.voiceButton,
                       micOn && styles.listeningButton,
@@ -783,7 +868,7 @@ export default function ChatBot() {
                       size={18}
                       color="#fff"
                     />
-                  </TouchableOpacity>
+                  </TouchableOpacity> */}
 
                   <TouchableOpacity
                     style={[
@@ -792,13 +877,13 @@ export default function ChatBot() {
                         styles.listeningButton,
                     ]}
                     onPress={handleSpeechToSpeech}
-                    disabled={isRecording || isSpeechToSpeechLoading}
+                    disabled={isSpeechToSpeechLoading}
                   >
                     {isSpeechToSpeechLoading ? (
                       <ActivityIndicator size="small" color="#fff" />
                     ) : (
                       <Feather
-                        name={isRecording ? "mic" : "activity"}
+                        name={isRecording ? "square" : "mic-off"}
                         size={20}
                         color="#fff"
                       />
