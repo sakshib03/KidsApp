@@ -215,7 +215,7 @@ export default function LoginScreen() {
       if (response.ok) {
         await storeAuthData("parent", data);
         Alert.alert("Success", "Login successful!");
-        router.push("/(tabs)/components/dashboard");
+        router.replace("/(tabs)/components/dashboard");
       } else {
         Alert.alert("Error", data.detail || "Login failed. Please try again.");
       }

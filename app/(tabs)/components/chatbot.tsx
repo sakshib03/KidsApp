@@ -185,54 +185,53 @@ export default function ChatBot() {
   };
 
   const startSpeechToText = async () => {
-  try {
-    const hasPermission = await requestMicrophonePermission();
-    if (!hasPermission) {
-      Alert.alert(
-        "Permission Required",
-        "Please enable microphone access in settings to use voice input."
+    try {
+      const hasPermission = await requestMicrophonePermission();
+      if (!hasPermission) {
+        Alert.alert(
+          "Permission Required",
+          "Please enable microphone access in settings to use voice input."
+        );
+        return;
+      }
+
+      console.log("Starting speech-to-text recording...");
+
+      const permission = await Audio.requestPermissionsAsync();
+      if (permission.status !== "granted") {
+        Alert.alert(
+          "Permission Required",
+          "Please allow microphone access for speech-to-text."
+        );
+        return;
+      }
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+        shouldDuckAndroid: true,
+        playThroughEarpieceAndroid: false,
+        staysActiveInBackground: false,
+      });
+
+      console.log("Creating recording instance for speech-to-text...");
+
+      const { recording: newRecording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
       );
-      return;
+
+      setRecording(newRecording);
+      setIsRecording(true);
+      setMicOn(true); // This indicates we're in speech-to-text mode
+
+      console.log("Speech-to-text recording started successfully");
+    } catch (error) {
+      console.error("Failed to start speech-to-text recording:", error);
+      Alert.alert("Error", "Failed to start recording. Please try again.");
+      setIsRecording(false);
+      setMicOn(false);
     }
-
-    console.log("Starting speech-to-text recording...");
-
-    const permission = await Audio.requestPermissionsAsync();
-    if (permission.status !== "granted") {
-      Alert.alert(
-        "Permission Required",
-        "Please allow microphone access for speech-to-text."
-      );
-      return;
-    }
-
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: true,
-      playsInSilentModeIOS: true,
-      shouldDuckAndroid: true,
-      playThroughEarpieceAndroid: false,
-      staysActiveInBackground: false,
-    });
-
-    console.log("Creating recording instance for speech-to-text...");
-
-    const { recording: newRecording } = await Audio.Recording.createAsync(
-      Audio.RecordingOptionsPresets.HIGH_QUALITY
-    );
-
-    setRecording(newRecording);
-    setIsRecording(true);
-    setMicOn(true); // This indicates we're in speech-to-text mode
-
-    console.log("Speech-to-text recording started successfully");
-
-  } catch (error) {
-    console.error("Failed to start speech-to-text recording:", error);
-    Alert.alert("Error", "Failed to start recording. Please try again.");
-    setIsRecording(false);
-    setMicOn(false);
-  }
-};
+  };
 
   const toggleMic = async () => {
     if (isRecording && micOn) {
@@ -263,6 +262,36 @@ export default function ChatBot() {
         }),
       });
 
+      if (response.status === 403) {
+        const errorData = await response.json();
+        if (errorData.detail && errorData.detail.includes("blocked")) {
+          Alert.alert(
+            "Account Blocked",
+            errorData.detail ||
+              "Your account has been blocked. Please contact your parent.",
+            [
+              {
+                text: "OK",
+                onPress: async () => {
+                  await AsyncStorage.multiRemove([
+                    "accessToken",
+                    "loginTime",
+                    "userType",
+                    "childId",
+                    "parentId",
+                    "userData",
+                    "parentData",
+                  ]);
+                  router.replace("/(tabs)/auth/login");
+                },
+              },
+            ]
+          );
+          return null;
+        }
+        throw new Error(errorData.detail || `API error: ${response.status}`);
+      }
+
       if (!response.ok) {
         throw new Error(`API error: ${response.status}`);
       }
@@ -273,7 +302,6 @@ export default function ChatBot() {
       if (data.warning) {
         Alert.alert("Warning", data.warning);
       }
-
       return {
         text: data.response || "I'm here to help! What would you like to know?",
         message_id: data.message_id, // Store the message_id for audio generation
@@ -453,51 +481,50 @@ export default function ChatBot() {
   };
 
   const stopRecordingAndProcessTo = async () => {
-  try {
-    console.log("Stopping speech-to-text recording and processing...");
-    if (!recording) {
-      console.log("No recording instance found");
-      return;
-    }
-    
-    setIsRecording(false);
-    setIsSpeechToSpeechLoading(true);
+    try {
+      console.log("Stopping speech-to-text recording and processing...");
+      if (!recording) {
+        console.log("No recording instance found");
+        return;
+      }
 
-    await recording.stopAndUnloadAsync();
-    const uri = recording.getURI();
+      setIsRecording(false);
+      setIsSpeechToSpeechLoading(true);
 
-    if (!uri) {
-      console.error("No audio file created");
-      Alert.alert("Error", "No audio recorded. Please try again.");
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+
+      if (!uri) {
+        console.error("No audio file created");
+        Alert.alert("Error", "No audio recorded. Please try again.");
+        setIsSpeechToSpeechLoading(false);
+        return;
+      }
+
+      console.log("Audio recorded at:", uri);
+
+      const base64Audio = await audioToBase64To(uri);
+
+      if (!base64Audio) {
+        console.error("Failed to convert audio to base64");
+        Alert.alert("Error", "Failed to process audio. Please try again.");
+        setIsSpeechToSpeechLoading(false);
+        return;
+      }
+
+      console.log("Audio converted to base64, length:", base64Audio.length);
+
+      // Send to speech-to-text API
+      await sendSpeechToText(base64Audio);
+    } catch (error) {
+      console.error("Error processing recording:", error);
+      Alert.alert("Error", "Failed to process recording");
+    } finally {
+      setRecording(null);
+      setMicOn(false); // Reset micOn state
       setIsSpeechToSpeechLoading(false);
-      return;
     }
-
-    console.log("Audio recorded at:", uri);
-
-    const base64Audio = await audioToBase64To(uri);
-
-    if (!base64Audio) {
-      console.error("Failed to convert audio to base64");
-      Alert.alert("Error", "Failed to process audio. Please try again.");
-      setIsSpeechToSpeechLoading(false);
-      return;
-    }
-    
-    console.log("Audio converted to base64, length:", base64Audio.length);
-    
-    // Send to speech-to-text API
-    await sendSpeechToText(base64Audio);
-    
-  } catch (error) {
-    console.error("Error processing recording:", error);
-    Alert.alert("Error", "Failed to process recording");
-  } finally {
-    setRecording(null);
-    setMicOn(false); // Reset micOn state
-    setIsSpeechToSpeechLoading(false);
-  }
-};
+  };
 
   const audioToBase64To = async (uri) => {
     try {
@@ -538,49 +565,51 @@ export default function ChatBot() {
   };
 
   const sendSpeechToText = async (audioBase64) => {
-  if (!userData?.child_id) {
-    Alert.alert("Error", "User data not loaded");
-    return;
-  }
-  
-  try {
-    console.log("Sending audio to speech-to-text API...");
-    console.log("Child ID:", userData.child_id);
-    console.log("Audio base64 length:", audioBase64.length);
-
-    const response = await fetch(`${API_BASE}/speech-to-text`, {
-      method: "POST",
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        child_id: userData.child_id,
-        audio_base64: audioBase64,
-      }),
-    });
-
-    console.log("Speech-to-text API Response status:", response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("API error response:", errorText);
-      throw new Error(`API error: ${response.status} - ${errorText}`);
+    if (!userData?.child_id) {
+      Alert.alert("Error", "User data not loaded");
+      return;
     }
 
-    const data = await response.json();
-    console.log("Speech-to-text Response:", data);
+    try {
+      console.log("Sending audio to speech-to-text API...");
+      console.log("Child ID:", userData.child_id);
+      console.log("Audio base64 length:", audioBase64.length);
 
-    // Set the transcribed text in the input field
-    if (data.transcribed_text) {
-      setText(data.transcribed_text);
+      const response = await fetch(`${API_BASE}/speech-to-text`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          child_id: userData.child_id,
+          audio_base64: audioBase64,
+        }),
+      });
+
+      console.log("Speech-to-text API Response status:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API error response:", errorText);
+        throw new Error(`API error: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log("Speech-to-text Response:", data);
+
+      // Set the transcribed text in the input field
+      if (data.transcribed_text) {
+        setText(data.transcribed_text);
+      }
+    } catch (error) {
+      console.error("Speech-to-text API Error:", error);
+      Alert.alert(
+        "Error",
+        "Failed to process speech-to-text request. Please try again."
+      );
     }
-
-  } catch (error) {
-    console.error("Speech-to-text API Error:", error);
-    Alert.alert("Error", "Failed to process speech-to-text request. Please try again.");
-  }
-};
+  };
 
   const handleSpeechToSpeech = async () => {
     try {
@@ -997,7 +1026,7 @@ export default function ChatBot() {
                   <TouchableOpacity
                     style={[
                       styles.voiceButton,
-                      (isRecording && micOn) && styles.listeningButton,
+                      isRecording && micOn && styles.listeningButton,
                     ]}
                     onPress={toggleMic}
                     disabled={isSpeechToSpeechLoading}
@@ -1016,16 +1045,16 @@ export default function ChatBot() {
                   <TouchableOpacity
                     style={[
                       styles.voiceButton,
-                      (isRecording && !micOn) && styles.listeningButton,
+                      isRecording && !micOn && styles.listeningButton,
                     ]}
                     onPress={handleSpeechToSpeech}
                     disabled={isSpeechToSpeechLoading || (isRecording && micOn)}
                   >
-                    {(isRecording && !micOn) ?(
+                    {isRecording && !micOn ? (
                       <ActivityIndicator size="small" color="#fff" />
                     ) : (
                       <Feather
-                        name={(isRecording && !micOn) ? "square" : "activity"}
+                        name={isRecording && !micOn ? "square" : "activity"}
                         size={20}
                         color="#fff"
                       />
