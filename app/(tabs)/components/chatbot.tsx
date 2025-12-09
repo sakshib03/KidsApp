@@ -130,8 +130,8 @@ export default function ChatBot() {
   const loadFonts = async () => {
     try {
       await Font.loadAsync({
-        "ComicRelief-Bold": require("../../assets/fonts/ComicRelief-Bold.ttf"),
-        "ComicRelief-Regular": require("../../assets/fonts/ComicRelief-Regular.ttf"),
+        "ComicRelief-Bold": require("../../../assets/fonts/ComicRelief-Bold.ttf"),
+        "ComicRelief-Regular": require("../../../assets/fonts/ComicRelief-Regular.ttf"),
       });
       setFontsLoaded(true);
     } catch (error) {
@@ -1141,7 +1141,7 @@ export default function ChatBot() {
                   style={{
                     marginBottom: 20,
                     flexDirection: "row",
-                    gap: 40,
+                    gap: 20,
                   }}
                 >
                   <TouchableOpacity
@@ -1169,7 +1169,7 @@ export default function ChatBot() {
                   style={{
                     marginBottom: 20,
                     flexDirection: "row",
-                    gap: 40,
+                    gap: 20,
                   }}
                 >
                   <TouchableOpacity
@@ -1201,7 +1201,7 @@ export default function ChatBot() {
                   style={{
                     marginBottom: 20,
                     flexDirection: "row",
-                    gap: 40,
+                    gap: 20,
                   }}
                 >
                   <TouchableOpacity

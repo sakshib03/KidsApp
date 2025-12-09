@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import { useTheme } from "../utils/ThemeContext";
 import { API_BASE } from "../utils/config";
+import { Audio } from "expo-av";
 
 export default function Quiz() {
   const [quizData, setQuizData] = useState(null);
@@ -30,8 +31,9 @@ export default function Quiz() {
   const [topic, setTopic] = useState("");
   const [dailyLimitReached, setDailyLimitReached] = useState(false);
   const [questionCount, setQuestionCount] = useState(0);
-  const [currentTopic, setCurrentTopic] = useState(""); 
-  const {theme}=useTheme();
+  const [currentTopic, setCurrentTopic] = useState("");
+  const [sound, setSound] = useState(null);
+  const { theme } = useTheme();
 
   useEffect(() => {
     Font.loadAsync({
@@ -56,6 +58,32 @@ export default function Quiz() {
       console.error("Error fetching child ID:", error);
     }
   };
+
+  async function playSound(isCorrect) {
+    try {
+      if (sound) {
+        await sound.unloadAsync();
+      }
+
+      const soundFile = isCorrect
+        ? require("../../../assets/audio/mixkit-correct.wav")
+        : require("../../../assets/audio/mixkit-wrong.wav");
+
+      const { sound: newSound } = await Audio.Sound.createAsync(soundFile);
+      setSound(newSound);
+      await newSound.playAsync();
+    } catch (error) {
+      console.error("Error playing sound:", error);
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      if (sound) {
+        sound.unloadAsync().catch(console.error);
+      }
+    };
+  }, [sound]);
 
   const fetchQuiz = async (id, userTopic = "") => {
     try {
@@ -102,10 +130,14 @@ export default function Quiz() {
       const data = await response.json();
       console.log("Full API response:", data);
 
-      if (data.quiz && data.quiz.question === "Unable to generate quiz question at this time.") {
-      throw new Error("Unable to generate quiz question for this topic. Please try a different topic.");
-    }
-
+      if (
+        data.quiz &&
+        data.quiz.question === "Unable to generate quiz question at this time."
+      ) {
+        throw new Error(
+          "Unable to generate quiz question for this topic. Please try a different topic."
+        );
+      }
 
       setQuizData(data.quiz);
 
@@ -156,6 +188,8 @@ export default function Quiz() {
 
       setResult(resultData);
       setShowResult(true);
+
+      await playSound(resultData.is_correct);
     } catch (error) {
       console.error("Error submitting answer:", error);
       Alert.alert("Error", "Failed to submit answer. Please try again.");
@@ -237,7 +271,7 @@ export default function Quiz() {
                 <View
                   style={{
                     marginTop: 10,
-                    maxWidth:132
+                    maxWidth: 132,
                   }}
                 >
                   <Text style={styles.topicText}>Topic: {currentTopic}</Text>
@@ -281,7 +315,6 @@ export default function Quiz() {
               </View>
             ) : quizData && quizData.question ? (
               <View style={styles.questionWrapper}>
-                
                 <View style={styles.questionContainer}>
                   <View style={{ flexDirection: "row", gap: 120 }}>
                     <View>
@@ -350,9 +383,7 @@ export default function Quiz() {
                       {loading ? (
                         <ActivityIndicator size="small" color="#fff" />
                       ) : dailyLimitReached || questionCount >= 5 ? (
-                        <Text style={styles.nextButtonText}>
-                          Limit Reached
-                        </Text>
+                        <Text style={styles.nextButtonText}>Limit Reached</Text>
                       ) : (
                         <Text style={styles.nextButtonText}>Next Question</Text>
                       )}
@@ -382,7 +413,23 @@ export default function Quiz() {
                         Credits awarded: {result.credits_awarded}
                       </Text>
 
-                      <Text style={{marginTop:10, color:"#ff0303ff", fontSize:16,  fontFamily: "ComicRelief-Regular", }}>{result.explanation}</Text>
+                      <View
+                        style={{
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            marginTop: 10,
+                            color: "#ff0303ff",
+                            fontSize: 16,
+                            fontFamily: "ComicRelief-Regular",
+                          }}
+                        >
+                          {result.explanation}
+                        </Text>
+                      </View>
                     </View>
                   </View>
                 )}
@@ -435,7 +482,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    marginTop:30,
+    marginTop: 30,
   },
   header: {
     alignItems: "flex-start",
@@ -472,7 +519,7 @@ const styles = StyleSheet.create({
   textInputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent:"center",
+    justifyContent: "center",
     backgroundColor: "#ffffff",
     padding: 2,
     paddingHorizontal: 16,
@@ -613,7 +660,7 @@ const styles = StyleSheet.create({
     fontFamily: "ComicRelief-Regular",
   },
   resultContainer: {
-    padding: 15,
+    padding: 10,
     borderRadius: 10,
     alignSelf: "center",
     width: "100%",

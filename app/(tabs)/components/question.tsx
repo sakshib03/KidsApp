@@ -30,26 +30,39 @@ export default function Question() {
   const [sound, setSound]=useState(null);
   const {theme}=useTheme();
 
+  useEffect(() => {
+  return () => {
+    if (sound) {
+      sound.unloadAsync();
+    }
+  };
+}, [sound]);
+
   async function playSound(isCorrect){
     try{
-      const soundFile=isCorrect ? require("@/assets/audio/mixkit-correct.wav") : require("@/assets/audio/mixkit-wrong.wav");
+      if (sound) {
+      await sound.unloadAsync();
+    }
+      const soundFile = isCorrect 
+      ? require("../../../assets/audio/mixkit-correct.wav") 
+      : require("../../../assets/audio/mixkit-wrong.wav");
 
-      const {sound}=await Audio.Sound.createAsync(soundFile);
-      setSound(sound);
-      await sound.playAsync();
+      const { sound: newSound } = await Audio.Sound.createAsync(soundFile);
+    setSound(newSound);
+    await newSound.playAsync();
     }catch(error){
       console.error("Error playing sound:",error);
     }
   }
 
-  useEffect(()=>{
-    return sound
-    ?()=>{
-      sound.unloadAsync();
-    }
-    : undefined;
-  },[sound]);
-
+  useEffect(() => {
+    return () => {
+      if (sound) {
+        sound.unloadAsync().catch(console.error);
+      }
+    };
+  }, [sound]);
+  
   useEffect(() => {
     Font.loadAsync({
       "ComicRelief-Bold": require("../../../assets/fonts/ComicRelief-Bold.ttf"),

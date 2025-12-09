@@ -236,7 +236,9 @@ export default function Dashboard() {
 
   const isChildBlocked = () => {
     const currentChildId = childrenData[selectedChild]?.profile?.id;
-    return blockedStatus[currentChildId] === true;
+    return blockedStatus[currentChildId] !== undefined 
+    ? blockedStatus[currentChildId] 
+    : childrenData[selectedChild]?.profile?.is_blocked === true;
   };
 
   const handleBlockChild = async () => {
@@ -490,7 +492,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <ImageBackground
-        source={require("@/assets/images/background.png")}
+        source={require("@/assets/images/login_image.png")}
         style={styles.background}
       >
         <View style={styles.loadingContainer}>
@@ -925,7 +927,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     backgroundColor: "rgba(255, 255, 255, 0.9)",
     paddingVertical: 6,
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     borderRadius: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },

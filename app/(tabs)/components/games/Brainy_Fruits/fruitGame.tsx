@@ -29,6 +29,7 @@ export default function FruitGame() {
   const [failedData, setFailedData] = useState(null);
   const [completionSound, setCompletionSound] = useState(null);
   const [failureSound, setFailureSound] = useState(null);
+  const [soundsLoaded, setSoundsLoaded] = useState(false); // NEW: Track sound loading
   const [showRewardMessage, setShowRewardMessage] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60);
   const [timerActive, setTimerActive] = useState(false);
@@ -38,6 +39,16 @@ export default function FruitGame() {
     loadFonts();
     initializeGame();
     loadSound();
+    
+    // Cleanup sounds on unmount
+    return () => {
+      if (completionSound) {
+        completionSound.unloadAsync();
+      }
+      if (failureSound) {
+        failureSound.unloadAsync();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -82,51 +93,135 @@ export default function FruitGame() {
     }
   }, [showCompletionModal, showFailedModal]);
 
-  useEffect(() => {
-    return () => {
-      if (completionSound) {
-        completionSound.unloadAsync();
-      }
-      if (failureSound) {
-        failureSound.unloadAsync();
-      }
-    };
-  }, [completionSound, failureSound]);
-
+  // FIXED: Improved sound loading
   const loadSound = async () => {
     try {
       console.log("🔊 Loading sounds...");
+      
+      // Load completion sound with immediate loading
       const { sound: completion } = await Audio.Sound.createAsync(
-        require("@/assets/audio/winner-game.mp3")
+        require("@/assets/audio/winner-game.mp3"),
+        { shouldPlay: false, isLooping: false },
+        null,
+        true // Load immediately
       );
-      setCompletionSound(completion);
-
+      
+      // Load failure sound with immediate loading
       const { sound: failure } = await Audio.Sound.createAsync(
-        require("@/assets/audio/game-over.mp3")
+        require("@/assets/audio/game-over.mp3"),
+        { shouldPlay: false, isLooping: false },
+        null,
+        true // Load immediately
       );
+      
+      setCompletionSound(completion);
       setFailureSound(failure);
+      setSoundsLoaded(true);
+      
+      console.log("✅ Sounds loaded successfully");
     } catch (error) {
-      console.error("Error loading sounds:", error);
+      console.error("❌ Error loading sounds:", error);
+      setSoundsLoaded(false);
     }
   };
 
+  // FIXED: Improved completion sound playback
   const playCompletionSound = async () => {
     try {
-      if (completionSound) {
-        await completionSound.replayAsync();
+      console.log("🎵 Attempting to play completion sound...");
+      
+      if (!completionSound) {
+        console.log("❌ Completion sound not available, loading on demand...");
+        try {
+          const { sound } = await Audio.Sound.createAsync(
+            require("@/assets/audio/winner-game.mp3")
+          );
+          setCompletionSound(sound);
+          await sound.playAsync();
+          console.log("🔄 Completion sound loaded and played");
+          return;
+        } catch (loadError) {
+          console.error("❌ Failed to load completion sound:", loadError);
+          return;
+        }
+      }
+      
+      // Check sound status
+      const status = await completionSound.getStatusAsync();
+      console.log("Completion sound status:", status);
+      
+      if (status.isLoaded) {
+        // Stop and reset if already playing
+        if (status.isPlaying) {
+          await completionSound.stopAsync();
+        }
+        await completionSound.setPositionAsync(0);
+        
+        // Play the sound
+        await completionSound.playAsync();
+        console.log("✅ Completion sound played successfully");
+      } else {
+        console.log("❌ Completion sound not loaded properly, reloading...");
+        try {
+          await completionSound.loadAsync(require("@/assets/audio/winner-game.mp3"));
+          await completionSound.playAsync();
+          console.log("🔄 Completion sound reloaded and played");
+        } catch (reloadError) {
+          console.error("❌ Failed to reload completion sound:", reloadError);
+        }
       }
     } catch (error) {
-      console.error("Error playing completion sound:", error);
+      console.error("❌ Error playing completion sound:", error);
     }
   };
 
+  // FIXED: Improved failure sound playback
   const playFailureSound = async () => {
     try {
-      if (failureSound) {
-        await failureSound.replayAsync();
+      console.log("🎵 Attempting to play failure sound...");
+      
+      if (!failureSound) {
+        console.log("❌ Failure sound not available, loading on demand...");
+        try {
+          const { sound } = await Audio.Sound.createAsync(
+            require("@/assets/audio/game-over.mp3")
+          );
+          setFailureSound(sound);
+          await sound.playAsync();
+          console.log("🔄 Failure sound loaded and played");
+          return;
+        } catch (loadError) {
+          console.error("❌ Failed to load failure sound:", loadError);
+          return;
+        }
+      }
+      
+      // Check sound status
+      const status = await failureSound.getStatusAsync();
+      console.log("Failure sound status:", status);
+      
+      if (status.isLoaded) {
+        // Stop and reset if already playing
+        if (status.isPlaying) {
+          await failureSound.stopAsync();
+        }
+        await failureSound.setPositionAsync(0);
+        
+        // Play the sound
+        await failureSound.playAsync();
+        console.log("✅ Failure sound played successfully");
+      } else {
+        console.log("❌ Failure sound not loaded properly, reloading...");
+        try {
+          await failureSound.loadAsync(require("@/assets/audio/game-over.mp3"));
+          await failureSound.playAsync();
+          console.log("🔄 Failure sound reloaded and played");
+        } catch (reloadError) {
+          console.error("❌ Failed to reload failure sound:", reloadError);
+        }
       }
     } catch (error) {
-      console.error("Error playing failure sound:", error);
+      console.error("❌ Error playing failure sound:", error);
     }
   };
 
@@ -142,7 +237,6 @@ export default function FruitGame() {
     }
   };
 
-  // In FruitGame component - update loadExistingGameData
   const loadExistingGameData = async () => {
     try {
       const storedSessionId = await AsyncStorage.getItem("gameSessionId");
@@ -168,7 +262,6 @@ export default function FruitGame() {
     }
   };
 
-  // Update initializeGame
   const initializeGame = async () => {
     try {
       const userDataString = await AsyncStorage.getItem("userData");
@@ -214,7 +307,6 @@ export default function FruitGame() {
 
       console.log("Submitting answer:", userAnswer);
 
-      // CAPTURE DATA BEFORE SUBMISSION
       const currentLevel = gameData?.level;
       const currentQuestion = gameData?.question_number;
       const totalQuestions = gameData?.total_questions_in_level;
@@ -272,7 +364,8 @@ export default function FruitGame() {
             lives: result.lives,
           });
           setShowFailedModal(true);
-          playFailureSound();
+          // Play sound after modal is shown
+          setTimeout(() => playFailureSound(), 300);
         } else if (isLevelCompleted) {
           console.log("🎉 LEVEL COMPLETED! Showing completion modal");
           setCompletionData({
@@ -282,7 +375,8 @@ export default function FruitGame() {
             totalQuestions: totalQuestions,
           });
           setShowCompletionModal(true);
-          playCompletionSound();
+          // Play sound after modal is shown
+          setTimeout(() => playCompletionSound(), 300);
         } else if (isTimeout) {
           console.log("TIMEOUT - Continue to next question");
         } else {
@@ -319,7 +413,6 @@ export default function FruitGame() {
     return hasTimeoutKeywords;
   };
 
-  // Check if game is over (lives lost, time out, etc.)
   const checkGameOver = (result) => {
     const message = result.reward_message.toLowerCase() || "";
 
@@ -409,24 +502,19 @@ export default function FruitGame() {
         const newGameData = await response.json();
         console.log("✅ Next level started:", newGameData);
 
-        // Clear the stored game data first
         await AsyncStorage.removeItem("currentGameData");
-
-        // Store the new session and game data
         await AsyncStorage.setItem("gameSessionId", newGameData.session_id);
         await AsyncStorage.setItem(
           "currentGameData",
           JSON.stringify(newGameData)
         );
 
-        // Update ALL state variables
         setGameData(newGameData);
         setSessionId(newGameData.session_id);
         setShowCompletionModal(false);
         setCompletionData(null);
         setAnswer("");
 
-        // Force a re-initialization to ensure clean state
         setTimeout(() => {
           initializeGame();
         }, 100);
@@ -446,7 +534,6 @@ export default function FruitGame() {
     }
   };
 
-  // Handle replay level (for both completion and failure modals)
   const handleReplayLevel = async () => {
     if (!childId) {
       Alert.alert("Error", "Child ID not found.");
@@ -542,14 +629,6 @@ export default function FruitGame() {
           </View>
         </View>
 
-        {/* <View style={{ marginTop: 25 }}>
-          <Text
-            style={{ fontFamily: "ComicRelief-Regular", color: "#f82828ff" }}
-          >
-            Each question has 60 Sec time.
-          </Text>
-        </View> */}
-
         <View style={styles.statsContainer}>
           <Text style={styles.statsText}>
             Lives: {gameData?.lives ?? "?"}❤️ | Points: {gameData?.points ?? 0}{" "}
@@ -623,6 +702,10 @@ export default function FruitGame() {
         animationType="slide"
         transparent={true}
         onRequestClose={() => setShowCompletionModal(false)}
+        onShow={() => {
+          // Play sound when modal is shown
+          playCompletionSound();
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
@@ -696,6 +779,10 @@ export default function FruitGame() {
         animationType="slide"
         transparent={true}
         onRequestClose={() => setShowFailedModal(false)}
+        onShow={() => {
+          // Play sound when modal is shown
+          playFailureSound();
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>

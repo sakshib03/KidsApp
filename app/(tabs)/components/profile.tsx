@@ -1,6 +1,7 @@
 import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
+import moment from "moment";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -20,6 +21,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { useTheme } from "../utils/ThemeContext";
 import { API_BASE } from "../utils/config";
 
@@ -53,6 +55,9 @@ export default function Profile() {
     useState(false);
   const [showOptionalCareer2Dropdown, setShowOptionalCareer2Dropdown] =
     useState(false);
+
+  // Date Picker State
+  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
 
   // Dropdown options
   const genderOptions = ["female", "male", "other"];
@@ -124,6 +129,21 @@ export default function Profile() {
       duration: 800,
       useNativeDriver: true,
     }).start();
+  };
+
+  // Date Picker Functions
+  const showDatePicker = () => {
+    setDatePickerVisibility(true);
+  };
+
+  const hideDatePicker = () => {
+    setDatePickerVisibility(false);
+  };
+
+  const handleDateConfirm = (date) => {
+    const formattedDate = moment(date).format("YYYY-MM-DD");
+    handleInputChange("dob", formattedDate);
+    hideDatePicker();
   };
 
   const loadChildId = async () => {
@@ -277,8 +297,11 @@ export default function Profile() {
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
-    const date = new Date(dateString);
-    return date.toISOString().split("T")[0];
+    try {
+      return moment(dateString).format("MM-DD-YYYY");
+    } catch (error) {
+      return dateString;
+    }
   };
 
   const formatTimestamp = (timestamp) => {
@@ -618,7 +641,7 @@ export default function Profile() {
               </View>
 
               {/* Stats Grid */}
-              <ScrollView horizontal>
+              <ScrollView horizontal showsHorizontalScrollIndicator={true}>
                 <View style={styles.statsGrid}>
                   <View style={styles.statItem}>
                     <Text style={styles.statValue}>
@@ -708,13 +731,25 @@ export default function Profile() {
                   <View style={styles.detailItem}>
                     <Text style={styles.detailLabel}>Birthday</Text>
                     {isEditing ? (
-                      <TextInput
-                        style={[styles.inputText, styles.editableInput]}
-                        value={formatDate(editedData.dob)}
-                        onChangeText={(text) => handleInputChange("dob", text)}
-                        placeholder="YYYY-MM-DD"
-                        placeholderTextColor="#888"
-                      />
+                      <>
+                        <TouchableOpacity
+                          style={[
+                            styles.inputText,
+                            styles.editableInput,
+                            styles.dropdownButton,
+                          ]}
+                          onPress={showDatePicker}
+                        >
+                          <Text
+                            style={[
+                              !editedData.dob && { color: "#888" }
+                            ]}
+                          >
+                            {editedData.dob ? moment(editedData.dob).format("MM-DD-YYYY") : "Select Birthday"}
+                          </Text>
+                          <Feather name="calendar" size={16} color="#FF6B6B" />
+                        </TouchableOpacity>
+                      </>
                     ) : (
                       <View style={[styles.inputText, styles.nonEditableInput]}>
                         <Text style={styles.detailValue}>
@@ -939,6 +974,16 @@ export default function Profile() {
           }}
           onClose={() => setShowOptionalCareer2Dropdown(false)}
           dropdownType="career"
+        />
+
+        {/* DateTimePicker Modal for Edit Mode */}
+        <DateTimePickerModal
+          isVisible={isDatePickerVisible}
+          mode="date"
+          maximumDate={new Date()}
+          minimumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 15))}
+          onConfirm={handleDateConfirm}
+          onCancel={hideDatePicker}
         />
 
         {/* Switch Career Modal */}

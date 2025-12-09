@@ -66,59 +66,181 @@ export default function SignUpScreen() {
 
   const inputsRef = useRef([]);
 
-  const genderOptions = ["Female", "Male", "Other"];
+  const genderOptions = ["Male", "Female", "Other"];
   const genderOptions2 = ["Male", "Female", "Other"];
+  // const careerOptions = [
+  //   "Doctor",
+  //   "Nurse",
+  //   "Teacher",
+  //   "Scientist",
+  //   "Police Officer",
+  //   "Firefighter",
+  //   "Pilot",
+  //   "Astronaut",
+  //   "Chef",
+  //   "Farmer",
+  //   "Artist",
+  //   "Dancer",
+  //   "Singer",
+  //   "Musician",
+  //   "Actor / Actress",
+  //   "Writer",
+  //   "Photographer",
+  //   "Fashion Designer",
+  //   "Baker",
+  //   "Builder",
+  //   "Engineer",
+  //   "Driver",
+  //   "Vet (Animal Doctor)",
+  //   "Zookeeper",
+  //   "Animal Trainer",
+  //   "Coach",
+  //   "Athlete",
+  //   "Cricketer",
+  //   "Footballer",
+  //   "Mountain Climber",
+  //   "Explorer",
+  //   "Librarian",
+  //   "Shopkeeper",
+  //   "Carpenter",
+  //   "Electrician",
+  //   "Plumber",
+  //   "Mechanic",
+  //   "Gardener",
+  //   "Bus Driver",
+  //   "Train Driver",
+  //   "Scientist",
+  //   "Robot Maker",
+  //   "Game Maker",
+  //   "YouTuber",
+  //   "Superhero (Fun Option)",
+  //   "Painter",
+  //   "Pilot",
+  //   "Detective",
+  //   "Space Scientist",
+  //   "Other",
+  // ];
+
   const careerOptions = [
-    "Doctor",
-    "Nurse",
-    "Teacher",
-    "Scientist",
-    "Police Officer",
-    "Firefighter",
-    "Pilot",
-    "Astronaut",
-    "Chef",
-    "Farmer",
-    "Artist",
-    "Dancer",
-    "Singer",
-    "Musician",
-    "Actor / Actress",
-    "Writer",
-    "Photographer",
-    "Fashion Designer",
-    "Baker",
-    "Builder",
-    "Engineer",
-    "Driver",
-    "Vet (Animal Doctor)",
-    "Zookeeper",
-    "Animal Trainer",
-    "Coach",
-    "Athlete",
-    "Cricketer",
-    "Footballer",
-    "Mountain Climber",
-    "Explorer",
-    "Librarian",
-    "Shopkeeper",
-    "Carpenter",
-    "Electrician",
-    "Plumber",
-    "Mechanic",
-    "Gardener",
-    "Bus Driver",
-    "Train Driver",
-    "Scientist",
-    "Robot Maker",
-    "Game Maker",
-    "YouTuber",
-    "Superhero (Fun Option)",
-    "Painter",
-    "Pilot",
-    "Detective",
-    "Space Scientist",
-    "Other",
+    // Academics / Professional
+    "doctor",
+    "nurse",
+    "surgeon",
+    "scientist",
+    "teacher",
+    "teacher assistant",
+    "engineer",
+    "software engineer",
+    "programmer",
+    "architect",
+    "lawyer",
+    "astronaut",
+    "pilot",
+    "veterinarian",
+    "veterinarian assistant",
+    "dentist",
+    "pharmacist",
+    "librarian",
+
+    // Creative / Arts
+    "artist",
+    "painter",
+    "musician",
+    "singer",
+    "dancer",
+    "actor",
+    "writer",
+    "poet",
+    "photographer",
+    "designer",
+    "fashion designer",
+    "animator",
+    "cartoonist",
+    "illustrator",
+    "filmmaker",
+    "editor",
+    "graphic designer",
+    "content creator",
+    "youtuber",
+    "storyteller",
+
+    // STEM & Technology
+    "computer scientist",
+    "game developer",
+    "app developer",
+    "data scientist",
+    "robotics engineer",
+    "ai engineer",
+    "cybersecurity expert",
+    "drone operator",
+    "web developer",
+    "electronics engineer",
+
+    // Sports
+    "athlete",
+    "footballer",
+    "cricketer",
+    "basketball player",
+    "swimmer",
+    "gymnast",
+    "runner",
+    "martial artist",
+    "badminton player",
+    "tennis player",
+    "cyclist",
+    "skateboarder",
+
+    // Community Helpers
+    "firefighter",
+    "police officer",
+    "paramedic",
+    "army soldier",
+    "navy officer",
+    "air force officer",
+    "lifeguard",
+    "mountain rescuer",
+    "park ranger",
+    "social worker",
+
+    // Business
+    "entrepreneur",
+    "business owner",
+    "manager",
+    "shop owner",
+    "financial advisor",
+    "marketing specialist",
+
+    // Nature & Animals
+    "gardener",
+    "farmer",
+    "botanist",
+    "zoologist",
+    "marine biologist",
+    "wildlife photographer",
+    "animal caretaker",
+    "zookeeper",
+
+    // Food & Hospitality
+    "chef",
+    "baker",
+    "food scientist",
+    "restaurant owner",
+    "chocolatier",
+
+    // Trade / Skills
+    "mechanic",
+    "electrician",
+    "carpenter",
+    "plumber",
+    "technician",
+    "auto engineer",
+
+    // Imaginative but safe
+    "magician",
+    "inventor",
+    "explorer",
+    "space traveler",
+    "game streamer",
   ];
 
   const relationOptions = [
@@ -625,6 +747,11 @@ export default function SignUpScreen() {
                   isVisible={isDatePickerVisible}
                   mode="date"
                   maximumDate={new Date()}
+                  minimumDate={
+                    new Date(
+                      new Date().setFullYear(new Date().getFullYear() - 15)
+                    )
+                  }
                   onConfirm={handleConfirm}
                   onCancel={hideDatePicker}
                 />
@@ -975,6 +1102,21 @@ export default function SignUpScreen() {
                   </Text>
                 )}
 
+                 <TouchableOpacity
+                  style={{ marginTop: 10, alignItems: "center" }}
+                  onPress={handleResendOTP}
+                >
+                  <Text
+                    style={{
+                      color: "#0F6424",
+                      fontSize: 14,
+                      fontFamily: "ComicRelief-Regular",
+                    }}
+                  >
+                    Resend OTP
+                  </Text>
+                </TouchableOpacity>
+
                 <TouchableOpacity
                   style={[
                     styles.button,
@@ -988,22 +1130,13 @@ export default function SignUpScreen() {
                   </Text>
                 </TouchableOpacity>
 
-                {countdown <= 0 && (
-                  <TouchableOpacity
-                    style={{ marginTop: 15, alignItems: "center" }}
-                    onPress={handleResendOTP}
-                  >
-                    <Text
-                      style={{
-                        color: "#0F6424",
-                        fontSize: 14,
-                        fontFamily: "ComicRelief-Regular",
-                      }}
-                    >
-                      Resend OTP
-                    </Text>
-                  </TouchableOpacity>
+                {isLoading && (
+                  <Text style={styles.dontGoBackText}>
+                    Please wait, don't go back until the process completes! ⏳
+                  </Text>
                 )}
+
+               
               </View>
             </View>
           )}
@@ -1138,5 +1271,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#0F6424",
     fontFamily: "ComicRelief-Regular",
+  },
+  dontGoBackText: {
+    fontSize: 14,
+    color: "#f97676ff",
+    fontFamily: "ComicRelief-Regular",
+    textAlign: "center",
+    marginTop: 10,
+    fontStyle: "italic",
+    opacity: 0.8,
   },
 });

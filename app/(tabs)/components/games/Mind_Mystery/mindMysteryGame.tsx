@@ -30,6 +30,7 @@ export default function mindMysteryGame() {
   const [failedData, setFailedData] = useState(null);
   const [completionSound, setCompletionSound] = useState(null);
   const [failureSound, setFailureSound] = useState(null);
+  const [soundsLoaded, setSoundsLoaded] = useState(false); // NEW: Track if sounds are loaded
   const [showRewardMessage, setShowRewardMessage] = useState(false);
   const [levelAlreadyCompleted, setLevelAlreadyCompleted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60);
@@ -40,6 +41,16 @@ export default function mindMysteryGame() {
     loadFonts();
     initializeGame();
     loadSound();
+    
+    // Cleanup sounds on unmount
+    return () => {
+      if (completionSound) {
+        completionSound.unloadAsync();
+      }
+      if (failureSound) {
+        failureSound.unloadAsync();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -84,51 +95,110 @@ export default function mindMysteryGame() {
     }
   }, [showCompletionModal, showFailedModal]);
 
-  useEffect(() => {
-    return () => {
-      if (completionSound) {
-        completionSound.unloadAsync();
-      }
-      if (failureSound) {
-        failureSound.unloadAsync();
-      }
-    };
-  }, [completionSound, failureSound]);
-
+  // FIXED: Improved sound loading with better error handling
   const loadSound = async () => {
     try {
       console.log("🔊 Loading sounds...");
-      const { sound: completion } = await Audio.Sound.createAsync(
-        require("@/assets/audio/winner-game.mp3")
+      
+      // Load completion sound
+      const { sound: completion, status: completionStatus } = await Audio.Sound.createAsync(
+        require("@/assets/audio/winner-game.mp3"),
+        { shouldPlay: false },
+        null,
+        true // Load immediately
       );
+      
+      // Load failure sound  
+      const { sound: failure, status: failureStatus } = await Audio.Sound.createAsync(
+        require("@/assets/audio/game-over.mp3"),
+        { shouldPlay: false },
+        null,
+        true // Load immediately
+      );
+      
       setCompletionSound(completion);
-
-      const { sound: failure } = await Audio.Sound.createAsync(
-        require("@/assets/audio/game-over.mp3")
-      );
       setFailureSound(failure);
+      setSoundsLoaded(true);
+      
+      console.log("✅ Sounds loaded successfully");
+      console.log("Completion sound status:", completionStatus);
+      console.log("Failure sound status:", failureStatus);
+      
     } catch (error) {
-      console.error("Error loading sounds:", error);
+      console.error("❌ Error loading sounds:", error);
+      // Continue without sounds if loading fails
+      setSoundsLoaded(false);
     }
   };
 
+  // FIXED: Improved completion sound playback with pre-play check
   const playCompletionSound = async () => {
     try {
-      if (completionSound) {
-        await completionSound.replayAsync();
+      console.log("🎵 Attempting to play completion sound...");
+      
+      if (!completionSound) {
+        console.log("❌ Completion sound not loaded");
+        return;
+      }
+      
+      // Check if sound is loaded and ready
+      const status = await completionSound.getStatusAsync();
+      console.log("Completion sound status before play:", status);
+      
+      if (status.isLoaded) {
+        // Stop and reset the sound before playing
+        await completionSound.stopAsync();
+        await completionSound.setPositionAsync(0);
+        
+        // Play the sound
+        await completionSound.playAsync();
+        console.log("✅ Completion sound played successfully");
+      } else {
+        console.log("❌ Completion sound is not loaded properly");
+        // Try to reload the sound
+        try {
+          await completionSound.loadAsync(require("@/assets/audio/winner-game.mp3"));
+          await completionSound.playAsync();
+          console.log("🔄 Completion sound reloaded and played");
+        } catch (reloadError) {
+          console.error("❌ Failed to reload completion sound:", reloadError);
+        }
       }
     } catch (error) {
-      console.error("Error playing completion sound:", error);
+      console.error("❌ Error playing completion sound:", error);
     }
   };
 
+  // FIXED: Improved failure sound playback
   const playFailureSound = async () => {
     try {
-      if (failureSound) {
-        await failureSound.replayAsync();
+      console.log("🎵 Attempting to play failure sound...");
+      
+      if (!failureSound) {
+        console.log("❌ Failure sound not loaded");
+        return;
+      }
+      
+      const status = await failureSound.getStatusAsync();
+      console.log("Failure sound status before play:", status);
+      
+      if (status.isLoaded) {
+        await failureSound.stopAsync();
+        await failureSound.setPositionAsync(0);
+        await failureSound.playAsync();
+        console.log("✅ Failure sound played successfully");
+      } else {
+        console.log("❌ Failure sound is not loaded properly");
+        try {
+          await failureSound.loadAsync(require("@/assets/audio/game-over.mp3"));
+          await failureSound.playAsync();
+          console.log("🔄 Failure sound reloaded and played");
+        } catch (reloadError) {
+          console.error("❌ Failed to reload failure sound:", reloadError);
+        }
       }
     } catch (error) {
-      console.error("Error playing failure sound:", error);
+      console.error("❌ Error playing failure sound:", error);
     }
   };
 
@@ -222,17 +292,20 @@ export default function mindMysteryGame() {
       const currentQuestion = gameData?.question_number;
       const totalQuestions = gameData?.total_questions_in_level;
 
-      const response = await fetch(`${API_BASE}/mind-mystery/Submit?child_id=${childId}`, {
-        method: "POST",
-        headers: {
-          accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          session_id: sessionId,
-          answer: userAnswer,
-        }),
-      });
+      const response = await fetch(
+        `${API_BASE}/mind-mystery/Submit?child_id=${childId}`,
+        {
+          method: "POST",
+          headers: {
+            accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            session_id: sessionId,
+            answer: userAnswer,
+          }),
+        }
+      );
 
       if (response.ok) {
         const result = await response.json();
@@ -267,6 +340,8 @@ export default function mindMysteryGame() {
           newLevel: result.level,
           newPoints: result.points,
           newLives: result.lives,
+          wasLastQuestion: currentQuestion >= totalQuestions,
+          rewardMessage: result.reward_message,
         });
 
         if (isGameOver) {
@@ -279,6 +354,7 @@ export default function mindMysteryGame() {
           });
           setShowFailedModal(true);
           setLevelAlreadyCompleted(false);
+          // Play failure sound when modal opens
           playFailureSound();
         } else if (isLevelCompleted && !levelAlreadyCompleted) {
           console.log("🎉 LEVEL COMPLETED! Showing completion modal");
@@ -290,6 +366,7 @@ export default function mindMysteryGame() {
           });
           setShowCompletionModal(true);
           setLevelAlreadyCompleted(true);
+          // Play completion sound when modal opens
           playCompletionSound();
         } else if (isTimeout) {
           console.log("TIMEOUT - Continue to next question");
@@ -369,47 +446,31 @@ export default function mindMysteryGame() {
       totalQuestions: oldGameData.total_questions_in_level,
       wasLastQuestion:
         oldGameData.question_number >= oldGameData.total_questions_in_level,
-      levelIncreased: newResult.level > oldGameData.level,
-      isNewLevelStarting:
-        newResult.question_number === 1 && newResult.level > oldGameData.level,
       rewardMessage: newResult.reward_message,
     });
 
-    const justCompletedLevel =
-      oldGameData.question_number === oldGameData.total_questions_in_level &&
-      newResult.question_number === 1 &&
-      newResult.level > oldGameData.level;
-
-    const levelIncreased = newResult.level > oldGameData.level;
-
-    const isNewLevelStarting =
-      newResult.question_number === 1 && newResult.level > oldGameData.level;
+    const wasLastQuestion =
+      oldGameData.question_number >= oldGameData.total_questions_in_level;
 
     const message = newResult.reward_message?.toLowerCase() || "";
     const hasCompletionKeywords =
       message.includes("level completed") ||
       message.includes("completed successfully") ||
       message.includes("congratulations") ||
-      message.includes("please start the next level");
+      message.includes("please start the next level") ||
+      message.includes("you can start the next level");
+
+    const isLevelCompleted =
+      (wasLastQuestion && hasCompletionKeywords) || hasCompletionKeywords;
 
     console.log("🎯 LEVEL COMPLETION ANALYSIS:", {
-      justCompletedLevel,
-      levelIncreased,
-      isNewLevelStarting,
+      wasLastQuestion,
       hasCompletionKeywords,
-      finalResult:
-        justCompletedLevel ||
-        levelIncreased ||
-        isNewLevelStarting ||
-        hasCompletionKeywords,
+      message: newResult.reward_message,
+      isLevelCompleted,
     });
 
-    return (
-      justCompletedLevel ||
-      levelIncreased ||
-      isNewLevelStarting ||
-      hasCompletionKeywords
-    );
+    return isLevelCompleted;
   };
 
   // Handle next level from completion modal
@@ -605,7 +666,7 @@ export default function mindMysteryGame() {
               <View style={{ flexDirection: "row", marginTop: 20, gap: 5 }}>
                 <View style={styles.imageContainer}>
                   <Image
-                    source={{ uri: gameData?.image}}
+                    source={{ uri: gameData?.image }}
                     style={styles.animalImage}
                     resizeMode="contain"
                     onError={(error) =>
@@ -668,10 +729,11 @@ export default function mindMysteryGame() {
         {showRewardMessage && (
           <View style={{ marginTop: 18 }}>
             <Text style={styles.rewardMessage}>{gameData?.reward_message}</Text>
-            <Text>{gameData?.fact}</Text>
+            <Text style={[styles.rewardMessage, { color: "#f65252ff" }]}>
+              {gameData?.fact}
+            </Text>
           </View>
         )}
-        
 
         <Image
           source={require("@/assets/images/games/mindMystery/snowman.png")}
@@ -685,6 +747,10 @@ export default function mindMysteryGame() {
         animationType="slide"
         transparent={true}
         onRequestClose={() => setShowCompletionModal(false)}
+        onShow={() => {
+          // FIXED: Play sound when modal is shown, not before
+          playCompletionSound();
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
@@ -724,7 +790,7 @@ export default function mindMysteryGame() {
 
               {/* Score Display */}
               <View style={styles.scoreContainer}>
-                <Text style={styles.scoreLabel}>Total Score</Text>
+                <Text style={styles.scoreLabel}>Total Score </Text>
                 <Text style={styles.scoreValue}>
                   {completionData?.points ?? gameData?.points ?? 0} points
                 </Text>
@@ -768,6 +834,10 @@ export default function mindMysteryGame() {
         animationType="slide"
         transparent={true}
         onRequestClose={() => setShowFailedModal(false)}
+        onShow={() => {
+          // FIXED: Play sound when modal is shown
+          playFailureSound();
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
@@ -799,7 +869,7 @@ export default function mindMysteryGame() {
 
               {/* Score Display */}
               <View style={styles.scoreContainer}>
-                <Text style={styles.scoreLabel}>Your Score</Text>
+                <Text style={styles.scoreLabel}>Your Score </Text>
                 <Text style={styles.scoreValue}>
                   {failedData?.points ?? gameData?.points ?? 0} points
                 </Text>
@@ -887,7 +957,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#98EEFF",
     width: "90%",
     height: "90%",
-    marginTop:10,
+    marginTop: 10,
     borderRadius: 20,
     paddingVertical: 20,
     paddingHorizontal: 15,
@@ -1117,7 +1187,7 @@ const styles = StyleSheet.create({
   scoreContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    width: "80%",
+    width: "90%",
     marginVertical: 15,
     padding: 15,
     backgroundColor: "rgba(255,255,255,0.9)",
@@ -1183,7 +1253,7 @@ const styles = StyleSheet.create({
     height: 110,
     position: "absolute",
     bottom: 0,
-    right:0,
+    right: 0,
     resizeMode: "contain",
   },
   disabledButton: {
