@@ -364,6 +364,7 @@ export default function Dashboard() {
               "parentData",
               "childrenData",
             ]);
+            router.dismissAll();
             router.replace("/(tabs)/auth/login");
           } catch (error) {
             console.error("Error during logout:", error);

@@ -282,6 +282,7 @@ export default function ChatBot() {
                     "userData",
                     "parentData",
                   ]);
+                  router.dismissAll();
                   router.replace("/(tabs)/auth/login");
                 },
               },
@@ -866,6 +867,7 @@ export default function ChatBot() {
               "userData",
               "parentData",
             ]);
+            router.dismissAll();
             router.replace("/(tabs)/auth/login");
           } catch (error) {
             console.error("Error during logout:", error);
@@ -966,7 +968,7 @@ export default function ChatBot() {
               style={styles.iconButton}
               onPress={() => router.push("/(tabs)/components/reminders")}
             >
-              <Feather name="bell" size={20} color="#239a5e" />
+              <Ionicons name="notifications-outline" size={22} color="#239a5e" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.iconButton} onPress={handleLogout}>

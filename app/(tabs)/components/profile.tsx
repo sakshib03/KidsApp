@@ -257,6 +257,7 @@ export default function Profile() {
             data.avatar_url
           }?t=${Date.now()}`;
           setAvatarUrl(fullUrl);
+          console.log("Generated Avatar URL:", fullUrl); 
         } else {
           setAvatarUrl(null);
         }
@@ -617,7 +618,7 @@ export default function Profile() {
               </View>
 
               {/* Stats Grid */}
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <ScrollView horizontal>
                 <View style={styles.statsGrid}>
                   <View style={styles.statItem}>
                     <Text style={styles.statValue}>
