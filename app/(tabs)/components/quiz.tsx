@@ -436,6 +436,7 @@ export default function Quiz() {
                             marginTop: 10,
                             color: "#ff0303ff",
                             fontSize: 16,
+                            textAlign:"center",
                             fontFamily: "ComicRelief-Regular",
                           }}
                         >

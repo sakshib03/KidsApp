@@ -135,7 +135,6 @@ export default function SignUpScreen() {
     "Mountain Rescuer",
     "Navy Officer",
     "Nurse",
-    "Other",
     "Painter",
     "Paramedic",
     "Pharmacist",
@@ -346,13 +345,13 @@ export default function SignUpScreen() {
         fullname: childFullName,
         username: childUsername,
         dob: dob,
-        gender: gender.toLowerCase(),
+        gender: gender,
         default_dream_career: dreamCareer,
         optional_dream_career_1: dreamCareer1,
         optional_dream_career_2: dreamCareer2,
         password: childPassword,
         parent_name: parentFullName,
-        parent_gender: parentGender.toLowerCase(),
+        parent_gender: parentGender,
         parent_email: parentEmail,
         parent_password: parentPassword,
         relation: relation,
@@ -1054,9 +1053,16 @@ export default function SignUpScreen() {
                   disabled={!isOtpComplete || isLoading}
                 >
                   {isLoading ? (
-                    <View>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <ActivityIndicator size="small" color="#f9f9f9ff" />
                       <Text style={styles.buttonText}>VERIFYING...</Text>
-                      <ActivityIndicator size="small" color="#10572bff" />
                     </View>
                   ) : (
                     <Text style={styles.buttonText}>VERIFY OTP</Text>
@@ -1165,7 +1171,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   button: {
-    width: "90%",
+    width: "100%",
     marginTop: 30,
     backgroundColor: "#0F6424",
     paddingVertical: 10,

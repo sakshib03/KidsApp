@@ -479,6 +479,12 @@ export default function Dashboard() {
             <MaterialIcons name="monetization-on" size={24} color="gold" />
           </View>
         )}
+        {item.credits_earned === 0 && (
+          <View style={{ flexDirection: "row" }}>
+            <Text style={styles.creditEarned}>{item.credits_earned}</Text>
+            <MaterialIcons name="monetization-on" size={24} color="gold" />
+          </View>
+        )}
         {item.credits_lost > 0 && (
           <View style={{ flexDirection: "row" }}>
             <Text style={styles.creditLost}>-{item.credits_lost}</Text>
@@ -891,7 +897,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   loadingText: {
-    color: "#fff",
+    color: "#2d3f81ff",
     fontSize: 18,
     fontFamily: "ComicRelief-Regular",
     marginTop: 16,

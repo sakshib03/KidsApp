@@ -10,6 +10,7 @@ import {
   Alert,
   Modal,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import * as Font from "expo-font";
 import { router } from "expo-router";
@@ -35,13 +36,14 @@ export default function mindMysteryGame() {
   const [levelAlreadyCompleted, setLevelAlreadyCompleted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60);
   const [timerActive, setTimerActive] = useState(false);
+  const [imageLoading, setImageLoading] = useState(false);
   const timerRef = useRef(null);
 
   useEffect(() => {
     loadFonts();
     initializeGame();
     loadSound();
-    
+
     // Cleanup sounds on unmount
     return () => {
       if (completionSound) {
@@ -99,31 +101,32 @@ export default function mindMysteryGame() {
   const loadSound = async () => {
     try {
       console.log("🔊 Loading sounds...");
-      
+
       // Load completion sound
-      const { sound: completion, status: completionStatus } = await Audio.Sound.createAsync(
-        require("@/assets/audio/winner-game.mp3"),
-        { shouldPlay: false },
-        null,
-        true // Load immediately
-      );
-      
-      // Load failure sound  
-      const { sound: failure, status: failureStatus } = await Audio.Sound.createAsync(
-        require("@/assets/audio/game-over.mp3"),
-        { shouldPlay: false },
-        null,
-        true // Load immediately
-      );
-      
+      const { sound: completion, status: completionStatus } =
+        await Audio.Sound.createAsync(
+          require("@/assets/audio/winner-game.mp3"),
+          { shouldPlay: false },
+          null,
+          true // Load immediately
+        );
+
+      // Load failure sound
+      const { sound: failure, status: failureStatus } =
+        await Audio.Sound.createAsync(
+          require("@/assets/audio/game-over.mp3"),
+          { shouldPlay: false },
+          null,
+          true // Load immediately
+        );
+
       setCompletionSound(completion);
       setFailureSound(failure);
       setSoundsLoaded(true);
-      
+
       console.log("✅ Sounds loaded successfully");
       console.log("Completion sound status:", completionStatus);
       console.log("Failure sound status:", failureStatus);
-      
     } catch (error) {
       console.error("❌ Error loading sounds:", error);
       // Continue without sounds if loading fails
@@ -135,21 +138,21 @@ export default function mindMysteryGame() {
   const playCompletionSound = async () => {
     try {
       console.log("🎵 Attempting to play completion sound...");
-      
+
       if (!completionSound) {
         console.log("❌ Completion sound not loaded");
         return;
       }
-      
+
       // Check if sound is loaded and ready
       const status = await completionSound.getStatusAsync();
       console.log("Completion sound status before play:", status);
-      
+
       if (status.isLoaded) {
         // Stop and reset the sound before playing
         await completionSound.stopAsync();
         await completionSound.setPositionAsync(0);
-        
+
         // Play the sound
         await completionSound.playAsync();
         console.log("✅ Completion sound played successfully");
@@ -157,7 +160,9 @@ export default function mindMysteryGame() {
         console.log("❌ Completion sound is not loaded properly");
         // Try to reload the sound
         try {
-          await completionSound.loadAsync(require("@/assets/audio/winner-game.mp3"));
+          await completionSound.loadAsync(
+            require("@/assets/audio/winner-game.mp3")
+          );
           await completionSound.playAsync();
           console.log("🔄 Completion sound reloaded and played");
         } catch (reloadError) {
@@ -173,15 +178,15 @@ export default function mindMysteryGame() {
   const playFailureSound = async () => {
     try {
       console.log("🎵 Attempting to play failure sound...");
-      
+
       if (!failureSound) {
         console.log("❌ Failure sound not loaded");
         return;
       }
-      
+
       const status = await failureSound.getStatusAsync();
       console.log("Failure sound status before play:", status);
-      
+
       if (status.isLoaded) {
         await failureSound.stopAsync();
         await failureSound.setPositionAsync(0);
@@ -665,10 +670,17 @@ export default function mindMysteryGame() {
             !gameData.image.includes("💡") ? (
               <View style={{ flexDirection: "row", marginTop: 20, gap: 5 }}>
                 <View style={styles.imageContainer}>
+                  {imageLoading && (
+                    <View style={{ alignContent: "center", top: 40 }}>
+                      <ActivityIndicator size="small" color="#103655" />
+                    </View>
+                  )}
                   <Image
                     source={{ uri: gameData?.image }}
                     style={styles.animalImage}
                     resizeMode="contain"
+                    onLoadStart={() => setImageLoading(true)}
+                    onLoadEnd={() => setImageLoading(false)}
                     onError={(error) =>
                       console.log(
                         "Image loading error:",

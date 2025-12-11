@@ -42,6 +42,7 @@ export default function ChatBot() {
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeechToSpeechLoading, setIsSpeechToSpeechLoading] = useState(false);
   const [audioLoadingId, setAudioLoadingId] = useState(null);
+  const [currentlyPlayingId, setCurrentlyPlayingId] = useState(null); 
   const { theme } = useTheme();
 
   // Sample initial messages for demo
@@ -63,6 +64,7 @@ export default function ChatBot() {
       if (sound) {
         sound.unloadAsync();
       }
+      setCurrentlyPlayingId(null); // Clean up on unmount
     };
   }, []);
 
@@ -323,8 +325,28 @@ export default function ChatBot() {
 
   const generateAndPlayAudio = async (messageItem) => {
     if (!messageItem.text.trim()) return;
+    
+    // If this message is already playing, stop it
+    if (currentlyPlayingId === messageItem.id) {
+      if (sound) {
+        await sound.stopAsync();
+        await sound.unloadAsync();
+        setSound(null);
+      }
+      setCurrentlyPlayingId(null);
+      return;
+    }
+    
+    // Stop any currently playing sound
+    if (sound) {
+      await sound.stopAsync();
+      await sound.unloadAsync();
+      setSound(null);
+      setCurrentlyPlayingId(null);
+    }
 
     try {
+      setCurrentlyPlayingId(messageItem.id);
       setAudioLoadingId(messageItem.id);
       if (messageItem.message_id && userData?.child_id) {
         const audioUrl = `${API_BASE}/generate-chat-audio?child_id=${userData.child_id}&message_id=${messageItem.message_id}`;
@@ -349,13 +371,6 @@ export default function ChatBot() {
         // Create object URL from blob
         const audioObjectUrl = URL.createObjectURL(audioBlob);
 
-        // Stop any currently playing sound
-        if (sound) {
-          await sound.stopAsync();
-          await sound.unloadAsync();
-          setSound(null);
-        }
-
         // Play the audio using Expo AV
         const { sound: newSound } = await Audio.Sound.createAsync(
           { uri: audioObjectUrl },
@@ -369,6 +384,7 @@ export default function ChatBot() {
           if (status.didJustFinish) {
             newSound.unloadAsync();
             setSound(null);
+            setCurrentlyPlayingId(null);
             // Clean up the object URL
             URL.revokeObjectURL(audioObjectUrl);
           }
@@ -380,6 +396,12 @@ export default function ChatBot() {
           language: "en",
           pitch: 1.0,
           rate: 0.9,
+          onDone: () => {
+            setCurrentlyPlayingId(null);
+          },
+          onError: () => {
+            setCurrentlyPlayingId(null);
+          }
         });
       }
     } catch (error) {
@@ -391,6 +413,12 @@ export default function ChatBot() {
         language: "en",
         pitch: 1.0,
         rate: 0.9,
+        onDone: () => {
+          setCurrentlyPlayingId(null);
+        },
+        onError: () => {
+          setCurrentlyPlayingId(null);
+        }
       });
     } finally {
       setAudioLoadingId(null);
@@ -400,7 +428,16 @@ export default function ChatBot() {
   const speakText = async (messageItem) => {
     if (!messageItem.text.trim() || audioLoadingId) return;
 
-    // Use the new audio generation function
+    if(currentlyPlayingId || audioLoadingId){
+      Alert.alert(
+        "Audio Playing",
+        "Please wait for the current audio to finish before playing another one.",
+        [{text: "OK"}]
+      );
+      return;
+    }
+    if (!messageItem.text.trim()) return;
+    
     await generateAndPlayAudio(messageItem);
   };
 
@@ -808,33 +845,35 @@ export default function ChatBot() {
   const playBase64Audio = async (base64Audio) => {
     try {
       console.log("Playing base64 audio...");
-
+      
       // Stop any currently playing sound
       if (sound) {
         await sound.stopAsync();
         await sound.unloadAsync();
         setSound(null);
+        setCurrentlyPlayingId(null);
       }
-
+      
       // Create data URL from base64
       const audioDataUrl = `data:audio/mp3;base64,${base64Audio}`;
-
+      
       // Load and play the audio
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri: audioDataUrl },
         { shouldPlay: true }
       );
-
+      
       setSound(newSound);
-
+      
       // Handle playback completion
       newSound.setOnPlaybackStatusUpdate((status) => {
         if (status.didJustFinish) {
           newSound.unloadAsync();
           setSound(null);
+          setCurrentlyPlayingId(null);
         }
       });
-
+      
       console.log("Audio playback started");
     } catch (error) {
       console.error("Error playing base64 audio:", error);
@@ -843,6 +882,12 @@ export default function ChatBot() {
         language: "en",
         pitch: 1.0,
         rate: 0.9,
+        onDone: () => {
+          setCurrentlyPlayingId(null);
+        },
+        onError: () => {
+          setCurrentlyPlayingId(null);
+        }
       });
     }
   };
@@ -907,8 +952,10 @@ export default function ChatBot() {
           >
             {audioLoadingId === item.id ? (
               <ActivityIndicator size="small" color="#56bbf1" />
+            ) : currentlyPlayingId === item.id ? (
+              <Ionicons name="volume-medium-outline" size={16} color="#56bbf1" />
             ) : (
-              <Ionicons name="volume-medium-outline" size={16} color="#666" />
+              <Ionicons name="volume-mute-outline" size={16} color="#666" />
             )}
           </TouchableOpacity>
         )}

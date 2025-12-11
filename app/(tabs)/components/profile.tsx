@@ -126,7 +126,6 @@ export default function Profile() {
     "Mountain Rescuer",
     "Navy Officer",
     "Nurse",
-    "Other",
     "Painter",
     "Paramedic",
     "Pharmacist",
@@ -323,7 +322,7 @@ export default function Profile() {
       }
 
       const directUrl = `${API_BASE}/avatar/${childId}?t=${Date.now()}`;
-      const testResponse = await fetch(directUrl, { method: "HEAD" });
+      const testResponse = await fetch(directUrl, { method: "GET" });
 
       if (testResponse.ok) {
         setAvatarUrl(directUrl);
@@ -560,6 +559,9 @@ export default function Profile() {
         {item.credits_earned > 0 && (
           <Text style={styles.creditEarned}>+{item.credits_earned} ⭐</Text>
         )}
+        {item.credits_earned === 0 && (
+          <Text style={styles.creditEarned}>{item.credits_earned} ⭐</Text>
+        )}
         {item.credits_lost > 0 && (
           <Text style={styles.creditLost}>-{item.credits_lost} ⭐</Text>
         )}
@@ -675,8 +677,8 @@ export default function Profile() {
                   >
                     <Feather
                       name="rotate-cw"
-                      size={18}
-                      color="#0e0e0eff"
+                      size={16}
+                      color="#4a4a4aff"
                       style={{ position: "absolute", right: 10, bottom: 8 , fontWeight:700}}
                     />
                   </TouchableOpacity>
