@@ -836,8 +836,9 @@ export default function Dashboard() {
                       data={filteredCreditHistory}
                       keyExtractor={(item) => item.id.toString()}
                       renderItem={CreditHistoryItem}
-                      showsVerticalScrollIndicator={false}
+                      showsVerticalScrollIndicator={true}
                       style={styles.creditHistoryFlatList}
+                      contentContainerStyle={styles.flatListContent}
                     />
                   </View>
                 ) : (
@@ -1465,12 +1466,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     fontFamily: "ComicRelief-Bold",
   },
-  statValue: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#f4bb35ff",
-    fontFamily: "ComicRelief-Bold",
-    textAlign: "center",
-    marginLeft: 8,
+  flatListContent: {
+    paddingBottom: 10, 
   },
 });

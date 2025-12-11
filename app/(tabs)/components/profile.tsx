@@ -60,34 +60,106 @@ export default function Profile() {
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
 
   // Dropdown options
-  const genderOptions = ["female", "male", "other"];
+  const genderOptions = ["Male", "Female", "Other"];
   const careerOptions = [
-    "Doctor",
-    "Engineer",
-    "Teacher",
-    "Scientist",
-    "Artist",
-    "Athlete",
-    "Astronaut",
-    "Veterinarian",
-    "Actor/Actress",
-    "Singer",
-    "Police Officer",
-    "Pilot",
-    "Chef",
-    "FireFighter",
-    "Lawyer",
-    "Fashion Designer",
-    "Dancer",
-    "Writer/Author",
-    "Musician",
+    "Actor",
+    "Air Force Officer",
+    "AI Engineer",
+    "Animal Caretaker",
+    "Animator",
+    "App Developer",
     "Architect",
+    "Army Soldier",
+    "Artist",
+    "Astronaut",
+    "Athlete",
+    "Auto Engineer",
+    "Baker",
+    "Badminton Player",
+    "Basketball Player",
+    "Botanist",
+    "Business Owner",
+    "Carpenter",
+    "Chef",
+    "Chocolatier",
+    "Computer Scientist",
+    "Content Creator",
+    "Cricketer",
+    "Cyclist",
+    "Cybersecurity Expert",
+    "Dancer",
+    "Data Scientist",
+    "Dentist",
+    "Designer",
+    "Doctor",
+    "Drone Operator",
+    "Editor",
+    "Electrician",
+    "Electronics Engineer",
+    "Engineer",
     "Entrepreneur",
-    "Computer Programmer/Software Developer",
+    "Explorer",
+    "Fashion Designer",
+    "Farmer",
+    "Filmmaker",
+    "Financial Advisor",
+    "Firefighter",
+    "Food Scientist",
+    "Footballer",
+    "Game Developer",
+    "Game Streamer",
+    "Gardener",
+    "Graphic Designer",
+    "Gymnast",
+    "Illustrator",
+    "Inventor",
+    "Lawyer",
+    "Librarian",
+    "Lifeguard",
+    "Magician",
+    "Manager",
     "Marine Biologist",
-    "Archaeologist",
-    "Environmental Scientist",
+    "Marketing Specialist",
+    "Martial Artist",
+    "Mechanic",
+    "Musician",
+    "Mountain Rescuer",
+    "Navy Officer",
+    "Nurse",
     "Other",
+    "Painter",
+    "Paramedic",
+    "Pharmacist",
+    "Photographer",
+    "Pilot",
+    "Plumber",
+    "Poet",
+    "Police Officer",
+    "Programmer",
+    "Restaurant Owner",
+    "Runner",
+    "Scientist",
+    "Shop Owner",
+    "Singer",
+    "Skateboarder",
+    "Social Worker",
+    "Software Engineer",
+    "Space Traveler",
+    "Storyteller",
+    "Surgeon",
+    "Swimmer",
+    "Teacher",
+    "Teacher Assistant",
+    "Technician",
+    "Tennis Player",
+    "Veterinarian",
+    "Veterinarian Assistant",
+    "Web Developer",
+    "Wildlife Photographer",
+    "Writer",
+    "YouTuber",
+    "Zookeeper",
+    "Zoologist",
   ];
 
   useEffect(() => {
@@ -277,7 +349,7 @@ export default function Profile() {
             data.avatar_url
           }?t=${Date.now()}`;
           setAvatarUrl(fullUrl);
-          console.log("Generated Avatar URL:", fullUrl); 
+          console.log("Generated Avatar URL:", fullUrl);
         } else {
           setAvatarUrl(null);
         }
@@ -598,12 +670,22 @@ export default function Profile() {
                     onError={handleAvatarError}
                     key={avatarUrl}
                   />
+                  <TouchableOpacity
+                  onPress={fetchAvatar}
+                  >
+                    <Feather
+                      name="rotate-cw"
+                      size={18}
+                      color="#0e0e0eff"
+                      style={{ position: "absolute", right: 10, bottom: 8 , fontWeight:700}}
+                    />
+                  </TouchableOpacity>
                   {/* </ImageBackground> */}
                 </Animated.View>
 
                 {avatarLoading && (
                   <Text style={styles.avatarLoadingText}>
-                    Creating your avatar... 🎨
+                    Loading your avatar...🎨
                   </Text>
                 )}
 
@@ -667,7 +749,7 @@ export default function Profile() {
                     </Text>
                     <Text style={styles.statLabel}>Chat Credit Lost📚</Text>
                   </View>
-                  
+
                   <View style={styles.statItem}>
                     <Text style={styles.statValue}>
                       {userData.credits?.joke?.toString() || "0"}
@@ -729,7 +811,7 @@ export default function Profile() {
                   </View>
 
                   <View style={styles.detailItem}>
-                    <Text style={styles.detailLabel}>Birthday</Text>
+                    <Text style={styles.detailLabel}>Date of Birth</Text>
                     {isEditing ? (
                       <>
                         <TouchableOpacity
@@ -740,12 +822,10 @@ export default function Profile() {
                           ]}
                           onPress={showDatePicker}
                         >
-                          <Text
-                            style={[
-                              !editedData.dob && { color: "#888" }
-                            ]}
-                          >
-                            {editedData.dob ? moment(editedData.dob).format("MM-DD-YYYY") : "Select Birthday"}
+                          <Text style={[!editedData.dob && { color: "#888" }]}>
+                            {editedData.dob
+                              ? moment(editedData.dob).format("MM-DD-YYYY")
+                              : "Select Birthday"}
                           </Text>
                           <Feather name="calendar" size={16} color="#FF6B6B" />
                         </TouchableOpacity>
@@ -981,7 +1061,9 @@ export default function Profile() {
           isVisible={isDatePickerVisible}
           mode="date"
           maximumDate={new Date()}
-          minimumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 15))}
+          minimumDate={
+            new Date(new Date().setFullYear(new Date().getFullYear() - 15))
+          }
           onConfirm={handleDateConfirm}
           onCancel={hideDatePicker}
         />
@@ -1153,7 +1235,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     justifyContent: "center",
-    marginTop:25,
+    marginTop: 25,
   },
   header: {
     flexDirection: "row",
@@ -1287,7 +1369,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderWidth: 2,
     borderColor: "#4ECDC4",
-    gap:12
+    gap: 12,
   },
   statItem: {
     alignItems: "center",
@@ -1396,6 +1478,9 @@ const styles = StyleSheet.create({
   },
   editButton: {
     backgroundColor: "#6C5CE7",
+  },
+  avatarButton: {
+    backgroundColor: "#e75c88ff",
   },
   buttonText: {
     fontSize: 14,

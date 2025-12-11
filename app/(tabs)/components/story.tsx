@@ -23,6 +23,7 @@ export default function Story() {
   const [childId, setChildId] = useState(null);
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [currentCartoon, setCurrentCartoon]=useState(null);
+  const [storyData, setStoryData] = useState(null);
   const {theme}=useTheme();
 
   const cartoons=[
@@ -74,6 +75,7 @@ export default function Story() {
         throw new Error("Failed to fetch story");
       }
       const data = await response.json();
+      setStoryData(data);
       setStory(data.story);
 
       // Split story into chunks that fit the container
@@ -84,6 +86,7 @@ export default function Story() {
       console.error("Error fetching story:", error);
       setStory("Unable to load story. Please try again.");
       setStoryParts(["Unable to load story. Please try again."]);
+      setStoryData(null);
     } finally {
       setLoading(false);
     }
@@ -129,105 +132,133 @@ export default function Story() {
   };
 
   return (
-    <ImageBackground
-      // source={require("@/assets/images/login_image.png")}
-      source={theme.background}
-      style={styles.background}
-    >
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.push("/(tabs)/components/chatbot")}
-          >
-            <Feather name="arrow-left" size={24} color="#fff" />
-            <Text style={styles.backButtonText}>Back to Home</Text>
-          </TouchableOpacity>
+  <ImageBackground
+    source={theme.background}
+    style={styles.background}
+  >
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.push("/(tabs)/components/chatbot")}
+        >
+          <Feather name="arrow-left" size={24} color="#fff" />
+          <Text style={styles.backButtonText}>Back to Home</Text>
+        </TouchableOpacity>
 
-          <Text style={styles.title}>Your Story</Text>
-        </View>
+        <Text style={styles.title}>{storyData?.title || "Your Story"}</Text>
+      </View>
 
-        {/* Main Content */}
-        <View style={styles.mainContainer}>
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <Feather name="loader" size={30} color="#3e3e3eff" />
-              <Text style={styles.loadingText}>
-                Generating your magical story...
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.storyWrapper}>
-              <View style={styles.storyContainer}>
-                <ScrollView 
-                  style={styles.scrollView}
-                  contentContainerStyle={styles.scrollContent}
-                  showsVerticalScrollIndicator={true}
-                >
-                  <Text style={styles.storyText}>
-                    {storyParts.length > 0
-                      ? storyParts[currentIndex]
-                      : "Your story will appear here..."}
-                  </Text>
-                </ScrollView>
-                
-                {/* Navigation Controls */}
-                {storyParts.length > 1 && (
-                  <View style={styles.navigationContainer}>
-                    <TouchableOpacity
-                      onPress={handlePrev}
-                      disabled={currentIndex === 0}
-                      style={[
-                        styles.navButton,
-                        currentIndex === 0 && styles.disabledButton
-                      ]}
-                    >
-                      <View style={styles.navButtonContent}>
-                        <Feather name="chevron-left" size={24} color={currentIndex === 0 ? "#ccc" : "#333"} />
-                        <Text style={[
-                          styles.navButtonText,
-                          currentIndex === 0 && styles.disabledText
-                        ]}>Prev</Text>
+      {/* Main Content */}
+      <View style={styles.mainContainer}>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <Feather name="loader" size={30} color="#3e3e3eff" />
+            <Text style={styles.loadingText}>
+              Generating your magical story...
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.storyWrapper}>
+            <View style={styles.storyContainer}>
+              <ScrollView 
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={true}
+              >
+                {/* Story Text */}
+                <Text style={styles.storyText}>
+                  {storyParts.length > 0
+                    ? storyParts[currentIndex]
+                    : "Your story will appear here..."}
+                </Text>
+
+                {/* Moral and Credits - Only show on last page */}
+                {currentIndex === storyParts.length - 1 && storyData?.moral && (
+                  <View style={styles.moralContainer}>
+                    {/* Divider line */}
+                    <View style={styles.divider} />
+                    
+                    {/* Moral Label */}
+                    <View style={styles.moralLabelContainer}>
+                      <Feather name="star" size={20} color="#FFD700" />
+                      <Text style={styles.moralLabel}>Moral of the Story</Text>
+                      <Feather name="star" size={20} color="#FFD700" />
+                    </View>
+                    
+                    {/* Moral Text */}
+                    <Text style={styles.moralText}>{storyData.moral}</Text>
+                    
+                    {/* Credits Earned */}
+                    {storyData?.credits_earned !== undefined && (
+                      <View style={styles.creditsContainer}>
+                        <Feather name="award" size={18} color="#FFD700" />
+                        <Text style={styles.creditsText}>
+                          Credits earned: {storyData.credits_earned}
+                        </Text>
                       </View>
-                    </TouchableOpacity>
-
-                    <Text style={styles.pageIndicator}>
-                      {currentIndex + 1} / {storyParts.length}
-                    </Text>
-
-                    <TouchableOpacity
-                      onPress={handleNext}
-                      disabled={currentIndex === storyParts.length - 1}
-                      style={[
-                        styles.navButton,
-                        currentIndex === storyParts.length - 1 && styles.disabledButton
-                      ]}
-                    >
-                      <View style={styles.navButtonContent}>
-                        <Text style={[
-                          styles.navButtonText,
-                          currentIndex === storyParts.length - 1 && styles.disabledText
-                        ]}>Next</Text>
-                        <Feather name="chevron-right" size={24} color={currentIndex === storyParts.length - 1 ? "#ccc" : "#333"} />
-                      </View>
-                    </TouchableOpacity>
+                    )}
                   </View>
                 )}
-              </View>
-            </View>
-          )}
-        </View>
+              </ScrollView>
+              
+              {/* Navigation Controls */}
+              {storyParts.length > 1 && (
+                <View style={styles.navigationContainer}>
+                  <TouchableOpacity
+                    onPress={handlePrev}
+                    disabled={currentIndex === 0}
+                    style={[
+                      styles.navButton,
+                      currentIndex === 0 && styles.disabledButton
+                    ]}
+                  >
+                    <View style={styles.navButtonContent}>
+                      <Feather name="chevron-left" size={24} color={currentIndex === 0 ? "#ccc" : "#333"} />
+                      <Text style={[
+                        styles.navButtonText,
+                        currentIndex === 0 && styles.disabledText
+                      ]}>Prev</Text>
+                    </View>
+                  </TouchableOpacity>
 
-        {/* Dragon Logo */}
-        <View style={styles.logoContainer}>
-          {currentCartoon &&(
-            <Image source={currentCartoon} style={styles.logo}/>
-          )}
-        </View>
+                  <Text style={styles.pageIndicator}>
+                    {currentIndex + 1} / {storyParts.length}
+                  </Text>
+
+                  <TouchableOpacity
+                    onPress={handleNext}
+                    disabled={currentIndex === storyParts.length - 1}
+                    style={[
+                      styles.navButton,
+                      currentIndex === storyParts.length - 1 && styles.disabledButton
+                    ]}
+                  >
+                    <View style={styles.navButtonContent}>
+                      <Text style={[
+                        styles.navButtonText,
+                        currentIndex === storyParts.length - 1 && styles.disabledText
+                      ]}>Next</Text>
+                      <Feather name="chevron-right" size={24} color={currentIndex === storyParts.length - 1 ? "#ccc" : "#333"} />
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
       </View>
-    </ImageBackground>
-  );
+
+      {/* Dragon Logo */}
+      <View style={styles.logoContainer}>
+        {currentCartoon && (
+          <Image source={currentCartoon} style={styles.logo}/>
+        )}
+      </View>
+    </View>
+  </ImageBackground>
+);
 }
 
 const styles = StyleSheet.create({
@@ -301,6 +332,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    paddingBottom: 10,
   },
   storyText: {
     fontSize: 18,
@@ -308,41 +340,131 @@ const styles = StyleSheet.create({
     color: "#333",
     textAlign: "left",
     fontFamily: "ComicRelief-Regular",
+    marginBottom: 10,
   },
+  // Moral Container Styles
+  moralContainer: {
+    marginTop: 25,
+    paddingTop: 20,
+    paddingHorizontal: 15,
+    paddingBottom: 15,
+    backgroundColor: "#f8faff",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e1e8ff",
+    shadowColor: "#51bdf8ff",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#51bdf8ff",
+    width: '100%',
+    marginBottom: 15,
+    opacity: 0.5,
+  },
+  moralLabelContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+    gap: 8,
+  },
+  moralLabel: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#51bdf8ff",
+    fontFamily: "ComicRelief-Bold",
+  },
+  moralText: {
+    fontSize: 17,
+    lineHeight: 24,
+    color: "#2c3e50",
+    fontStyle: "italic",
+    textAlign: "center",
+    marginBottom: 15,
+    fontFamily: "ComicRelief-Regular",
+    backgroundColor: "#fff",
+    padding: 12,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: "#FFD700",
+  },
+  creditsContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff9e6",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#FFD700",
+    alignSelf: "center",
+    marginTop: 5,
+  },
+  creditsText: {
+    fontSize: 15,
+    color: "#8B6914",
+    marginLeft: 8,
+    fontWeight: "600",
+    fontFamily: "ComicRelief-Regular",
+  },
+  // Navigation Styles
   navigationContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 4,
-    paddingTop: 10,
+    marginTop: 15,
+    paddingTop: 15,
     borderTopWidth: 1,
+    gap:6,
     borderTopColor: "#eee",
   },
   navButton: {
     paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 8,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    backgroundColor: "#f0f8ff",
+    borderWidth: 1,
+    borderColor: "#51bdf8ff",
+    minWidth: 100,
   },
   navButtonContent: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
   },
   navButtonText: {
     fontSize: 16,
-    color: "#333",
+    color: "#51bdf8ff",
     fontFamily: "ComicRelief-Regular",
+    fontWeight: "600",
+    marginHorizontal: 5,
   },
   disabledButton: {
-  
+    backgroundColor: "#f5f5f5",
+    borderColor: "#ddd",
   },
   disabledText: {
-    color: "#ccc",
+    color: "#aaa",
   },
   pageIndicator: {
-    fontSize: 14,
+    fontSize: 15,
     color: "#666",
     fontFamily: "ComicRelief-Regular",
     fontWeight: "600",
+    backgroundColor: "#f0f8ff",
+    paddingVertical: 6,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#51bdf8ff",
   },
   loadingContainer: {
     flex: 1,

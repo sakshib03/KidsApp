@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
   questionContainer: {
     flex: 1,
     backgroundColor: "#f8f9fa",
-    maxHeight: 550,
+    maxHeight: 530,
     borderRadius: 20,
     padding: 25,
   },

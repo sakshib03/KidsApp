@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import moment from "moment";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   ImageBackground,
@@ -68,179 +69,106 @@ export default function SignUpScreen() {
 
   const genderOptions = ["Male", "Female", "Other"];
   const genderOptions2 = ["Male", "Female", "Other"];
-  // const careerOptions = [
-  //   "Doctor",
-  //   "Nurse",
-  //   "Teacher",
-  //   "Scientist",
-  //   "Police Officer",
-  //   "Firefighter",
-  //   "Pilot",
-  //   "Astronaut",
-  //   "Chef",
-  //   "Farmer",
-  //   "Artist",
-  //   "Dancer",
-  //   "Singer",
-  //   "Musician",
-  //   "Actor / Actress",
-  //   "Writer",
-  //   "Photographer",
-  //   "Fashion Designer",
-  //   "Baker",
-  //   "Builder",
-  //   "Engineer",
-  //   "Driver",
-  //   "Vet (Animal Doctor)",
-  //   "Zookeeper",
-  //   "Animal Trainer",
-  //   "Coach",
-  //   "Athlete",
-  //   "Cricketer",
-  //   "Footballer",
-  //   "Mountain Climber",
-  //   "Explorer",
-  //   "Librarian",
-  //   "Shopkeeper",
-  //   "Carpenter",
-  //   "Electrician",
-  //   "Plumber",
-  //   "Mechanic",
-  //   "Gardener",
-  //   "Bus Driver",
-  //   "Train Driver",
-  //   "Scientist",
-  //   "Robot Maker",
-  //   "Game Maker",
-  //   "YouTuber",
-  //   "Superhero (Fun Option)",
-  //   "Painter",
-  //   "Pilot",
-  //   "Detective",
-  //   "Space Scientist",
-  //   "Other",
-  // ];
 
   const careerOptions = [
-    // Academics / Professional
-    "doctor",
-    "nurse",
-    "surgeon",
-    "scientist",
-    "teacher",
-    "teacher assistant",
-    "engineer",
-    "software engineer",
-    "programmer",
-    "architect",
-    "lawyer",
-    "astronaut",
-    "pilot",
-    "veterinarian",
-    "veterinarian assistant",
-    "dentist",
-    "pharmacist",
-    "librarian",
-
-    // Creative / Arts
-    "artist",
-    "painter",
-    "musician",
-    "singer",
-    "dancer",
-    "actor",
-    "writer",
-    "poet",
-    "photographer",
-    "designer",
-    "fashion designer",
-    "animator",
-    "cartoonist",
-    "illustrator",
-    "filmmaker",
-    "editor",
-    "graphic designer",
-    "content creator",
-    "youtuber",
-    "storyteller",
-
-    // STEM & Technology
-    "computer scientist",
-    "game developer",
-    "app developer",
-    "data scientist",
-    "robotics engineer",
-    "ai engineer",
-    "cybersecurity expert",
-    "drone operator",
-    "web developer",
-    "electronics engineer",
-
-    // Sports
-    "athlete",
-    "footballer",
-    "cricketer",
-    "basketball player",
-    "swimmer",
-    "gymnast",
-    "runner",
-    "martial artist",
-    "badminton player",
-    "tennis player",
-    "cyclist",
-    "skateboarder",
-
-    // Community Helpers
-    "firefighter",
-    "police officer",
-    "paramedic",
-    "army soldier",
-    "navy officer",
-    "air force officer",
-    "lifeguard",
-    "mountain rescuer",
-    "park ranger",
-    "social worker",
-
-    // Business
-    "entrepreneur",
-    "business owner",
-    "manager",
-    "shop owner",
-    "financial advisor",
-    "marketing specialist",
-
-    // Nature & Animals
-    "gardener",
-    "farmer",
-    "botanist",
-    "zoologist",
-    "marine biologist",
-    "wildlife photographer",
-    "animal caretaker",
-    "zookeeper",
-
-    // Food & Hospitality
-    "chef",
-    "baker",
-    "food scientist",
-    "restaurant owner",
-    "chocolatier",
-
-    // Trade / Skills
-    "mechanic",
-    "electrician",
-    "carpenter",
-    "plumber",
-    "technician",
-    "auto engineer",
-
-    // Imaginative but safe
-    "magician",
-    "inventor",
-    "explorer",
-    "space traveler",
-    "game streamer",
+    "Actor",
+    "Air Force Officer",
+    "AI Engineer",
+    "Animal Caretaker",
+    "Animator",
+    "App Developer",
+    "Architect",
+    "Army Soldier",
+    "Artist",
+    "Astronaut",
+    "Athlete",
+    "Auto Engineer",
+    "Baker",
+    "Badminton Player",
+    "Basketball Player",
+    "Botanist",
+    "Business Owner",
+    "Carpenter",
+    "Chef",
+    "Chocolatier",
+    "Computer Scientist",
+    "Content Creator",
+    "Cricketer",
+    "Cyclist",
+    "Cybersecurity Expert",
+    "Dancer",
+    "Data Scientist",
+    "Dentist",
+    "Designer",
+    "Doctor",
+    "Drone Operator",
+    "Editor",
+    "Electrician",
+    "Electronics Engineer",
+    "Engineer",
+    "Entrepreneur",
+    "Explorer",
+    "Fashion Designer",
+    "Farmer",
+    "Filmmaker",
+    "Financial Advisor",
+    "Firefighter",
+    "Food Scientist",
+    "Footballer",
+    "Game Developer",
+    "Game Streamer",
+    "Gardener",
+    "Graphic Designer",
+    "Gymnast",
+    "Illustrator",
+    "Inventor",
+    "Lawyer",
+    "Librarian",
+    "Lifeguard",
+    "Magician",
+    "Manager",
+    "Marine Biologist",
+    "Marketing Specialist",
+    "Martial Artist",
+    "Mechanic",
+    "Musician",
+    "Mountain Rescuer",
+    "Navy Officer",
+    "Nurse",
+    "Other",
+    "Painter",
+    "Paramedic",
+    "Pharmacist",
+    "Photographer",
+    "Pilot",
+    "Plumber",
+    "Poet",
+    "Police Officer",
+    "Programmer",
+    "Restaurant Owner",
+    "Runner",
+    "Scientist",
+    "Shop Owner",
+    "Singer",
+    "Skateboarder",
+    "Social Worker",
+    "Software Engineer",
+    "Space Traveler",
+    "Storyteller",
+    "Surgeon",
+    "Swimmer",
+    "Teacher",
+    "Teacher Assistant",
+    "Technician",
+    "Tennis Player",
+    "Veterinarian",
+    "Veterinarian Assistant",
+    "Web Developer",
+    "Wildlife Photographer",
+    "Writer",
+    "YouTuber",
+    "Zookeeper",
+    "Zoologist",
   ];
 
   const relationOptions = [
@@ -1102,7 +1030,7 @@ export default function SignUpScreen() {
                   </Text>
                 )}
 
-                 <TouchableOpacity
+                <TouchableOpacity
                   style={{ marginTop: 10, alignItems: "center" }}
                   onPress={handleResendOTP}
                 >
@@ -1125,9 +1053,14 @@ export default function SignUpScreen() {
                   onPress={handleVerifyOTP}
                   disabled={!isOtpComplete || isLoading}
                 >
-                  <Text style={styles.buttonText}>
-                    {isLoading ? "VERIFYING..." : "VERIFY OTP"}
-                  </Text>
+                  {isLoading ? (
+                    <View>
+                      <Text style={styles.buttonText}>VERIFYING...</Text>
+                      <ActivityIndicator size="small" color="#10572bff" />
+                    </View>
+                  ) : (
+                    <Text style={styles.buttonText}>VERIFY OTP</Text>
+                  )}
                 </TouchableOpacity>
 
                 {isLoading && (
@@ -1135,8 +1068,6 @@ export default function SignUpScreen() {
                     Please wait, don't go back until the process completes! ⏳
                   </Text>
                 )}
-
-               
               </View>
             </View>
           )}
@@ -1234,7 +1165,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   button: {
-    width: 280,
+    width: "90%",
     marginTop: 30,
     backgroundColor: "#0F6424",
     paddingVertical: 10,
@@ -1274,7 +1205,7 @@ const styles = StyleSheet.create({
   },
   dontGoBackText: {
     fontSize: 14,
-    color: "#f97676ff",
+    color: "#fa4747ff",
     fontFamily: "ComicRelief-Regular",
     textAlign: "center",
     marginTop: 10,

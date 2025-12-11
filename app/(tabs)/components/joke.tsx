@@ -21,7 +21,8 @@ export default function Joke() {
   const [loading, setLoading] = useState(false);
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [currentGif, setCurrentGif] = useState(null);
-  const {theme}=useTheme();
+  const [jokeData, setJokeData] = useState(null);
+  const { theme } = useTheme();
 
   const gifs = [
     require("@/assets/gifs/hahaha.gif"),
@@ -38,7 +39,6 @@ export default function Joke() {
 
     const randomIndex = Math.floor(Math.random() * gifs.length);
     setCurrentGif(gifs[randomIndex]);
-
   }, []);
 
   useEffect(() => {
@@ -46,23 +46,23 @@ export default function Joke() {
   }, []);
 
   const fetchChildId = async () => {
-  try {
-    const userDataString = await AsyncStorage.getItem("userData");
-    
-    console.log("userData from AsyncStorage:", userDataString);
-    
-    if (userDataString) {
-      const userData = JSON.parse(userDataString);
-      console.log("Parsed userData:", userData);
-      setChildId(userData.child_id);
-      fetchJoke(userData.child_id);
-    }else {
-      console.log("No user data found in AsyncStorage");
+    try {
+      const userDataString = await AsyncStorage.getItem("userData");
+      
+      console.log("userData from AsyncStorage:", userDataString);
+      
+      if (userDataString) {
+        const userData = JSON.parse(userDataString);
+        console.log("Parsed userData:", userData);
+        setChildId(userData.child_id);
+        fetchJoke(userData.child_id);
+      } else {
+        console.log("No user data found in AsyncStorage");
+      }
+    } catch (error) {
+      console.error("Error fetching child ID:", error);
     }
-  } catch (error) {
-    console.error("Error fetching child ID:", error);
-  }
-};
+  };
 
   const fetchJoke = async (id) => {
     try {
@@ -83,26 +83,29 @@ export default function Joke() {
       }
 
       const data = await response.json();
-      setJoke(data.joke);
+      console.log("Joke data received:", data); // Debug log
+      setJokeData(data);
+      // Combine question and answer for display
+      setJoke(data.question ? `${data.question}\n\n${data.answer}` : data.joke);
     } catch (error) {
       console.error("Error fetching joke:", error);
       setJoke("Unable to load joke. Please try again.");
+      setJokeData(null);
     } finally {
       setLoading(false);
     }
   };
 
-  //   const refreshJoke = () => {
-  //     if (childId) {
-  //       fetchJoke(childId);
-  //     } else {
-  //       fetchChildId();
-  //     }
-  //   };
+  const refreshJoke = () => {
+    if (childId) {
+      fetchJoke(childId);
+    } else {
+      fetchChildId();
+    }
+  };
 
   return (
     <ImageBackground
-      // source={require("@/assets/images/login_image.png")}
       style={styles.background}
       source={theme.background}
     >
@@ -131,13 +134,36 @@ export default function Joke() {
                 showsVerticalScrollIndicator={true}
                 contentContainerStyle={styles.scrollContent}
               >
-                <Text style={styles.jokeText}>
-                  {joke || "Your joke will appear here..."}
-                </Text>
+                {jokeData?.question && (
+                  <View style={styles.questionContainer}>
+                    <Text style={styles.questionText}>
+                      {jokeData.question}
+                    </Text>
+                  </View>
+                )}
+                
+                {jokeData?.answer && (
+                  <View style={styles.answerContainer}>
+                    <Text style={styles.answerText}>
+                      {jokeData.answer}
+                    </Text>
+                  </View>
+                )}
+                
+                {jokeData?.credits_earned !== undefined && (
+                  <View style={styles.creditsContainer}>
+                    <Feather name="award" size={18} color="#FFD700" />
+                    <Text style={styles.creditsText}>
+                      Credits earned: {jokeData.credits_earned}
+                    </Text>
+                  </View>
+                )}
               </ScrollView>
+              
             </View>
           )}
         </View>
+        
         <View style={styles.logoContainer}>
           {currentGif && <Image source={currentGif} style={styles.logo} />}
         </View>
@@ -155,7 +181,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 25,
-    marginBottom:30,
+    marginBottom: 30,
   },
   header: {
     alignItems: "center",
@@ -180,7 +206,7 @@ const styles = StyleSheet.create({
     fontFamily: "ComicRelief-Bold",
   },
   title: {
-    fontSize: 26,
+    fontSize: 32,
     fontWeight: "bold",
     marginTop: 90,
     color: "#ffd70fff",
@@ -194,7 +220,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
     borderRadius: 25,
-    padding: 20,
+    padding: 15,
     marginBottom: 20,
     shadowColor: "#000",
     shadowOffset: {
@@ -208,20 +234,73 @@ const styles = StyleSheet.create({
   jokeWrapper: {
     flex: 1,
     padding: 5,
-    marginBottom: 25,
+    marginBottom: 15,
   },
   jokeContainer: {
     flex: 1,
     padding: 10,
+    marginBottom: 20,
   },
   scrollContent: {
     flexGrow: 1,
+    paddingBottom: 10,
+  },
+  questionContainer: {
+    marginBottom: 20,
+    paddingBottom: 15,
+    borderBottomWidth: 2,
+    borderBottomColor: "#ffd70fff",
+    borderStyle: "dashed",
+  },
+  questionText: {
+    fontSize: 20,
+    lineHeight: 30,
+    color: "#333",
+    textAlign: "center",
+    fontFamily: "ComicRelief-Regular",
+    fontWeight: "bold",
+  },
+  answerContainer: {
+    marginBottom: 25,
+    padding: 15,
+    backgroundColor: "#fffae6",
+    borderRadius: 15,
+    borderWidth: 2,
+    borderColor: "#ffd70fff",
+  },
+  answerText: {
+    fontSize: 22,
+    lineHeight: 32,
+    color: "#e67e22",
+    textAlign: "center",
+    fontFamily: "ComicRelief-Regular",
+    fontWeight: "bold",
   },
   jokeText: {
     fontSize: 18,
     lineHeight: 28,
     color: "#3f3f3fff",
     textAlign: "left",
+    fontFamily: "ComicRelief-Regular",
+  },
+  creditsContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff9e6",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    borderWidth: 2,
+    borderColor: "#FFD700",
+    marginTop: 20,
+    alignSelf: "center",
+  },
+  creditsText: {
+    fontSize: 16,
+    color: "#8B6914",
+    marginLeft: 8,
+    fontWeight: "600",
     fontFamily: "ComicRelief-Regular",
   },
   loadingContainer: {
@@ -241,25 +320,25 @@ const styles = StyleSheet.create({
     fontFamily: "ComicRelief-Regular",
   },
   refreshButton: {
-    backgroundColor: "#56bbf1",
+    backgroundColor: "#f5c525ff",
     paddingVertical: 15,
-    paddingHorizontal: 30,
+    paddingHorizontal: 25,
     borderRadius: 25,
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "center",
-    gap: 10,
-    shadowColor: "#56bbf1",
+    gap: 12,
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 3,
     },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.2,
     shadowRadius: 5,
     elevation: 6,
   },
   refreshButtonDisabled: {
-    backgroundColor: "#a0d4f5",
+    backgroundColor: "#ffda6b",
   },
   refreshIconLoading: {
     transform: [{ rotate: "180deg" }],

@@ -786,7 +786,7 @@ export default function ChatBot() {
         text: data.response || "I couldn't process that. Please try again.",
         isUser: false,
         timestamp: new Date(),
-        audio_base64: data.audio_base64, // Store audio base64 for playback
+        audio_base64: data.audio_base64, 
       };
 
       // Add both messages to chat
@@ -968,7 +968,11 @@ export default function ChatBot() {
               style={styles.iconButton}
               onPress={() => router.push("/(tabs)/components/reminders")}
             >
-              <Ionicons name="notifications-outline" size={22} color="#239a5e" />
+              <Ionicons
+                name="notifications-outline"
+                size={22}
+                color="#239a5e"
+              />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.iconButton} onPress={handleLogout}>
@@ -1034,7 +1038,7 @@ export default function ChatBot() {
                     disabled={isSpeechToSpeechLoading}
                   >
                     {isRecording && micOn ? (
-                      <ActivityIndicator size="small" color="#fff" />
+                      <Feather name="arrow-up" size={24} color="#fff" />
                     ) : (
                       <Feather
                         name={micOn ? "mic" : "mic-off"}
@@ -1052,8 +1056,10 @@ export default function ChatBot() {
                     onPress={handleSpeechToSpeech}
                     disabled={isSpeechToSpeechLoading || (isRecording && micOn)}
                   >
-                    {isRecording && !micOn ? (
+                    {isSpeechToSpeechLoading && !micOn ? (
                       <ActivityIndicator size="small" color="#fff" />
+                    ) : isRecording && !micOn ? (
+                      <Feather name="arrow-up" size={24} color="#fff" />
                     ) : (
                       <Feather
                         name={isRecording && !micOn ? "square" : "activity"}
@@ -1067,46 +1073,6 @@ export default function ChatBot() {
             </View>
           </View>
         </View>
-
-        {/* Quick Action Buttons */}
-        {/* <ScrollView
-            style={styles.quickActions}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.quickActionsContent}
-          >
-            <TouchableOpacity
-              style={styles.quickActionButton}
-              onPress={() => router.push("/(tabs)/quiz")}
-            >
-              <Text style={styles.quickActionText}>Go to Quiz</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.quickActionButton}
-              onPress={() => router.push("/(tabs)/components/story")}
-            >
-              <Text style={styles.quickActionText}>Story of the Day</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.quickActionButton}>
-              <Text style={styles.quickActionText}>Games</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.quickActionButton}
-              onPress={() => router.push("/(tabs)/question")}
-            >
-              <Text style={styles.quickActionText}>Question of the Day</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.quickActionButton}
-              onPress={() => router.push("/(tabs)/joke")}
-            >
-              <Text style={styles.quickActionText}>Joke of the Day</Text>
-            </TouchableOpacity>
-          </ScrollView> */}
 
         {showHistory && (
           <View style={styles.chatHistory}>
@@ -1448,7 +1414,7 @@ const styles = StyleSheet.create({
     fontFamily: "ComicRelief-Regular",
     color: "#000",
     maxHeight: 80,
-    paddingVertical: 2,
+    paddingVertical: 4,
   },
   inputButtons: {
     flexDirection: "row",
@@ -1458,7 +1424,7 @@ const styles = StyleSheet.create({
   },
   voiceButton: {
     backgroundColor: "#56bbf1",
-    padding: 10,
+    padding: 6,
     borderRadius: 20,
     width: 40,
     height: 40,

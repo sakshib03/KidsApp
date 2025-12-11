@@ -38,60 +38,7 @@ export default function LoginScreen() {
       "ComicRelief-Bold": require("../../../assets/fonts/ComicRelief-Bold.ttf"),
       "ComicRelief-Regular": require("../../../assets/fonts/ComicRelief-Regular.ttf"),
     }).then(() => setFontsLoaded(true));
-
-    checkExistingAuth();
   }, []);
-
-  // Check for existing valid authentication
-  const checkExistingAuth = async () => {
-    try {
-      const loginTime = await AsyncStorage.getItem("loginTime");
-      const accessToken = await AsyncStorage.getItem("accessToken");
-      const userType = await AsyncStorage.getItem("userType");
-
-      if (loginTime && accessToken && userType) {
-        const isTokenValid = checkTokenValidity(loginTime);
-
-        if (isTokenValid) {
-          if (userType === "child") {
-            router.replace("/(tabs)/components/chatbot");
-          } else if (userType === "parent") {
-            router.replace("/(tabs)/components/dashboard");
-          }
-        } else {
-          await clearAuthStorage();
-        }
-      }
-    } catch (error) {
-      console.error("Error checking auth status:", error);
-    }
-  };
-
-  // Check if token is still valid (15 days)
-  const checkTokenValidity = (loginTime) => {
-    const FIFTEEN_DAYS_IN_MS = 15 * 24 * 60 * 60 * 1000;
-    const currentTime = new Date().getTime();
-    const loginTimestamp = parseInt(loginTime);
-
-    return currentTime - loginTimestamp < FIFTEEN_DAYS_IN_MS;
-  };
-
-  // Clear authentication data
-  const clearAuthStorage = async () => {
-    try {
-      await AsyncStorage.multiRemove([
-        "accessToken",
-        "loginTime",
-        "userType",
-        "childId",
-        "parentId",
-        "userData",
-        "parentData",
-      ]);
-    } catch (error) {
-      console.error("Error clearing auth storage:", error);
-    }
-  };
 
   // Store authentication data
   const storeAuthData = async (userType, data) => {

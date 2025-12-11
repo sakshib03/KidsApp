@@ -54,16 +54,18 @@ export default function GamesDashboard() {
     }
   };
 
+  const handleBackPress = () => {
+    soundManager.unload();
+    router.push("/(tabs)/components/chatbot");
+  };
+
   return (
     <ImageBackground
       source={require("@/assets/images/bg6.jpg")}
       style={styles.background}
       blurRadius={2}
     >
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => router.push("/(tabs)/components/chatbot")}
-      >
+      <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
         <Feather name="arrow-left" size={24} color={"#fff"} />
         <Text style={styles.backButtonText}>Back to Home</Text>
       </TouchableOpacity>
@@ -227,19 +229,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
- labelTextContainer: {
-  position: "absolute",
-  top: "40%",
-  left: "50%",
-  transform: [{ translateY: -12 }],
-  alignItems: "center",
-},
-labelText: {
-  color: "#582525ff",
-  fontSize: 18,
-  fontFamily: "ComicRelief-Bold",
-  textAlign: "center",
-},
+  labelTextContainer: {
+    position: "absolute",
+    top: "40%",
+    left: "50%",
+    transform: [{ translateY: -12 }],
+    alignItems: "center",
+  },
+  labelText: {
+    color: "#582525ff",
+    fontSize: 18,
+    fontFamily: "ComicRelief-Bold",
+    textAlign: "center",
+  },
   appleIcon: {
     width: 160,
     height: 90,

@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Font from "expo-font";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -34,6 +34,17 @@ export default function Quiz() {
   const [currentTopic, setCurrentTopic] = useState("");
   const [sound, setSound] = useState(null);
   const { theme } = useTheme();
+
+  const scrollViewRef = useRef(null);
+  const resultRef = useRef(null);
+
+  useEffect(() => {
+    if (showResult && result) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [showResult, result]);
 
   useEffect(() => {
     Font.loadAsync({
@@ -301,6 +312,7 @@ export default function Quiz() {
         </View>
 
         <ScrollView
+          ref={scrollViewRef}
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContentContainer}
           showsVerticalScrollIndicator={true}
@@ -392,7 +404,7 @@ export default function Quiz() {
                 </View>
 
                 {showResult && result && (
-                  <View style={styles.resultContainer}>
+                  <View ref={resultRef} style={styles.resultContainer}>
                     <View style={styles.resultTextContainer}>
                       <Text style={styles.resultTitle}>
                         {result.is_correct ? "" : "Try Again! 💪"}

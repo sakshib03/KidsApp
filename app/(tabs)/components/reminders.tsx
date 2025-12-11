@@ -588,7 +588,6 @@ export default function Reminders() {
                     onPress={handleCreateReminder}
                     disabled={!childId}
                   >
-                    <Feather name="plus" size={20} color="#fff" />
                     <Text style={styles.createButtonText}>
                       {childId ? "Create Reminder" : "Loading..."}
                     </Text>
@@ -815,7 +814,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#196c57",
     paddingVertical: 12,
-    paddingHorizontal: 18,
+    paddingHorizontal: 28,
     borderRadius: 25,
     marginTop: 10,
     gap: 10,

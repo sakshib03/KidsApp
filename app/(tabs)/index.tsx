@@ -5,20 +5,71 @@ import {
   StyleSheet,
   ImageBackground,
   Image,
-  ActivityIndicator
+  ActivityIndicator,
 } from "react-native";
 import { useEffect, useState } from "react";
 import { router } from "expo-router";
 import * as Font from "expo-font";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function HomeScreen() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
-  
+
+   const checkTokenValidity = (loginTime) => {
+    const FIFTEEN_DAYS_IN_MS = 15 * 24 * 60 * 60 * 1000;
+    const currentTime = new Date().getTime();
+    const loginTimestamp = parseInt(loginTime);
+
+    return currentTime - loginTimestamp < FIFTEEN_DAYS_IN_MS;
+  };
+
+  const clearAuthStorage = async () => {
+    try {
+      await AsyncStorage.multiRemove([
+        "accessToken",
+        "loginTime",
+        "userType",
+        "childId",
+        "parentId",
+        "userData",
+        "parentData",
+      ]);
+    } catch (error) {
+      console.error("Error clearing auth storage:", error);
+    }
+  };
+
+  const checkExistingAuth = async () => {
+    try {
+      const loginTime = await AsyncStorage.getItem("loginTime");
+      const accessToken = await AsyncStorage.getItem("accessToken");
+      const userType = await AsyncStorage.getItem("userType");
+
+      if (loginTime && accessToken && userType) {
+        const isTokenValid = checkTokenValidity(loginTime);
+
+        if (isTokenValid) {
+          if (userType === "child") {
+            router.replace("/(tabs)/components/chatbot");
+          } else if (userType === "parent") {
+            router.replace("/(tabs)/components/dashboard");
+          }
+        } else {
+          await clearAuthStorage();
+        }
+      }
+    } catch (error) {
+      console.error("Error checking auth status:", error);
+    }
+  };
+
   useEffect(() => {
     Font.loadAsync({
       "ComicRelief-Bold": require("../../assets/fonts/ComicRelief-Regular.ttf"),
       "ComicRelief-Regular": require("../../assets/fonts/ComicRelief-Regular.ttf"),
     }).then(() => setFontsLoaded(true));
+
+    checkExistingAuth();
   }, []);
 
   // Show loading indicator while fonts load
@@ -28,7 +79,7 @@ export default function HomeScreen() {
         source={require("@/assets/images/login/bg1.png")}
         style={styles.background}
       >
-        <View style={[styles.container, {justifyContent: 'center'}]}>
+        <View style={[styles.container, { justifyContent: "center" }]}>
           <ActivityIndicator size="large" color="#0F6424" />
         </View>
       </ImageBackground>
@@ -45,25 +96,25 @@ export default function HomeScreen() {
           source={require("@/assets/images/login/logo.png")}
           style={styles.logo}
         />
-        <Text style={styles.title}>
-          Kids Bot
-        </Text>
-        <Text style={styles.welcomeText}>
-          Welcome!
-        </Text>
-        
+        <Text style={styles.title}>Kids Bot</Text>
+        <Text style={styles.welcomeText}>Welcome!</Text>
+
         {/* CREATE ACCOUNT BUTTON - FIXED */}
         <TouchableOpacity
           style={styles.button}
           onPress={() => router.push("/(tabs)/auth/signup")}
         >
-          <Text style={styles.buttonText} numberOfLines={1} adjustsFontSizeToFit>
+          <Text
+            style={styles.buttonText}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+          >
             CREATE AN ACCOUNT
           </Text>
         </TouchableOpacity>
-        
+
         {/* LOGIN BUTTON - FIXED */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.loginButton}
           onPress={() => router.push("/(tabs)/auth/login")}
         >
@@ -94,7 +145,7 @@ const styles = StyleSheet.create({
     marginTop: 100,
     marginHorizontal: 20,
     borderRadius: 15,
-    paddingHorizontal: 20, 
+    paddingHorizontal: 20,
   },
   logo: {
     width: 90,
@@ -105,14 +156,14 @@ const styles = StyleSheet.create({
     color: "#0F6424",
     fontSize: 26,
     fontFamily: "ComicRelief-Regular",
-    fontWeight:700,
+    fontWeight: 700,
     marginTop: 20,
   },
   welcomeText: {
     color: "#0F6424",
     fontSize: 28,
     fontFamily: "ComicRelief-Regular",
-    fontWeight:700,
+    fontWeight: 700,
     marginBottom: 30,
   },
   button: {
@@ -121,19 +172,19 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     marginTop: 20,
     backgroundColor: "#0F6424",
-    paddingVertical: 15, 
-    paddingHorizontal: 40, 
+    paddingVertical: 15,
+    paddingHorizontal: 40,
     borderRadius: 25,
-    minWidth: 250, 
-    width: '90%', 
-    maxWidth: 300, 
+    minWidth: 250,
+    width: "90%",
+    maxWidth: 300,
   },
   buttonText: {
-    fontSize: 16, 
+    fontSize: 16,
     color: "#fff",
     fontFamily: "ComicRelief-Regular",
     textAlign: "center",
-    width: '100%',
+    width: "100%",
   },
   loginButton: {
     marginBottom: 20,
