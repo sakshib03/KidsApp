@@ -16,26 +16,18 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Audio } from "expo-av";
 import { soundManager } from "../../../utils/soundManager";
 import { API_BASE } from "@/app/(tabs)/utils/config";
+import { globalSound } from "@/app/(tabs)/utils/globalSound";
 
 export default function WelcomePage() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [childId, setChildId] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [isSoundPlaying, setIsSoundPlaying] = useState(true);
+  const {isSoundPlaying, toggleSound} = globalSound();
 
   useEffect(() => {
     loadFonts();
     fetchChildId();
   }, []);
-
-  const toggleSound = async () => {
-    try {
-      await soundManager.toggle();
-      setIsSoundPlaying(soundManager.getIsPlaying());
-    } catch (error) {
-      console.error("Error toggling sound:", error);
-    }
-  };
 
   const loadFonts = async () => {
     try {

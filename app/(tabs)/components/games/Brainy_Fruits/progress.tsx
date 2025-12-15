@@ -161,10 +161,15 @@ export default function Progress() {
             <TouchableOpacity
               style={styles.exitButton}
               onPress={() =>
-                router.push("/(tabs)/components/games/gamesDashboard")
+                router.push("/(tabs)/components/games/Brainy_Fruits/welcomePage")
               }
             >
-              <Text style={styles.buttonText}>Exit</Text>
+               <Image
+                              source={require("@/assets/images/games/back-arrow.png")}
+                              style={styles.backIcon}
+                            />
+              
+              <Text style={styles.buttonText}>Back</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -257,17 +262,24 @@ const styles = StyleSheet.create({
   },
   exitButton: {
     backgroundColor: "#0A761E",
+     gap: 10,
+    flexDirection:"row",
     borderRadius: 10,
     paddingVertical: 10,
-    paddingHorizontal: 40,
+    paddingHorizontal: 20,
     marginTop: 10,
     marginBottom: 10,
   },
+  backIcon: {
+    width: 30,
+    height: 30,
+  },
   buttonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: "ComicRelief-Bold",
     color: "#fff",
     textAlign: "center",
+    top:2,
   },
   bottomIcon: {
     width: 50,

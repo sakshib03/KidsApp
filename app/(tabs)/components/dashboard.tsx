@@ -473,25 +473,23 @@ export default function Dashboard() {
         </Text>
       </View>
       <View style={styles.creditHistoryRight}>
-        {item.credits_earned > 0 && (
-          <View style={{ flexDirection: "row" }}>
-            <Text style={styles.creditEarned}>+{item.credits_earned}</Text>
-            <MaterialIcons name="monetization-on" size={24} color="gold" />
-          </View>
-        )}
-        {item.credits_earned === 0 && (
-          <View style={{ flexDirection: "row" }}>
-            <Text style={styles.creditEarned}>{item.credits_earned}</Text>
-            <MaterialIcons name="monetization-on" size={24} color="gold" />
-          </View>
-        )}
-        {item.credits_lost > 0 && (
-          <View style={{ flexDirection: "row" }}>
-            <Text style={styles.creditLost}>-{item.credits_lost}</Text>
-            <MaterialIcons name="monetization-on" size={24} color="gold" />
-          </View>
-        )}
-      </View>
+  {item.credits_earned > 0 ? (
+    <View style={{ flexDirection: "row", alignItems: "center" }}>
+      <Text style={styles.creditEarned}>+{item.credits_earned}</Text>
+      <MaterialIcons name="monetization-on" size={20} color="gold" />
+    </View>
+  ) : item.credits_lost > 0 ? (
+    <View style={{ flexDirection: "row", alignItems: "center" }}>
+      <Text style={styles.creditLost}>-{item.credits_lost}</Text>
+      <MaterialIcons name="monetization-on" size={20} color="gold" />
+    </View>
+  ) : (
+    <View style={{ flexDirection: "row", alignItems: "center" }}>
+      <Text style={styles.creditEarned}>0</Text>
+      <MaterialIcons name="monetization-on" size={20} color="gold" />
+    </View>
+  )}
+</View>
     </View>
   );
 

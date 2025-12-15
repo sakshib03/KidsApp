@@ -113,7 +113,7 @@ export default function SpellBreakerFAQ() {
       <View style={styles.mainContainer}>
         <ScrollView style={{ width: "100%" }}>
 
-          <Text style={styles.headerText}>Brainy Fruits FAQ</Text>
+          <Text style={styles.headerText}>Spell Breaker FAQ</Text>
 
           {spellBreakerFAQ.map((item, index) => (
             <View key={index} style={styles.questionBox}>

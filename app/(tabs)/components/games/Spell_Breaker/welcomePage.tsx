@@ -16,26 +16,18 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
 import { soundManager } from "@/app/(tabs)/utils/soundManager";
 import { API_BASE } from "@/app/(tabs)/utils/config";
+import { globalSound } from "@/app/(tabs)/utils/globalSound";
 
 export default function WelcomePage() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [childId, setChildId] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [isSoundPlaying, setIsSoundPlaying] = useState(true);
+  const {isSoundPlaying, toggleSound} = globalSound();
 
   useEffect(() => {
     loadFonts();
     fetchChildId();
   }, []);
-
-  const toggleSound = async () => {
-      try {
-        await soundManager.toggle();
-        setIsSoundPlaying(soundManager.getIsPlaying());
-      } catch (error) {
-        console.error("Error toggling sound:", error);
-      }
-    };
 
   const loadFonts = async () => {
     try {
@@ -110,7 +102,14 @@ export default function WelcomePage() {
           router.push("/(tabs)/components/games/Spell_Breaker/settings")
         }
       >
-        <View style={{ flexDirection: "row", justifyContent: "space-between" , marginTop:35, gap:20}}>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            marginTop: 35,
+            gap: 20,
+          }}
+        >
           <View>
             <TouchableOpacity
               style={styles.backBtn}
@@ -124,7 +123,7 @@ export default function WelcomePage() {
             </TouchableOpacity>
             <Image
               source={require("@/assets/images/games/spellGame/img4.png")}
-              style={{width:160, height:110}}
+              style={{ width: 160, height: 110 }}
             />
           </View>
 
@@ -171,11 +170,28 @@ export default function WelcomePage() {
             </TouchableOpacity>
 
             <TouchableOpacity
-            onPress={()=>router.push("/(tabs)/components/games/Spell_Breaker/spellBreakerFAQ")}
+              onPress={() =>
+                router.push(
+                  "/(tabs)/components/games/Spell_Breaker/spellBreakerFAQ"
+                )
+              }
             >
               <Image
                 source={require("@/assets/images/games/spellGame/questions.png")}
                 style={{ width: 45, height: 45, borderRadius: 50 }}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() =>
+                router.push("/components/games/Spell_Breaker/settings")
+              }
+            >
+              <Image
+                source={require("@/assets/images/games/spellGame/settings.png")}
+                style={{
+                  height: 45,
+                  width: 45,
+                }}
               />
             </TouchableOpacity>
           </View>
@@ -185,7 +201,7 @@ export default function WelcomePage() {
         <View style={styles.imageWrapper}>
           <Image
             source={require("@/assets/images/games/spellGame/welcome.png")}
-            style={{width:250, height:100}}
+            style={{ width: 250, height: 100 }}
           />
           <TouchableOpacity
             style={[styles.button, loading && styles.disabledButton]}
@@ -208,7 +224,7 @@ export default function WelcomePage() {
         </View>
       </View>
 
-      <TouchableOpacity
+      {/* <TouchableOpacity
         onPress={() => router.push("/components/games/Spell_Breaker/settings")}
       >
         <Image
@@ -220,7 +236,7 @@ export default function WelcomePage() {
             left: 10,
           }}
         />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       <View style={styles.bottomContainer}>
         <Image
@@ -246,7 +262,7 @@ const styles = StyleSheet.create({
   imageWrapper: {
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 80,
+    marginTop: 40,
   },
   backBtn: {
     marginTop: 20,

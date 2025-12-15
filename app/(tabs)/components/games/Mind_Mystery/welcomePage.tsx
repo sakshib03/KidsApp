@@ -16,27 +16,19 @@ import {
     View,
 } from "react-native";
 import { soundManager } from "@/app/(tabs)/utils/soundManager";
+import { globalSound } from "@/app/(tabs)/utils/globalSound";
 const { width, height } = Dimensions.get("window");
 
 export default function WelcomePage() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [childId, setChildId] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [isSoundPlaying, setIsSoundPlaying] = useState(true);
+  const {isSoundPlaying, toggleSound} = globalSound();
 
   useEffect(() => {
     loadFonts();
     fetchChildId();
   }, []);
-
-  const toggleSound = async () => {
-    try {
-      await soundManager.toggle();
-      setIsSoundPlaying(soundManager.getIsPlaying());
-    } catch (error) {
-      console.error("Error toggling sound:", error);
-    }
-  };
 
   const loadFonts = async () => {
     try {

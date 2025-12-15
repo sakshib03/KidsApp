@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Font from "expo-font";
+import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 import moment from "moment";
 import React, { useEffect, useState } from "react";
@@ -9,6 +10,7 @@ import {
   Alert,
   FlatList,
   ImageBackground,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -20,6 +22,28 @@ import {
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { useTheme } from "../utils/ThemeContext";
 import { API_BASE } from "../utils/config";
+
+// Configure notifications globally
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
+
+// Setup Android notification channel
+const setupNotificationChannel = async () => {
+  if (Platform.OS === "android") {
+    await Notifications.setNotificationChannelAsync("reminders", {
+      name: "Reminders",
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: "#FF231F7C",
+      sound: "default",
+    });
+  }
+};
 
 export default function Reminders() {
   const [reminders, setReminders] = useState([]);
@@ -34,7 +58,7 @@ export default function Reminders() {
   const [editMode, setEditMode] = useState(false);
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const { theme } = useTheme();
-  
+
   // Date and Time picker states
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [isTimePickerVisible, setTimePickerVisibility] = useState(false);
@@ -63,6 +87,215 @@ export default function Reminders() {
     }
   };
 
+  // Setup notification permissions
+  const setupNotifications = async () => {
+    try {
+      console.log("🔔 Setting up notifications...");
+
+      // Setup Android notification channel
+      if (Platform.OS === "android") {
+        await Notifications.setNotificationChannelAsync("reminders", {
+          name: "Reminders",
+          importance: Notifications.AndroidImportance.HIGH,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: "#FF231F7C",
+          sound: "default",
+        });
+        console.log("✅ Android notification channel created");
+      }
+
+      // Check current permissions
+      const { status: existingStatus } =
+        await Notifications.getPermissionsAsync();
+      console.log("📋 Current notification status:", existingStatus);
+
+      let finalStatus = existingStatus;
+
+      // Only request if not already granted
+      if (existingStatus.status !== "granted") {
+        console.log("🔐 Requesting notification permissions...");
+
+        // Request permissions with platform-specific options
+        const permissionRequest = await Notifications.requestPermissionsAsync({
+          ios: {
+            allowAlert: true,
+            allowBadge: true,
+            allowSound: true,
+          },
+          android: {
+            allowAlert: true,
+            allowSound: true,
+            allowVibrate: true,
+          },
+        });
+
+        finalStatus = permissionRequest;
+        console.log("📋 Permission request result:", finalStatus);
+      }
+
+      if (finalStatus.status === "granted") {
+        console.log("✅ Notification permissions granted!");
+        return true;
+      } else if (finalStatus.status === "undetermined") {
+        console.log("⚠️ Notification permission undetermined");
+        Alert.alert(
+          "Notifications",
+          "Please enable notifications in Settings to get reminder alerts.",
+          [
+            { text: "Later", style: "cancel" },
+            { text: "Open Settings", onPress: openAppSettings },
+          ]
+        );
+        return false;
+      } else {
+        console.log("❌ Notification permission denied");
+        Alert.alert(
+          "Notifications Disabled",
+          "Reminders will work, but you won't receive notifications. You can enable them in Settings.",
+          [{ text: "OK" }]
+        );
+        return false;
+      }
+    } catch (error) {
+      console.error("❌ Error setting up notifications:", error);
+      return false;
+    }
+  };
+
+  // Add this helper function to open app settings
+  const openAppSettings = () => {
+    // You can use Linking.openSettings() or show instructions
+    Alert.alert(
+      "Open Settings",
+      "Go to Settings > Apps > Your App > Notifications and enable them.",
+      [{ text: "OK" }]
+    );
+  };
+
+  // Schedule notification for a reminder
+  const scheduleReminderNotification = async (reminder) => {
+    try {
+      console.log(
+        "🔔 Attempting to schedule notification for:",
+        reminder.occasion
+      );
+
+      // Setup notifications first
+      const hasPermission = await setupNotifications();
+
+      if (!hasPermission) {
+        console.log("⚠️ No notification permission");
+        return null;
+      }
+
+      // Parse date and time
+      const reminderDateTime = moment(
+        `${reminder.reminder_date} ${reminder.reminder_time}`,
+        "YYYY-MM-DD HH:mm"
+      );
+
+      console.log(
+        "📅 Reminder datetime:",
+        reminderDateTime.format("YYYY-MM-DD HH:mm")
+      );
+      console.log("📅 Current time:", moment().format("YYYY-MM-DD HH:mm"));
+
+      // If reminder is in the past, don't schedule
+      if (reminderDateTime.isBefore(moment())) {
+        console.log("⏰ Reminder is in the past");
+        Alert.alert("Past Reminder", "This reminder is set for a past time.");
+        return null;
+      }
+
+      // Create notification content
+      const notificationContent = {
+        title: `⏰ Reminder: ${reminder.occasion}`,
+        body: reminder.message,
+        data: {
+          reminderId: reminder.id,
+          childId: reminder.child_id,
+          type: "reminder",
+        },
+        sound: true, // Use boolean instead of 'default'
+      };
+
+      // Add badge for iOS
+      if (Platform.OS === "ios") {
+        notificationContent.badge = 1;
+      }
+
+      // IMPORTANT: Create trigger with DATE property
+      const trigger = {
+        type: "date", // Explicitly set trigger type
+        date: reminderDateTime.toDate(), // This was missing!
+        channelId: "reminders",
+      };
+
+      console.log("⏰ Trigger object:", JSON.stringify(trigger, null, 2));
+      console.log("⏰ Trigger date:", trigger.date);
+      console.log("⏰ Trigger date timestamp:", trigger.date.getTime());
+
+      // Schedule notification
+      const notificationId = await Notifications.scheduleNotificationAsync({
+        content: notificationContent,
+        trigger,
+      });
+
+      console.log(`✅ Notification scheduled with ID: ${notificationId}`);
+
+      // Verify it was scheduled
+      const scheduledNotifications =
+        await Notifications.getAllScheduledNotificationsAsync();
+      console.log(
+        "📋 Currently scheduled notifications:",
+        scheduledNotifications.length
+      );
+
+      // Check if our notification is in the list
+      const ourNotification = scheduledNotifications.find(
+        (n) => n.identifier === notificationId.toString()
+      );
+
+      if (ourNotification) {
+        console.log("✅ Our notification found in scheduled list");
+        console.log("Scheduled for:", ourNotification.trigger.date);
+      } else {
+        console.warn("⚠️ Our notification not found in scheduled list");
+      }
+
+      // Show success message
+      // Alert.alert(
+      //   'Notification Scheduled! 🔔',
+      //   `You'll receive a notification on ${reminder.reminder_date} at ${reminder.reminder_time}`,
+      //   [{ text: 'Great!' }]
+      // );
+
+      return notificationId;
+    } catch (error) {
+      console.error("❌ Error scheduling notification:", error);
+
+      if (error.message.includes("trigger")) {
+        Alert.alert("Trigger Error", "Could not set notification trigger.");
+      } else {
+        Alert.alert("Notification Error", "Could not schedule notification.");
+      }
+
+      return null;
+    }
+  };
+
+  // Cancel a scheduled notification
+  const cancelReminderNotification = async (notificationId) => {
+    if (!notificationId) return;
+
+    try {
+      await Notifications.cancelScheduledNotificationAsync(notificationId);
+      console.log(`Notification ${notificationId} cancelled`);
+    } catch (error) {
+      console.error("Error cancelling notification:", error);
+    }
+  };
+
   // Load reminders from API
   const loadReminders = async (childIdParam = null) => {
     try {
@@ -70,16 +303,16 @@ export default function Reminders() {
 
       const currentChildId = childIdParam || childId;
       if (!currentChildId) {
-        throw new Error('No child ID available');
+        throw new Error("No child ID available");
       }
 
       console.log("Loading reminders for child ID:", currentChildId);
 
       const response = await fetch(`${API_BASE}/reminders/${currentChildId}`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'accept': 'application/json'
-        }
+          accept: "application/json",
+        },
       });
 
       if (response.ok) {
@@ -87,13 +320,32 @@ export default function Reminders() {
         console.log("API Response:", result);
 
         if (result.reminders && Array.isArray(result.reminders)) {
-          setReminders(result.reminders);
-          await AsyncStorage.setItem("kid_reminders", JSON.stringify(result.reminders));
+          const remindersWithNotifications = result.reminders.map(
+            (reminder) => ({
+              ...reminder,
+              notificationId: null, // Will be scheduled on device
+            })
+          );
+
+          setReminders(remindersWithNotifications);
+          await AsyncStorage.setItem(
+            "kid_reminders",
+            JSON.stringify(remindersWithNotifications)
+          );
+
+          // Schedule notifications for future reminders
+          await scheduleNotificationsForFutureReminders(
+            remindersWithNotifications
+          );
         } else {
           console.log("No reminders from API, checking local storage");
           const storedReminders = await AsyncStorage.getItem("kid_reminders");
           if (storedReminders) {
-            setReminders(JSON.parse(storedReminders));
+            const parsedReminders = JSON.parse(storedReminders);
+            setReminders(parsedReminders);
+
+            // Schedule notifications for future reminders
+            await scheduleNotificationsForFutureReminders(parsedReminders);
           }
         }
       } else {
@@ -106,7 +358,11 @@ export default function Reminders() {
         const storedReminders = await AsyncStorage.getItem("kid_reminders");
         if (storedReminders) {
           console.log("Using local storage reminders");
-          setReminders(JSON.parse(storedReminders));
+          const parsedReminders = JSON.parse(storedReminders);
+          setReminders(parsedReminders);
+
+          // Schedule notifications for future reminders
+          await scheduleNotificationsForFutureReminders(parsedReminders);
         }
       } catch (storageError) {
         console.error("Error loading from local storage:", storageError);
@@ -114,6 +370,76 @@ export default function Reminders() {
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const checkAndShowPermissionStatus = async () => {
+    try {
+      const { status } = await Notifications.getPermissionsAsync();
+
+      if (status.status === "granted") {
+        return { hasPermission: true, message: "Notifications enabled ✅" };
+      } else if (status.status === "denied") {
+        return { hasPermission: false, message: "Notifications disabled ❌" };
+      } else {
+        return {
+          hasPermission: false,
+          message: "Tap to enable notifications 🔔",
+        };
+      }
+    } catch (error) {
+      return { hasPermission: false, message: "Error checking permissions" };
+    }
+  };
+
+  // Schedule notifications for all future reminders
+  const scheduleNotificationsForFutureReminders = async (remindersList) => {
+    try {
+      // Clear existing notifications
+      await Notifications.cancelAllScheduledNotificationsAsync();
+
+      // Schedule notifications for future reminders
+      for (const reminder of remindersList) {
+        const reminderDateTime = moment(
+          `${reminder.reminder_date} ${reminder.reminder_time}`,
+          "YYYY-MM-DD HH:mm"
+        );
+
+        // Only schedule if reminder is in the future
+        if (reminderDateTime.isAfter(moment())) {
+          const notificationId = await scheduleReminderNotification(reminder);
+
+          if (notificationId) {
+            // Update reminder with notification ID
+            reminder.notificationId = notificationId;
+          }
+        }
+      }
+
+      console.log("✅ All notifications scheduled for future reminders");
+    } catch (error) {
+      console.error("❌ Error scheduling notifications:", error);
+    }
+  };
+
+  // Save reminders to AsyncStorage
+  const saveReminders = async (newReminders) => {
+    try {
+      await AsyncStorage.setItem("kid_reminders", JSON.stringify(newReminders));
+
+      // Also store notification mapping
+      const notificationMap = {};
+      newReminders.forEach((reminder) => {
+        if (reminder.notificationId) {
+          notificationMap[reminder.id] = reminder.notificationId;
+        }
+      });
+      await AsyncStorage.setItem(
+        "reminder_notifications",
+        JSON.stringify(notificationMap)
+      );
+    } catch (error) {
+      console.error("Error saving reminders:", error);
     }
   };
 
@@ -138,6 +464,7 @@ export default function Reminders() {
     }
   };
 
+  // Setup notification listener
   useEffect(() => {
     const init = async () => {
       await Font.loadAsync({
@@ -145,19 +472,52 @@ export default function Reminders() {
         "ComicRelief-Regular": require("../../../assets/fonts/ComicRelief-Regular.ttf"),
       });
       setFontsLoaded(true);
-      
+
       // Initialize data after fonts are loaded
       await initializeData();
+
+      // Setup notification response listener
+      const subscription =
+        Notifications.addNotificationResponseReceivedListener((response) => {
+          const { reminderId, type } =
+            response.notification.request.content.data;
+
+          if (type === "reminder") {
+            console.log("User tapped reminder notification:", reminderId);
+            // Navigate to reminders screen
+            router.push("/(tabs)/components/reminders");
+          }
+        });
+
+      // Setup notification received listener
+      const receivedSubscription =
+        Notifications.addNotificationReceivedListener((notification) => {
+          console.log("Notification received:", notification);
+        });
+
+      return () => {
+        subscription.remove();
+        receivedSubscription.remove();
+      };
     };
-    
+
     init();
   }, []);
 
   if (!fontsLoaded) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#fff" }}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#fff",
+        }}
+      >
         <ActivityIndicator size="large" color="#196c57" />
-        <Text style={{ marginTop: 10, color: "#196c57" }}>Loading fonts...</Text>
+        <Text style={{ marginTop: 10, color: "#196c57" }}>
+          Loading fonts...
+        </Text>
       </View>
     );
   }
@@ -168,14 +528,6 @@ export default function Reminders() {
       loadReminders(childId);
     } else {
       initializeData();
-    }
-  };
-
-  const saveReminders = async (newReminders) => {
-    try {
-      await AsyncStorage.setItem("kid_reminders", JSON.stringify(newReminders));
-    } catch (error) {
-      console.error("Error saving reminders:", error);
     }
   };
 
@@ -212,7 +564,7 @@ export default function Reminders() {
       return;
     }
 
-    const currentChildId = childId || await getChildIdFromStorage();
+    const currentChildId = childId || (await getChildIdFromStorage());
 
     if (!currentChildId) {
       Alert.alert("Error", "Child ID not found. Please login again.");
@@ -225,43 +577,51 @@ export default function Reminders() {
         occasion,
         reminder_date: reminderDate,
         reminder_time: reminderTime,
-        message
+        message,
       };
 
       console.log("Creating reminder:", reminderData);
 
+      // Schedule notification
+      const notificationId = await scheduleReminderNotification(reminderData);
+
+      const newReminder = {
+        id: Date.now().toString(), // Use timestamp as ID
+        ...reminderData,
+        created_at: new Date().toISOString(),
+        notificationId: notificationId || null,
+      };
+
+      // Call API to save to backend
       const response = await fetch(`${API_BASE}/set-reminder`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'accept': 'application/json'
+          "Content-Type": "application/json",
+          accept: "application/json",
         },
-        body: JSON.stringify(reminderData)
+        body: JSON.stringify({
+          ...reminderData,
+          notification_id: notificationId,
+        }),
       });
 
+      // Update local state regardless of API response
+      const updatedReminders = [...reminders, newReminder];
+      setReminders(updatedReminders);
+      await saveReminders(updatedReminders);
+
+      resetForm();
+
       if (response.ok) {
-        const result = await response.json();
-        console.log("Create reminder result:", result);
-
-        const newReminder = {
-          id: result.reminder_id || Date.now(),
-          ...reminderData,
-          created_at: new Date().toISOString()
-        };
-
-        const updatedReminders = [...reminders, newReminder];
-        setReminders(updatedReminders);
-        await saveReminders(updatedReminders);
-
-        resetForm();
-        Alert.alert("Yay!", "Reminder created successfully!");
+        Alert.alert("🎉 Yay!", "Reminder created with notification! 🔔");
       } else {
-        const errorText = await response.text();
-        console.error("Create reminder failed:", errorText);
-        throw new Error('Failed to create reminder');
+        Alert.alert(
+          "✅ Reminder created!",
+          "Saved locally with notification! 🔔"
+        );
       }
     } catch (error) {
-      console.error('Error creating reminder:', error);
+      console.error("Error creating reminder:", error);
       Alert.alert("Oh no!", "Couldn't create reminder. Please try again!");
     }
   };
@@ -274,7 +634,7 @@ export default function Reminders() {
     }
 
     try {
-      const currentChildId = childId || await getChildIdFromStorage();
+      const currentChildId = childId || (await getChildIdFromStorage());
 
       if (!currentChildId) {
         Alert.alert("Error", "Child ID not found.");
@@ -286,42 +646,69 @@ export default function Reminders() {
         occasion,
         reminder_date: reminderDate,
         reminder_time: reminderTime,
-        message
+        message,
       };
 
       console.log("Updating reminder:", editingReminder.id, reminderData);
 
-      const response = await fetch(`${API_BASE}/reminder/${editingReminder.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'accept': 'application/json'
-        },
-        body: JSON.stringify(reminderData)
-      });
+      // Cancel old notification if exists
+      if (editingReminder.notificationId) {
+        await cancelReminderNotification(editingReminder.notificationId);
+      }
 
-      if (response.ok) {
-        const result = await response.json();
-        console.log("Update reminder result:", result);
+      // Schedule new notification
+      const newNotificationId = await scheduleReminderNotification(
+        reminderData
+      );
 
-        const updatedReminders = reminders.map(reminder =>
-          reminder.id === editingReminder.id
-            ? { ...reminder, ...reminderData }
-            : reminder
+      const updatedReminders = reminders.map((reminder) =>
+        reminder.id === editingReminder.id
+          ? {
+              ...reminder,
+              ...reminderData,
+              notificationId: newNotificationId || null,
+              updated_at: new Date().toISOString(),
+            }
+          : reminder
+      );
+
+      setReminders(updatedReminders);
+      await saveReminders(updatedReminders);
+
+      // Try to update on backend
+      try {
+        const response = await fetch(
+          `${API_BASE}/reminder/${editingReminder.id}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              accept: "application/json",
+            },
+            body: JSON.stringify({
+              ...reminderData,
+              notification_id: newNotificationId,
+            }),
+          }
         );
 
-        setReminders(updatedReminders);
-        await saveReminders(updatedReminders);
-
-        resetForm();
-        Alert.alert("Success!", "Reminder updated successfully!");
-      } else {
-        const errorText = await response.text();
-        console.error("Update reminder failed:", errorText);
-        throw new Error('Failed to update reminder');
+        if (response.ok) {
+          Alert.alert(
+            "✅ Success!",
+            "Reminder updated with new notification! 🔔"
+          );
+        }
+      } catch (apiError) {
+        console.error("API update error:", apiError);
+        Alert.alert(
+          "✅ Updated locally!",
+          "Reminder updated with notification! 🔔"
+        );
       }
+
+      resetForm();
     } catch (error) {
-      console.error('Error updating reminder:', error);
+      console.error("Error updating reminder:", error);
       Alert.alert("Oh no!", "Couldn't update reminder. Please try again!");
     }
   };
@@ -330,7 +717,7 @@ export default function Reminders() {
   const deleteReminder = async (id) => {
     Alert.alert(
       "Delete Reminder",
-      "Are you sure you want to delete this reminder?",
+      "Are you sure you want to delete this reminder and its notification?",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -338,50 +725,56 @@ export default function Reminders() {
           style: "destructive",
           onPress: async () => {
             try {
-              const currentChildId = childId || await getChildIdFromStorage();
+              const currentChildId = childId || (await getChildIdFromStorage());
 
               if (!currentChildId) {
                 Alert.alert("Error", "Child ID not found.");
                 return;
               }
 
+              // Find the reminder to get notification ID
+              const reminderToDelete = reminders.find((r) => r.id === id);
+
+              // Cancel notification if exists
+              if (reminderToDelete?.notificationId) {
+                await cancelReminderNotification(
+                  reminderToDelete.notificationId
+                );
+              }
+
               console.log("Deleting reminder:", id);
 
-              const response = await fetch(
-                `${API_BASE}/reminder/${id}?child_id=${currentChildId}`,
-                {
-                  method: 'DELETE',
-                  headers: {
-                    'accept': 'application/json'
+              // Try to delete from API
+              try {
+                const response = await fetch(
+                  `${API_BASE}/reminder/${id}?child_id=${currentChildId}`,
+                  {
+                    method: "DELETE",
+                    headers: {
+                      accept: "application/json",
+                    },
                   }
+                );
+
+                if (!response.ok) {
+                  throw new Error("Failed to delete from API");
                 }
-              );
-
-              if (response.ok) {
-                const result = await response.json();
-                console.log("Delete reminder result:", result);
-
-                const updatedReminders = reminders.filter(reminder => reminder.id !== id);
-                setReminders(updatedReminders);
-                await saveReminders(updatedReminders);
-
-                Alert.alert("Success!", "Reminder deleted successfully!");
-              } else {
-                const errorText = await response.text();
-                console.error("Delete reminder failed:", errorText);
-                throw new Error('Failed to delete reminder from API');
+              } catch (apiError) {
+                console.error("API delete error:", apiError);
               }
-            } catch (error) {
-              console.error("Error deleting reminder:", error);
 
-              const updatedReminders = reminders.filter(reminder => reminder.id !== id);
+              // Always delete locally
+              const updatedReminders = reminders.filter(
+                (reminder) => reminder.id !== id
+              );
               setReminders(updatedReminders);
               await saveReminders(updatedReminders);
-
-              Alert.alert("Deleted locally", "Reminder was deleted from your device.");
+            } catch (error) {
+              console.error("Error deleting reminder:", error);
+              Alert.alert("Error", "Couldn't delete reminder.");
             }
-          }
-        }
+          },
+        },
       ]
     );
   };
@@ -437,15 +830,15 @@ export default function Reminders() {
       <View style={styles.reminderDateTime}>
         <Text style={styles.reminderDate}>{item.reminder_date}</Text>
         <Text style={styles.reminderTime}>{item.reminder_time}</Text>
+        {item.notificationId && (
+          <Text style={styles.notificationStatus}>🔔 Scheduled</Text>
+        )}
       </View>
     </View>
   );
 
   return (
-    <ImageBackground
-      style={styles.background}
-      source={theme.background}
-    >
+    <ImageBackground style={styles.background} source={theme.background}>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -455,6 +848,15 @@ export default function Reminders() {
           >
             <Feather name="arrow-left" size={20} color={"#fff"} />
             <Text style={styles.backButtonText}>Back to Home</Text>
+          </TouchableOpacity>
+
+          {/* Notification Info */}
+          <TouchableOpacity
+            style={styles.notificationInfoButton}
+            onPress={setupNotifications}
+          >
+            <Feather name="bell" size={16} color={"#fff"} />
+            <Text style={styles.notificationInfoText}>Notifications</Text>
           </TouchableOpacity>
         </View>
 
@@ -476,6 +878,10 @@ export default function Reminders() {
               {/* Dynamic Title based on mode */}
               <Text style={styles.sectionTitle}>
                 {editMode ? "Edit Reminder" : "Create New Reminder"}
+              </Text>
+
+              <Text style={styles.notificationNote}>
+                🔔 Notifications will be sent at the scheduled time
               </Text>
 
               {/* Input Fields */}
@@ -501,14 +907,16 @@ export default function Reminders() {
                       <Feather name="calendar" size={16} color="#196c57" />
                       <Text style={styles.inputLabelText}>Date</Text>
                     </View>
-                    <TouchableOpacity 
-                      style={styles.dateTimeInput} 
+                    <TouchableOpacity
+                      style={styles.dateTimeInput}
                       onPress={showDatePicker}
                     >
-                      <Text style={[
-                        styles.dateTimeInputText,
-                        !reminderDate && { color: "#999" }
-                      ]}>
+                      <Text
+                        style={[
+                          styles.dateTimeInputText,
+                          !reminderDate && { color: "#999" },
+                        ]}
+                      >
                         {reminderDate ? reminderDate : "Select Date"}
                       </Text>
                       <Feather name="calendar" size={16} color="#196c57" />
@@ -521,14 +929,16 @@ export default function Reminders() {
                       <Feather name="clock" size={16} color="#196c57" />
                       <Text style={styles.inputLabelText}>Time</Text>
                     </View>
-                    <TouchableOpacity 
-                      style={styles.dateTimeInput} 
+                    <TouchableOpacity
+                      style={styles.dateTimeInput}
                       onPress={showTimePicker}
                     >
-                      <Text style={[
-                        styles.dateTimeInputText,
-                        !reminderTime && { color: "#999" }
-                      ]}>
+                      <Text
+                        style={[
+                          styles.dateTimeInputText,
+                          !reminderTime && { color: "#999" },
+                        ]}
+                      >
                         {reminderTime ? reminderTime : "Select Time"}
                       </Text>
                       <Feather name="clock" size={16} color="#196c57" />
@@ -579,7 +989,9 @@ export default function Reminders() {
                       onPress={handleUpdateReminder}
                     >
                       <Feather name="save" size={20} color="#fff" />
-                      <Text style={styles.actionButtonText}>Update</Text>
+                      <Text style={styles.actionButtonText}>
+                        Update & Notify
+                      </Text>
                     </TouchableOpacity>
                   </>
                 ) : (
@@ -588,8 +1000,9 @@ export default function Reminders() {
                     onPress={handleCreateReminder}
                     disabled={!childId}
                   >
+                    <Feather name="bell" size={20} color="#fff" />
                     <Text style={styles.createButtonText}>
-                      {childId ? "Create Reminder" : "Loading..."}
+                      {childId ? "Create Reminder & Notify" : "Loading..."}
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -609,6 +1022,10 @@ export default function Reminders() {
               <View style={styles.remindersContainer}>
                 <View style={styles.remindersHeader}>
                   <Text style={styles.sectionTitle}>Your Reminders 📝</Text>
+                  <Text style={styles.remindersCount}>
+                    {reminders.length} reminder
+                    {reminders.length !== 1 ? "s" : ""}
+                  </Text>
                 </View>
                 <FlatList
                   data={reminders}
@@ -669,6 +1086,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
+  notificationInfoButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#4CAF50",
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    gap: 5,
+  },
+  notificationInfoText: {
+    color: "#fff",
+    fontFamily: "ComicRelief-Regular",
+    fontSize: 12,
+  },
   scrollContainer: {
     flex: 1,
   },
@@ -698,7 +1129,15 @@ const styles = StyleSheet.create({
     color: "#196c57",
     fontFamily: "ComicRelief-Regular",
     textAlign: "center",
-    marginBottom: 20,
+    marginBottom: 10,
+  },
+  notificationNote: {
+    fontSize: 12,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 15,
+    fontFamily: "ComicRelief-Regular",
+    fontStyle: "italic",
   },
   inputsContainer: {
     gap: 16,
@@ -776,7 +1215,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 10,
     justifyContent: "center",
-    alignItems:"center",
+    alignItems: "center",
     marginTop: 20,
   },
   actionButton: {
@@ -803,7 +1242,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFA000",
   },
   actionButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
     color: "#fff",
     fontFamily: "ComicRelief-Regular",
@@ -853,6 +1292,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
   },
+  remindersCount: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 5,
+    fontFamily: "ComicRelief-Regular",
+  },
   remindersList: {
     gap: 12,
   },
@@ -882,20 +1327,21 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#196c57",
     fontFamily: "ComicRelief-Regular",
+    flex: 1,
   },
   reminderActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   editButton: {
     padding: 6,
     borderRadius: 6,
-    backgroundColor: '#E8F5E8',
+    backgroundColor: "#E8F5E8",
   },
   deleteButton: {
     padding: 6,
     borderRadius: 6,
-    backgroundColor: '#FFEBEE',
+    backgroundColor: "#FFEBEE",
   },
   reminderMessage: {
     fontSize: 14,
@@ -906,6 +1352,7 @@ const styles = StyleSheet.create({
   reminderDateTime: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
   },
   reminderDate: {
     fontSize: 12,
@@ -915,6 +1362,11 @@ const styles = StyleSheet.create({
   reminderTime: {
     fontSize: 12,
     color: "#888",
+    fontFamily: "ComicRelief-Regular",
+  },
+  notificationStatus: {
+    fontSize: 10,
+    color: "#4CAF50",
     fontFamily: "ComicRelief-Regular",
   },
   noRemindersContainer: {

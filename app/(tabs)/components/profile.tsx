@@ -474,6 +474,12 @@ export default function Profile() {
       });
 
       if (!response.ok) {
+        const errorData=await response.json();
+        if(response.status === 404 && errorData.detail){
+          Alert.alert("Oops!", errorData.detail);
+          setIsSwitching(false);
+          return;
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
@@ -556,15 +562,13 @@ export default function Profile() {
         </Text>
       </View>
       <View style={styles.creditHistoryRight}>
-        {item.credits_earned > 0 && (
-          <Text style={styles.creditEarned}>+{item.credits_earned} ⭐</Text>
-        )}
-        {item.credits_earned === 0 && (
-          <Text style={styles.creditEarned}>{item.credits_earned} ⭐</Text>
-        )}
-        {item.credits_lost > 0 && (
-          <Text style={styles.creditLost}>-{item.credits_lost} ⭐</Text>
-        )}
+        {item.credits_earned > 0 ? (
+        <Text style={styles.creditEarned}>+{item.credits_earned} ⭐</Text>
+      ) : item.credits_lost > 0 ? (
+        <Text style={styles.creditLost}>-{item.credits_lost} ⭐</Text>
+      ) : (
+        <Text style={styles.creditEarned}>0 ⭐</Text>
+      )}
       </View>
     </View>
   );
@@ -763,6 +767,12 @@ export default function Profile() {
                       {userData.credits?.story?.toString() || "0"}
                     </Text>
                     <Text style={styles.statLabel}>Story 🏠</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>
+                      {userData.credits?.question?.toString() || "0"}
+                    </Text>
+                    <Text style={styles.statLabel}>Question 📚</Text>
                   </View>
                   {/* <View style={styles.statItem}>
                   <Text style={styles.statValue}>

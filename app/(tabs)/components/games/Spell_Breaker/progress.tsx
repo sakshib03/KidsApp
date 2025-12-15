@@ -157,10 +157,10 @@ export default function Progress() {
             <TouchableOpacity
               style={styles.exitButton}
               onPress={() =>
-                router.push("/(tabs)/components/games/gamesDashboard")
+                router.push("/(tabs)/components/games/Spell_Breaker/welcomePage")
               }
             >
-              <Text style={styles.buttonText}>Exit</Text>
+              <Text style={styles.buttonText}>BACK</Text>
             </TouchableOpacity>
           </View>
         </View>

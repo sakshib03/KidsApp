@@ -32,20 +32,29 @@
       "favicon": "./assets/images/app-logo.png"
     },
     "plugins": [
-      "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/app-logo.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
-          "dark": {
-            "backgroundColor": "#000000"
-          }
-        }
-      ]
-    ],
+  "expo-router",
+  [
+    "expo-splash-screen",
+    {
+      "image": "./assets/images/app-logo.png",
+      "imageWidth": 200,
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff",
+      "dark": {
+        "backgroundColor": "#000000"
+      }
+    }
+  ],
+  [
+    "expo-notifications",
+    {
+      "icon":"./assets/images/app-logo.png",
+      "color": "#196c57",
+      "sounds": ["./assets/audio/new-notification.mp3"]
+    }
+  ]
+],
+
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true

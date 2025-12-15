@@ -125,7 +125,7 @@ export default function MindMysteryFAQ() {
       <View style={styles.mainContainer}>
         <ScrollView style={{ width: "100%" }}>
 
-          <Text style={styles.headerText}>Brainy Fruits FAQ</Text>
+          <Text style={styles.headerText}>Mind Mystery FAQ</Text>
 
           {mindMysteryFAQ.map((item, index) => (
             <View key={index} style={styles.questionBox}>

@@ -12,10 +12,11 @@ import * as Font from "expo-font";
 import { router } from "expo-router";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { soundManager } from "@/app/(tabs)/utils/soundManager";
+import { globalSound } from "@/app/(tabs)/utils/globalSound";
 
 export default function Settings() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
-  const [isSoundPlaying, setIsSoundPlaying] = useState(true);
+  const {isSoundPlaying, toggleSound} =globalSound();
   const [openPlayInfo, setOpenPlayInfo] = useState(false);
   const [openFeature, setOpenFeature] = useState(false);
   const [openAccessibility, setOpenAccessibility] = useState(false);
@@ -51,14 +52,6 @@ Brainy Fruits is a fun learning game for kids!
 • Kid-safe and easy navigation ♿
 `;
 
-  const toggleSound = async () => {
-    try {
-      await soundManager.toggle();
-      setIsSoundPlaying(soundManager.getIsPlaying());
-    } catch (error) {
-      console.error("Error toggling sound:", error);
-    }
-  };
 
   const loadFonts = async () => {
     try {
@@ -187,11 +180,7 @@ Brainy Fruits is a fun learning game for kids!
                 router.push("/(tabs)/components/games/gamesDashboard")
               }
             >
-              <Image
-                source={require("@/assets/images/games/back-arrow.png")}
-                style={styles.backIcon}
-              />
-
+             
               <Text style={styles.buttonText}>Exit</Text>
             </TouchableOpacity>
           </View>
@@ -316,7 +305,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#406027ff",
     borderRadius: 8,
     paddingVertical: 8,
-    paddingHorizontal: 15,
+    paddingHorizontal: 20,
     marginBottom: 10,
     marginTop: 20,
   },
@@ -340,10 +329,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontFamily: "ComicRelief-Regular",
   },
-  backIcon: {
-    width: 30,
-    height: 30,
-  },
+  
 
   modalOverlay: {
     position: "absolute",

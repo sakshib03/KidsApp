@@ -13,10 +13,11 @@ import { router } from "expo-router";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { soundManager } from "@/app/(tabs)/utils/soundManager";
 import Question from "../../question";
+import { globalSound } from "@/app/(tabs)/utils/globalSound";
 
 export default function Settings() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
-  const [isSoundPlaying, setIsSoundPlaying] = useState(true);
+  const {isSoundPlaying, toggleSound} = globalSound();
   const [openPlayInfo, setOpenPlayInfo] = useState(false);
   const [openFeature, setOpenFeature] = useState(false);
   const [openAccessibility, setOpenAccessibility] = useState(false);
@@ -111,15 +112,6 @@ Mind Mystery is a fun shadow-guessing and riddle game for kids!
         "Because it makes you smarter with numbers while having fun! 🧠✨",
     },
   ];
-
-  const toggleSound = async () => {
-    try {
-      await soundManager.toggle();
-      setIsSoundPlaying(soundManager.getIsPlaying());
-    } catch (error) {
-      console.error("Error toggling sound:", error);
-    }
-  };
 
   const loadFonts = async () => {
     try {
@@ -264,12 +256,12 @@ Mind Mystery is a fun shadow-guessing and riddle game for kids!
             <TouchableOpacity
               style={styles.backButton}
               onPress={() =>
-                router.push("/(tabs)/components/games/Mind_Mystery/welcomePage")
+                router.push("/(tabs)/components/games/gamesDashboard")
               }
             >
               <Feather name="arrow-left" size={26} color={"#fff"} />
 
-              <Text style={styles.buttonText}>BACK</Text>
+              <Text style={styles.buttonText}>Exit</Text>
             </TouchableOpacity>
           </View>
         </View>

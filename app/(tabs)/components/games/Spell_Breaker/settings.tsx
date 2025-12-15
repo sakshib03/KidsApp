@@ -12,10 +12,11 @@ import * as Font from "expo-font";
 import { router } from "expo-router";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { soundManager } from "@/app/(tabs)/utils/soundManager";
+import { globalSound } from "@/app/(tabs)/utils/globalSound";
 
 export default function Settings() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
-  const [isSoundPlaying, setIsSoundPlaying] = useState(true);
+  const {isSoundPlaying, toggleSound} = globalSound();
   const [openPlayInfo, setOpenPlayInfo] = useState(false);
   const [openFeature, setOpenFeature] = useState(false);
   const [openAccessibility, setOpenAccessibility] = useState(false);
@@ -50,15 +51,6 @@ Spell Breaker is a fun learning game for kids!
 • Slow-learning friendly design
 • Kid-safe and easy navigation ♿
 `;
-
-  const toggleSound = async () => {
-    try {
-      await soundManager.toggle();
-      setIsSoundPlaying(soundManager.getIsPlaying());
-    } catch (error) {
-      console.error("Error toggling sound:", error);
-    }
-  };
 
   const loadFonts = async () => {
     try {
@@ -375,7 +367,7 @@ const styles = StyleSheet.create({
   },
   flowerBottom: {
     width: "100%",
-    height: 200,
+    height: 270,
   },
   modalOverlay: {
     position: "absolute",

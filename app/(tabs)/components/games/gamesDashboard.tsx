@@ -12,11 +12,11 @@ import { router } from "expo-router";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
 import { soundManager } from "../../utils/soundManager";
+import { globalSound } from "../../utils/globalSound";
 
 export default function GamesDashboard() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
-  const [backgroundSound, setBackgroundSound] = useState(null);
-  const [isSoundPlaying, setIsSoundPlaying] = useState(true);
+  const {isSoundPlaying, toggleSound} = globalSound();
 
   useEffect(() => {
     loadFonts();
@@ -27,18 +27,8 @@ export default function GamesDashboard() {
   const initializeSound = async () => {
     try {
       await soundManager.loadAndPlay();
-      setIsSoundPlaying(soundManager.getIsPlaying());
     } catch (error) {
       console.error("Error initializing sound:", error);
-    }
-  };
-
-  const toggleSound = async () => {
-    try {
-      await soundManager.toggle();
-      setIsSoundPlaying(soundManager.getIsPlaying());
-    } catch (error) {
-      console.error("Error toggling sound:", error);
     }
   };
 
