@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   modalTitle: {
-    marginTop: 10,
+    marginTop: 5,
     fontSize: 22,
     fontFamily: "ComicRelief-Bold",
     color: "#223E52",
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
     fontFamily: "ComicRelief-Regular",
     color: "#3a3a3a",
     lineHeight: 24,
-    marginBottom: 20,
+    marginBottom: 15,
   },
 
   closeBtn: {

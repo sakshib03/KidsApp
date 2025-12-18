@@ -129,6 +129,7 @@ export default function LoginScreen() {
         router.replace("/(tabs)/components/chatbot");
       } else {
         Alert.alert("Error", data.detail || "Login failed. Please try again.");
+        console.log(data.detail);
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -162,11 +163,11 @@ export default function LoginScreen() {
 
       if (response.ok) {
         await storeAuthData("parent", data);
-        Alert.alert("Success", "Login successful!");
         router.dismissAll();
         router.replace("/(tabs)/components/dashboard");
       } else {
         Alert.alert("Error", data.detail || "Login failed. Please try again.");
+        console.log(data.detail);
       }
     } catch (error) {
       console.error("Login error:", error);

@@ -1202,7 +1202,7 @@ export default function Profile() {
                         data={creditHistory}
                         keyExtractor={(item) => item.id.toString()}
                         renderItem={CreditHistoryItem}
-                        showsVerticalScrollIndicator={false}
+                        showsVerticalScrollIndicator={true}
                         style={styles.creditHistoryFlatList}
                       />
                     </View>

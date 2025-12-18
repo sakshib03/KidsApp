@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontFamily: "ComicRelief-Bold",
     color: "#451760",
-    marginBottom: 10,
+    marginBottom: 5,
     textAlign: "center",
   },
 
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
     fontFamily: "ComicRelief-Regular",
     color: "#3a3a3a",
     lineHeight: 24,
-    marginBottom: 20,
+    marginBottom: 15,
   },
 
   closeBtn: {

@@ -372,7 +372,7 @@ export default function SignUpScreen() {
       if (response.ok) {
         setStep("otp");
         setCountdown(300);
-        Alert.alert("Success", "OTP sent to your parent's email address");
+        Alert.alert("Success", data.message || "OTP sent to your parent's email address");
       } else {
         if (
           response.status === 409 ||
@@ -382,11 +382,17 @@ export default function SignUpScreen() {
           setIsAlreadyRegistered(true);
           Alert.alert(
             "Registration Error",
-            data.message ||
+            data.detail ||
+              data.message ||
               "This username or email is already registered. Please try logging in."
           );
+          console.log(data.detail);
         } else {
-          Alert.alert("Error", data.message || "Failed to send OTP");
+          Alert.alert(
+            "Error",
+            data.detail || data.message || "Failed to send OTP"
+          );
+          
         }
       }
     } catch (error) {
@@ -412,7 +418,11 @@ export default function SignUpScreen() {
         setCountdown(300);
         Alert.alert("Success", "OTP resent successfully");
       } else {
-        Alert.alert("Error", data.message || "Failed to resend OTP");
+        Alert.alert(
+          "Error",
+          data.detail || data.message || "Failed to resend OTP"
+        );
+        console.log(data.detail);
       }
     } catch (error) {
       Alert.alert("Error", "Network error. Please try again.");
@@ -450,12 +460,14 @@ export default function SignUpScreen() {
           setIsAlreadyRegistered(true);
           Alert.alert(
             "Registration Error",
-            data.message ||
+            data.detail ||
+              data.message ||
               "This account is already registered. Please try logging in."
           );
           router.push("/(tabs)/auth/login");
         } else {
-          Alert.alert("Error", data.message || "Invalid OTP");
+          Alert.alert("Error", data.detail || data.message || "Invalid OTP");
+          console.log(data.detail);
         }
       }
     } catch (error) {
@@ -572,6 +584,18 @@ export default function SignUpScreen() {
                 borderRadius: 10,
               }}
             >
+
+              <TouchableOpacity
+                style={{
+                  alignItems: "flex-start",
+                  justifyContent: "flex-start",
+                  paddingLeft: 250,
+                  marginBottom: 5,
+                }}
+                onPress={() => setStep("parent")}
+              >
+                <Feather name="arrow-right" size={24} color={"#0F6424"} />
+              </TouchableOpacity>
               <Text
                 style={{
                   fontSize: 16,
@@ -801,6 +825,18 @@ export default function SignUpScreen() {
                 borderRadius: 10,
               }}
             >
+              <TouchableOpacity
+                style={{
+                  alignItems: "flex-start",
+                  justifyContent: "flex-start",
+                  paddingRight: 250,
+                  marginBottom: 5,
+                }}
+                onPress={() => setStep("child")}
+              >
+                <Feather name="arrow-left" size={24} color={"#0F6424"} />
+              </TouchableOpacity>
+
               <Text
                 style={{
                   fontSize: 16,

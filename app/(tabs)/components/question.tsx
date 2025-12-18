@@ -27,31 +27,36 @@ export default function Question() {
   const [showResult, setShowResult] = useState(false);
   const [result, setResult] = useState(null);
   const [fontsLoaded, setFontsLoaded] = useState(false);
-  const [sound, setSound]=useState(null);
-  const {theme}=useTheme();
+  const [sound, setSound] = useState(null);
+  const { theme } = useTheme();
+
+  // Helper function to check if user has already answered today
+  const hasAlreadyAnswered = () => {
+    return questionData?.note?.includes("already answered today");
+  };
 
   useEffect(() => {
-  return () => {
-    if (sound) {
-      sound.unloadAsync();
-    }
-  };
-}, [sound]);
-
-  async function playSound(isCorrect){
-    try{
+    return () => {
       if (sound) {
-      await sound.unloadAsync();
-    }
-      const soundFile = isCorrect 
-      ? require("../../../assets/audio/mixkit-correct.wav") 
-      : require("../../../assets/audio/mixkit-wrong.wav");
+        sound.unloadAsync();
+      }
+    };
+  }, [sound]);
+
+  async function playSound(isCorrect) {
+    try {
+      if (sound) {
+        await sound.unloadAsync();
+      }
+      const soundFile = isCorrect
+        ? require("../../../assets/audio/mixkit-correct.wav")
+        : require("../../../assets/audio/mixkit-wrong.wav");
 
       const { sound: newSound } = await Audio.Sound.createAsync(soundFile);
-    setSound(newSound);
-    await newSound.playAsync();
-    }catch(error){
-      console.error("Error playing sound:",error);
+      setSound(newSound);
+      await newSound.playAsync();
+    } catch (error) {
+      console.error("Error playing sound:", error);
     }
   }
 
@@ -62,7 +67,7 @@ export default function Question() {
       }
     };
   }, [sound]);
-  
+
   useEffect(() => {
     Font.loadAsync({
       "ComicRelief-Bold": require("../../../assets/fonts/ComicRelief-Bold.ttf"),
@@ -73,7 +78,6 @@ export default function Question() {
   useEffect(() => {
     fetchChildId();
   }, []);
-
 
   const fetchChildId = async () => {
     try {
@@ -111,8 +115,14 @@ export default function Question() {
       }
 
       const data = await response.json();
-      console.log("Full API response:", data); 
+      console.log("Full API response:", data);
       setQuestionData(data);
+      
+      // If already answered, don't show any selected answer
+      if (data.note?.includes("already answered today")) {
+        setSelectedAnswer(null);
+        setShowResult(false);
+      }
     } catch (error) {
       console.error("Error fetching question:", error);
       Alert.alert("Error", "Failed to load question. Please try again.");
@@ -123,7 +133,7 @@ export default function Question() {
   };
 
   const submitAnswer = async (answer) => {
-    if (!childId || !questionData) return;
+    if (!childId || !questionData || hasAlreadyAnswered()) return;
 
     try {
       setSubmitting(true);
@@ -145,12 +155,14 @@ export default function Question() {
       }
 
       const resultData = await response.json();
-      console.log("Answer submission result:", resultData); // Debug log
+      console.log("Answer submission result:", resultData);
 
       setResult(resultData);
       setShowResult(true);
 
-      await playSound(resultData.is_correct);
+      if (resultData.is_correct === true || resultData.is_correct === false) {
+        await playSound(resultData.is_correct);
+      }
     } catch (error) {
       console.error("Error submitting answer:", error);
       Alert.alert("Error", "Failed to submit answer. Please try again.");
@@ -160,10 +172,18 @@ export default function Question() {
   };
 
   const getOptionStyle = (optionKey) => {
+    const correctAnswer = questionData?.correct_answer;
+    
+    // If user has already answered today, only highlight correct answer
+    if (hasAlreadyAnswered()) {
+      if (optionKey === correctAnswer) {
+        return styles.correctOption;
+      }
+      return styles.optionButtonDisabled;
+    }
+    
+    // Original logic for normal flow
     if (!selectedAnswer) return styles.optionButton;
-
-    const isCorrect = result?.is_correct;
-    const correctAnswer = questionData?.question?.correct_answer;
 
     if (optionKey === correctAnswer) {
       return styles.correctOption;
@@ -173,9 +193,18 @@ export default function Question() {
     return styles.optionButton;
   };
 
+  // Helper function to get option text style
+  const getOptionTextStyle = (optionKey) => {
+    const correctAnswer = questionData?.correct_answer;
+    
+    if (hasAlreadyAnswered() && optionKey === correctAnswer) {
+      return styles.correctOptionText;
+    }
+    return styles.optionText;
+  };
+
   return (
     <ImageBackground
-      // source={require("@/assets/images/login_image.png")}
       style={styles.background}
       source={theme.background}
     >
@@ -200,6 +229,16 @@ export default function Question() {
             </View>
           ) : questionData && questionData.question ? (
             <View style={styles.questionWrapper}>
+              {questionData?.note && (
+                <View style={[
+                  styles.noteContainer,
+                  hasAlreadyAnswered() ? styles.noteContainerAnswered : styles.noteContainerNormal
+                ]}>
+                  <Text style={styles.noteText}>
+                    {questionData.note}
+                  </Text>
+                </View>
+              )}
               <ScrollView
                 style={styles.questionContainer}
                 showsVerticalScrollIndicator={false}
@@ -207,23 +246,22 @@ export default function Question() {
               >
                 <Text style={styles.questionTitle}>Question:</Text>
                 <Text style={styles.questionText}>
-                  {questionData.question.question ||
-                    "No question text available"}
+                  {questionData.question || "No question text available"}
                 </Text>
 
                 <View style={styles.optionsContainer}>
-                  {Object.entries(questionData.question.options || {}).map(
+                  {Object.entries(questionData.options || {}).map(
                     ([key, value]) => (
                       <TouchableOpacity
                         key={key}
                         style={getOptionStyle(key)}
                         onPress={() =>
-                          !submitting && !selectedAnswer && submitAnswer(key)
+                          !submitting && !selectedAnswer && !hasAlreadyAnswered() && submitAnswer(key)
                         }
-                        disabled={submitting || !!selectedAnswer}
+                        disabled={submitting || !!selectedAnswer || hasAlreadyAnswered()}
                       >
                         <Text
-                          style={styles.optionText}
+                          style={getOptionTextStyle(key)}
                         >{`${key}: ${value}`}</Text>
                       </TouchableOpacity>
                     )
@@ -231,13 +269,11 @@ export default function Question() {
                 </View>
               </ScrollView>
 
-              {showResult && result && (
+              {/* Only show result if NOT already answered today */}
+              {showResult && result && !hasAlreadyAnswered() && (
                 <View style={styles.resultContainer}>
                   <View style={styles.resultTextContainer}>
-                    <Text style={styles.resultTitle}>
-                      {result.is_correct ? "" : "Try Again! 💪"}
-                    </Text>
-                    {result.is_correct && (
+                    {result.is_correct === true ? (
                       <>
                         <Image
                           source={require("../../../assets/gifs/congratulations.gif")}
@@ -248,7 +284,15 @@ export default function Question() {
                           Correct answer.
                         </Text>
                       </>
+                    ) : result.is_correct === false ? (
+                      <Text style={styles.resultTitle}>Try Again! 💪</Text>
+                    ) : (
+                      <Text style={styles.errorText}>
+                        {result.explanation ||
+                          "Come back tomorrow for a new question!"}
+                      </Text>
                     )}
+                    
                     <Text style={styles.creditsText}>
                       Credits awarded: {result.credits_awarded}
                     </Text>
@@ -259,7 +303,9 @@ export default function Question() {
           ) : (
             <View style={styles.errorContainer}>
               <Feather name="alert-circle" size={40} color="#f76868ff" />
-              <Text style={styles.errorText}>{questionData?.message || "Unable to load question."}</Text>  
+              <Text style={styles.errorText}>
+                {questionData?.message || "Unable to load question."}
+              </Text>
             </View>
           )}
         </View>
@@ -309,7 +355,7 @@ const styles = StyleSheet.create({
   questionContainer: {
     flex: 1,
     backgroundColor: "#f8f9fa",
-    maxHeight: 530,
+    maxHeight: 500,
     borderRadius: 20,
     padding: 25,
   },
@@ -355,6 +401,15 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 3,
   },
+  optionButtonDisabled: {
+    backgroundColor: "#f5f5f5",
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: "#e9ecef",
+    opacity: 0.7,
+  },
   correctOption: {
     backgroundColor: "#d4edda",
     padding: 15,
@@ -362,6 +417,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 2,
     borderColor: "#28a745",
+  },
+  correctOptionText: {
+    fontSize: 16,
+    color: "#155724",
+    fontFamily: "ComicRelief-Regular",
+    fontWeight: "600",
   },
   incorrectOption: {
     backgroundColor: "#f8d7da",
@@ -379,31 +440,31 @@ const styles = StyleSheet.create({
   resultContainer: {
     padding: 15,
     borderRadius: 10,
-    alignSelf: 'center',
-    width: '90%',
+    alignSelf: "center",
+    width: "90%",
   },
   resultTextContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   resultTitle: {
     fontSize: 22,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontWeight: "bold",
+    textAlign: "center",
     marginBottom: 10,
     fontFamily: "ComicRelief-Regular",
   },
   resultExplanation: {
     fontSize: 18,
-    color:"#39a247ff",
-    textAlign: 'center',
-    fontWeight:600,
+    color: "#39a247ff",
+    textAlign: "center",
+    fontWeight: 600,
     fontFamily: "ComicRelief-Regular",
   },
   creditsText: {
     fontSize: 14,
     color: "#383838ff",
-    textAlign: 'center',
+    textAlign: "center",
     fontFamily: "ComicRelief-Regular",
   },
   loadingContainer: {
@@ -412,7 +473,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 15,
     padding: 40,
-    backgroundColor:"#fff",
+    backgroundColor: "#fff",
   },
   loadingText: {
     fontSize: 16,
@@ -432,22 +493,28 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: "#f76868ff",
+    color: "#f33d3dff",
     marginTop: 15,
     textAlign: "center",
     fontFamily: "ComicRelief-Regular",
   },
-  retryButton: {
-    backgroundColor: "#f35a5aff",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+  noteContainer: {
+    padding: 15,
     borderRadius: 10,
-    marginTop: 15,
+    marginBottom: 15,
   },
-  retryText: {
-    color: "#fff",
-    fontSize: 14,
+  noteContainerAnswered: {
+    backgroundColor: "#d4edda",
+    borderWidth: 2,
+    borderColor: "#28a745",
+  },
+  noteContainerNormal: {
+    backgroundColor: "#fcc2c2ff",
+  },
+  noteText: {
+    fontSize: 16,
+    textAlign: "center",
     fontFamily: "ComicRelief-Regular",
+    color: "#155724",
   },
 });
-

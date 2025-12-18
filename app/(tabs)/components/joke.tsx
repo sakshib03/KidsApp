@@ -239,11 +239,9 @@ const styles = StyleSheet.create({
   jokeContainer: {
     flex: 1,
     padding: 10,
-    marginBottom: 20,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 10,
   },
   questionContainer: {
     marginBottom: 20,
@@ -293,7 +291,7 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     borderWidth: 2,
     borderColor: "#FFD700",
-    marginTop: 20,
+    marginTop: 10,
     alignSelf: "center",
   },
   creditsText: {

@@ -64,6 +64,13 @@ export default function Reminders() {
   const [isTimePickerVisible, setTimePickerVisibility] = useState(false);
   const [pickerMode, setPickerMode] = useState("date"); // "date" or "time"
 
+  useEffect(()=>{
+    const init=async()=>{
+      await setupNotifications();
+    };
+    init();
+  },[]);
+
   // Consistent with Profile page approach
   const getChildIdFromStorage = async () => {
     try {
@@ -557,12 +564,28 @@ export default function Reminders() {
     hideDatePicker();
   };
 
+  const validateReminderDateTime = (date, time) => {
+    const reminderDateTime = moment(`${date} ${time}`, "YYYY-MM-DD HH:mm");
+    const currentDateTime = moment();
+
+    return reminderDateTime.isAfter(currentDateTime);
+  };
+
   // Create new reminder
   const handleCreateReminder = async () => {
     if (!occasion || !reminderDate || !reminderTime || !message) {
       Alert.alert("Oops!", "Please fill in all fields!");
       return;
     }
+
+    if (!validateReminderDateTime(reminderDate, reminderTime)) {
+    Alert.alert(
+      "Past Time Selected ⏰",
+      "Please select a future date and time for your reminder.",
+      [{ text: "OK" }]
+    );
+    return;
+  }
 
     const currentChildId = childId || (await getChildIdFromStorage());
 
@@ -632,6 +655,15 @@ export default function Reminders() {
       Alert.alert("Oops!", "Please fill in all fields!");
       return;
     }
+
+    if (!validateReminderDateTime(reminderDate, reminderTime)) {
+    Alert.alert(
+      "Past Time Selected ⏰",
+      "Please select a future date and time for your reminder.",
+      [{ text: "OK" }]
+    );
+    return;
+  }
 
     try {
       const currentChildId = childId || (await getChildIdFromStorage());
@@ -851,13 +883,13 @@ export default function Reminders() {
           </TouchableOpacity>
 
           {/* Notification Info */}
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.notificationInfoButton}
             onPress={setupNotifications}
           >
             <Feather name="bell" size={16} color={"#fff"} />
             <Text style={styles.notificationInfoText}>Notifications</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
 
         <ScrollView

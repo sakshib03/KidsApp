@@ -109,10 +109,6 @@ export default function Quiz() {
         setDailyLimitReached(true);
         setQuizData(null);
         setLoading(false);
-        Alert.alert(
-          "Daily Limit Reached",
-          "You've completed 5 questions today. Try again tomorrow!"
-        );
         return;
       }
 
@@ -132,7 +128,7 @@ export default function Quiz() {
           const errorData = await response.json();
           setDailyLimitReached(true);
           throw new Error(
-            errorData.detail || "Daily quiz limit reached! Try again tomorrow."
+            errorData.detail
           );
         }
         throw new Error("Failed to fetch quiz");
@@ -228,10 +224,6 @@ export default function Quiz() {
       if (questionCount >= 5) {
         setDailyLimitReached(true);
         setQuizData(null);
-        Alert.alert(
-          "Daily Limit Reached",
-          "You've completed 5 questions today. Try again tomorrow!"
-        );
         return;
       }
 
@@ -328,7 +320,7 @@ export default function Quiz() {
             ) : quizData && quizData.question ? (
               <View style={styles.questionWrapper}>
                 <View style={styles.questionContainer}>
-                  <View style={{ flexDirection: "row", gap: 120 }}>
+                  <View style={{ flexDirection: "row", justifyContent:"space-between"}}>
                     <View>
                       <Text style={styles.questionTitle}>Question:</Text>
                     </View>
@@ -345,7 +337,7 @@ export default function Quiz() {
                             }}
                           >
                             <Text style={styles.counterText}>
-                              Question {questionCount} of 5
+                              {questionCount} / 5
                             </Text>
                           </View>
                         )}
@@ -407,7 +399,7 @@ export default function Quiz() {
                   <View ref={resultRef} style={styles.resultContainer}>
                     <View style={styles.resultTextContainer}>
                       <Text style={styles.resultTitle}>
-                        {result.is_correct ? "" : "Try Again! 💪"}
+                        {result.is_correct ? "" : "Try Again!💪"}
                       </Text>
                       {result.is_correct && (
                         <>
@@ -436,7 +428,7 @@ export default function Quiz() {
                             marginTop: 10,
                             color: "#ff0303ff",
                             fontSize: 16,
-                            textAlign:"center",
+                            textAlign: "center",
                             fontFamily: "ComicRelief-Regular",
                           }}
                         >
@@ -449,34 +441,15 @@ export default function Quiz() {
               </View>
             ) : (
               <View style={styles.initialStateContainer}>
-                {dailyLimitReached ? (
-                  <>
-                    <Feather
-                      name="alert-triangle"
-                      size={60}
-                      color="#f35a5aff"
-                    />
-                    <Text style={styles.limitErrorText}>
-                      Daily quiz limit reached!
-                    </Text>
-                    <Text style={styles.limitErrorSubtext}>
-                      You've completed 5 questions today. Try again tomorrow!
-                    </Text>
-                  </>
-                ) : (
-                  <>
-                    <Feather name="help-circle" size={60} color="#52b9f1ff" />
-                    <Text style={styles.initialStateText}>
-                      Enter a topic above to generate your quiz!
-                    </Text>
-                    <Text style={styles.initialStateSubtext}>
-                      Examples: Animals, Space, Math, History
-                    </Text>
-                    {/* <Text style={styles.limitInfoText}>
-                      Daily limit: 5 questions
-                    </Text> */}
-                  </>
-                )}
+                <View style={{justifyContent:"center", alignItems:"center"}}>
+                  <Feather name="help-circle" size={60} color="#52b9f1ff" />
+                  <Text style={styles.initialStateText}>
+                    Enter a topic above to generate your quiz!
+                  </Text>
+                  <Text style={styles.initialStateSubtext}>
+                    Examples: Animals, Space, Math, History
+                  </Text>
+                </View>
               </View>
             )}
           </View>

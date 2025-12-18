@@ -66,7 +66,7 @@ export default function ForgotPassParent() {
           router.push("/(tabs)/components/verifyForgotPassword");
         },1000)
       } else {
-        setLoginError(data.message || "Failed to send OTP. Please try again.");
+        setLoginError(data.detail || data.message || "Failed to send OTP. Please try again.");
       }
     } catch (error) {
       console.error("Reset password error:", error);

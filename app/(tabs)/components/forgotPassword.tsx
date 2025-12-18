@@ -44,7 +44,7 @@ export default function ForgotPassword() {
         // Save email for the next screen
         await AsyncStorage.setItem("resetUsername", username.trim());
         
-         Alert.alert("Success", "OTP sent to your email address");
+         Alert.alert("Success", "OTP sent to your parents email address");
         setTimeout(()=>{
           router.push("/(tabs)/components/verifyForgotPassword");
         },1000)

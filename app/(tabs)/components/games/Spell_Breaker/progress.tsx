@@ -128,7 +128,7 @@ export default function Progress() {
               <View style={styles.progressItem}>
                 <Text style={styles.progressLabel}>Next Unlock Level:</Text>
                 <Text style={styles.progressValue}>
-                  {progressData?.Next_Unlocked_Level}
+                  {progressData?.next_level}
                 </Text>
               </View>
 

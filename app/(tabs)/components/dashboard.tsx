@@ -36,7 +36,7 @@ export default function Dashboard() {
   const [slideAnim] = useState(new Animated.Value(50));
   const [expandedDates, setExpandedDates] = useState(new Set());
   const [blockedStatus, setBlockedStatus] = useState({});
-  
+
   // Date Picker State
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
 
@@ -236,9 +236,9 @@ export default function Dashboard() {
 
   const isChildBlocked = () => {
     const currentChildId = childrenData[selectedChild]?.profile?.id;
-    return blockedStatus[currentChildId] !== undefined 
-    ? blockedStatus[currentChildId] 
-    : childrenData[selectedChild]?.profile?.is_blocked === true;
+    return blockedStatus[currentChildId] !== undefined
+      ? blockedStatus[currentChildId]
+      : childrenData[selectedChild]?.profile?.is_blocked === true;
   };
 
   const handleBlockChild = async () => {
@@ -473,23 +473,23 @@ export default function Dashboard() {
         </Text>
       </View>
       <View style={styles.creditHistoryRight}>
-  {item.credits_earned > 0 ? (
-    <View style={{ flexDirection: "row", alignItems: "center" }}>
-      <Text style={styles.creditEarned}>+{item.credits_earned}</Text>
-      <MaterialIcons name="monetization-on" size={20} color="gold" />
-    </View>
-  ) : item.credits_lost > 0 ? (
-    <View style={{ flexDirection: "row", alignItems: "center" }}>
-      <Text style={styles.creditLost}>-{item.credits_lost}</Text>
-      <MaterialIcons name="monetization-on" size={20} color="gold" />
-    </View>
-  ) : (
-    <View style={{ flexDirection: "row", alignItems: "center" }}>
-      <Text style={styles.creditEarned}>0</Text>
-      <MaterialIcons name="monetization-on" size={20} color="gold" />
-    </View>
-  )}
-</View>
+        {item.credits_earned > 0 ? (
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Text style={styles.creditEarned}>+{item.credits_earned}</Text>
+            <MaterialIcons name="monetization-on" size={20} color="gold" />
+          </View>
+        ) : item.credits_lost > 0 ? (
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Text style={styles.creditLost}>-{item.credits_lost}</Text>
+            <MaterialIcons name="monetization-on" size={20} color="gold" />
+          </View>
+        ) : (
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Text style={styles.creditEarned}>0</Text>
+            <MaterialIcons name="monetization-on" size={20} color="gold" />
+          </View>
+        )}
+      </View>
     </View>
   );
 
@@ -725,7 +725,23 @@ export default function Dashboard() {
               {isChildBlocked() ? (
                 <TouchableOpacity
                   style={[styles.actionButton, styles.successButton]}
-                  onPress={handleUnblockChild}
+                  onPress={() => {
+                    Alert.alert(
+                      "Confirm Unblock",
+                      `Are you sure you want to unblock ${currentChild?.profile?.fullname}? They will be able to chat again.`,
+                      [
+                        {
+                          text: "Cancel",
+                          style: "cancel",
+                        },
+                        {
+                          text: "Yes, Unblock",
+                          style: "default",
+                          onPress: handleUnblockChild,
+                        },
+                      ]
+                    );
+                  }}
                 >
                   <MaterialIcons name="lock-open" size={20} color="#fff" />
                   <Text style={styles.actionButtonText}>Unblock Child</Text>
@@ -733,7 +749,23 @@ export default function Dashboard() {
               ) : (
                 <TouchableOpacity
                   style={[styles.actionButton, styles.warningButton]}
-                  onPress={handleBlockChild}
+                  onPress={() => {
+                    Alert.alert(
+                      "Confirm Block",
+                      `Are you sure you want to block ${currentChild?.profile?.fullname}? They will not be able to chat until you unblock them.`,
+                      [
+                        {
+                          text: "Cancel",
+                          style: "cancel",
+                        },
+                        {
+                          text: "Yes, Block",
+                          style: "destructive",
+                          onPress: handleBlockChild,
+                        },
+                      ]
+                    );
+                  }}
                 >
                   <MaterialIcons name="block" size={20} color="#fff" />
                   <Text style={styles.actionButtonText}>Block Child</Text>
@@ -796,7 +828,7 @@ export default function Dashboard() {
                       <Feather name="calendar" size={20} color="#56BBF1" />
                     </TouchableOpacity>
                   </View>
-                  
+
                   <View style={styles.filterButtons}>
                     <TouchableOpacity
                       style={[styles.filterButton, styles.applyButton]}
@@ -1471,6 +1503,6 @@ const styles = StyleSheet.create({
     fontFamily: "ComicRelief-Bold",
   },
   flatListContent: {
-    paddingBottom: 10, 
+    paddingBottom: 10,
   },
 });

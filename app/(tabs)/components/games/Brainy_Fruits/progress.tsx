@@ -66,15 +66,12 @@ export default function Progress() {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        `${API_BASE}/game/progress/${childId}`,
-        {
-          method: "GET",
-          headers: {
-            accept: "application/json",
-          },
-        }
-      );
+      const response = await fetch(`${API_BASE}/game/progress/${childId}`, {
+        method: "GET",
+        headers: {
+          accept: "application/json",
+        },
+      });
       if (response.ok) {
         const data = await response.json();
         console.log("Child Progress:", data);
@@ -132,7 +129,7 @@ export default function Progress() {
               <View style={styles.progressItem}>
                 <Text style={styles.progressLabel}>Next Unlock Level:</Text>
                 <Text style={styles.progressValue}>
-                  {progressData?.Next_Unlocked_Level}
+                  {progressData?.next_level}
                 </Text>
               </View>
 
@@ -161,14 +158,16 @@ export default function Progress() {
             <TouchableOpacity
               style={styles.exitButton}
               onPress={() =>
-                router.push("/(tabs)/components/games/Brainy_Fruits/welcomePage")
+                router.push(
+                  "/(tabs)/components/games/Brainy_Fruits/welcomePage"
+                )
               }
             >
-               <Image
-                              source={require("@/assets/images/games/back-arrow.png")}
-                              style={styles.backIcon}
-                            />
-              
+              <Image
+                source={require("@/assets/images/games/back-arrow.png")}
+                style={styles.backIcon}
+              />
+
               <Text style={styles.buttonText}>Back</Text>
             </TouchableOpacity>
           </View>
@@ -262,8 +261,8 @@ const styles = StyleSheet.create({
   },
   exitButton: {
     backgroundColor: "#0A761E",
-     gap: 10,
-    flexDirection:"row",
+    gap: 10,
+    flexDirection: "row",
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 20,
@@ -279,7 +278,7 @@ const styles = StyleSheet.create({
     fontFamily: "ComicRelief-Bold",
     color: "#fff",
     textAlign: "center",
-    top:2,
+    top: 3,
   },
   bottomIcon: {
     width: 50,
@@ -338,7 +337,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffeccc",
     borderRadius: 8,
     padding: 10,
-    margin:10,
+    margin: 10,
     width: "100%",
   },
   levelPointsRow: {

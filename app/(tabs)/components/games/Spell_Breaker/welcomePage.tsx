@@ -297,6 +297,6 @@ const styles = StyleSheet.create({
   },
   flowerBottom: {
     width: "100%",
-    height: 300,
+    height: 280,
   },
 });
